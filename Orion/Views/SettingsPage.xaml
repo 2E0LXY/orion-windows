@@ -1,0 +1,2089 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Orion.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Orion"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <NavigationView
+            x:Name="SettingsNavigationView"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="False"
+            OpenPaneLength="250"
+            PaneDisplayMode="Left"
+            PaneTitle="Settings"
+            SelectionChanged="SettingsNavigationView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="General" Tag="General">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Profiles" Tag="Profiles">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE77B;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Appearance" Tag="Appearance">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE790;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Tabs" Tag="Tabs">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE737;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Browsing" Tag="Browsing">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE774;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Sync" Tag="Sync">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE895;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Passwords" Tag="Passwords">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8D7;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Privacy" Tag="Privacy">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE72E;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Search" Tag="Search">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE721;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Websites" Tag="Websites">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE774;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Advanced" Tag="Advanced">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE15E;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Plus" Tag="Plus">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE710;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator />
+                <NavigationViewItem Content="Extensions" Tag="Extensions">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE74C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="About" Tag="About">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE946;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <!--  Settings Content Area  -->
+            <Grid Padding="24">
+                <!--  General Content  -->
+                <ScrollViewer x:Name="GeneralContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="General" />
+
+                        <!--  Two-column form grid: labels right-aligned, controls left-aligned  -->
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Orion opens with  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Orion opens with:" />
+                            <ComboBox
+                                x:Name="OrionOpensWithComboBox"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                SelectionChanged="OrionOpensWith_SelectionChanged">
+                                <ComboBoxItem Content="A new window" />
+                                <ComboBoxItem Content="A new private window" />
+                                <ComboBoxItem Content="All windows from last session" />
+                                <ComboBoxItem Content="All non-private windows from last session" />
+                            </ComboBox>
+
+                            <!--  Row 1: New windows open with  -->
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="New windows open with:" />
+                            <ComboBox
+                                x:Name="NewWindowsOpenWithComboBox"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                SelectionChanged="NewWindowsOpenWith_SelectionChanged">
+                                <ComboBoxItem Content="Start page" />
+                                <ComboBoxItem Content="Empty page" />
+                                <ComboBoxItem Content="Same page" />
+                                <ComboBoxItem Content="Homepage" />
+                                <ComboBoxItem Content="Notes" />
+                            </ComboBox>
+
+                            <!--  Row 2: New tabs open with  -->
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="New tabs open with:" />
+                            <ComboBox
+                                x:Name="NewTabsOpenWithComboBox"
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                SelectionChanged="NewTabsOpenWith_SelectionChanged">
+                                <ComboBoxItem Content="Start page" />
+                                <ComboBoxItem Content="Empty page" />
+                                <ComboBoxItem Content="Same page" />
+                                <ComboBoxItem Content="Homepage" />
+                                <ComboBoxItem Content="Notes" />
+                            </ComboBox>
+
+                            <!--  Row 3: Homepage  -->
+                            <TextBlock
+                                Grid.Row="3"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Homepage:" />
+                            <TextBox
+                                x:Name="HomepageTextBox"
+                                Grid.Row="3"
+                                Grid.Column="1"
+                                PlaceholderText="https://example.com"
+                                TextChanged="Homepage_TextChanged" />
+
+                            <!--  Row 4: File download location  -->
+                            <TextBlock
+                                Grid.Row="4"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="File download location:" />
+                            <ComboBox
+                                x:Name="FileDownloadLocationComboBox"
+                                Grid.Row="4"
+                                Grid.Column="1"
+                                SelectionChanged="FileDownloadLocation_SelectionChanged">
+                                <ComboBoxItem Content="Downloads" />
+                                <ComboBoxItem Content="Ask for each download" />
+                                <ComboBoxItem Content="Other..." />
+                            </ComboBox>
+                            <TextBlock
+                                x:Name="CustomDownloadPathText"
+                                Grid.Row="4"
+                                Grid.Column="1"
+                                Margin="0,36,0,0"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Visibility="Collapsed" />
+
+                            <!--  Row 5: Remove download items  -->
+                            <TextBlock
+                                Grid.Row="5"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Remove download items:" />
+                            <ComboBox
+                                x:Name="RemoveDownloadItemsComboBox"
+                                Grid.Row="5"
+                                Grid.Column="1"
+                                SelectionChanged="RemoveDownloadItems_SelectionChanged">
+                                <ComboBoxItem Content="After one day" />
+                                <ComboBoxItem Content="When Orion quits" />
+                                <ComboBoxItem Content="Upon successful download" />
+                                <ComboBoxItem Content="Manually" />
+                            </ComboBox>
+
+                            <!--  Row 6: Language  -->
+                            <TextBlock
+                                Grid.Row="6"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Language:" />
+                            <ComboBox
+                                x:Name="LanguageComboBox"
+                                Grid.Row="6"
+                                Grid.Column="1"
+                                SelectionChanged="Language_SelectionChanged">
+                                <ComboBoxItem Content="German" />
+                                <ComboBoxItem Content="Arabic" />
+                                <ComboBoxItem Content="Greek" />
+                                <ComboBoxItem Content="Chinese (Simplified)" />
+                                <ComboBoxItem Content="Japanese" />
+                                <ComboBoxItem Content="English" />
+                                <ComboBoxItem Content="Ukrainian" />
+                                <ComboBoxItem Content="Spanish" />
+                                <ComboBoxItem Content="Slovenian" />
+                                <ComboBoxItem Content="Galician" />
+                                <ComboBoxItem Content="Italian" />
+                                <ComboBoxItem Content="Swedish" />
+                                <ComboBoxItem Content="Czech" />
+                                <ComboBoxItem Content="Chinese (Traditional)" />
+                                <ComboBoxItem Content="Turkish" />
+                                <ComboBoxItem Content="Polish" />
+                                <ComboBoxItem Content="Portuguese (Brazil)" />
+                                <ComboBoxItem Content="Russian" />
+                                <ComboBoxItem Content="French" />
+                                <ComboBoxItem Content="Finnish" />
+                                <ComboBoxItem Content="Dutch" />
+                                <ComboBoxItem Content="Polish (Poland)" />
+                            </ComboBox>
+
+                            <!--  Row 7: Open external links in  -->
+                            <TextBlock
+                                Grid.Row="7"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Open external links in:" />
+                            <ComboBox
+                                x:Name="OpenExternalLinksComboBox"
+                                Grid.Row="7"
+                                Grid.Column="1"
+                                SelectionChanged="OpenExternalLinksIn_SelectionChanged">
+                                <ComboBoxItem Content="Last active profile" />
+                                <ComboBoxItem Content="Default profile" />
+                            </ComboBox>
+
+                            <!--  Row 8: Separator  -->
+                            <Border
+                                Grid.Row="8"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,8"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 9: Import browser data  -->
+                            <TextBlock
+                                Grid.Row="9"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Import browser data:" />
+                            <Button
+                                x:Name="ImportBrowserDataButton"
+                                Grid.Row="9"
+                                Grid.Column="1"
+                                Content="Import..." />
+
+                            <!--  Row 10: Orion updates  -->
+                            <TextBlock
+                                Grid.Row="10"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Orion updates:" />
+                            <StackPanel Grid.Row="10" Grid.Column="1">
+                                <CheckBox
+                                    x:Name="AutoUpdateCheckBox"
+                                    Checked="AutoUpdate_Changed"
+                                    Content="Automatically keep Orion up to date"
+                                    Unchecked="AutoUpdate_Changed" />
+                                <CheckBox
+                                    x:Name="ShowWarningBeforeQuittingCheckBox"
+                                    Checked="ShowWarningBeforeQuitting_Changed"
+                                    Content="Show warning before quitting"
+                                    Unchecked="ShowWarningBeforeQuitting_Changed" />
+                            </StackPanel>
+
+                            <!--  Row 11: Separator  -->
+                            <Border
+                                Grid.Row="11"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,8"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 12: Default browser status  -->
+                            <TextBlock
+                                Grid.Row="12"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Default browser:" />
+                            <StackPanel
+                                Grid.Row="12"
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                                <TextBlock
+                                    x:Name="DefaultBrowserText"
+                                    VerticalAlignment="Center"
+                                    Text="Orion is not your default browser." />
+                                <Button
+                                    x:Name="SetDefaultBrowserButton"
+                                    Click="SetDefaultBrowser_Click"
+                                    Content="Set Default..." />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Appearance Content  -->
+                <ScrollViewer x:Name="AppearanceContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Appearance" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Theme  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Theme:" />
+                            <StackPanel
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                                <ComboBox x:Name="ThemeComboBox" SelectionChanged="Theme_SelectionChanged">
+                                    <ComboBoxItem Content="System default" />
+                                    <ComboBoxItem Content="Light" />
+                                    <ComboBoxItem Content="Dark" />
+                                </ComboBox>
+                                <Button VerticalAlignment="Center" Content="Customize..." />
+                            </StackPanel>
+
+                            <!--  Row 1: Show website color (no label)  -->
+                            <CheckBox
+                                x:Name="ShowWebsiteColorCheckBox"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Checked="ShowWebsiteColor_Changed"
+                                Content="Show website color for vertical tabs"
+                                Unchecked="ShowWebsiteColor_Changed" />
+
+                            <!--  Row 2: Separator  -->
+                            <Border
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,4"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 3: Toolbar  -->
+                            <TextBlock
+                                Grid.Row="3"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Toolbar:" />
+                            <StackPanel Grid.Row="3" Grid.Column="1">
+                                <CheckBox
+                                    x:Name="AlwaysShowToolbarCheckBox"
+                                    Checked="AlwaysShowToolbar_Changed"
+                                    Content="Always show toolbar in full screen"
+                                    Unchecked="AlwaysShowToolbar_Changed" />
+                                <CheckBox
+                                    x:Name="ShowBookmarksBarCheckBox"
+                                    Checked="ShowBookmarksBar_Changed"
+                                    Content="Show bookmarks bar"
+                                    Unchecked="ShowBookmarksBar_Changed" />
+
+                                <CheckBox
+                                    x:Name="DisplayRssFeedsCheckBox"
+                                    Checked="DisplayRssFeeds_Changed"
+                                    Content="Display RSS Feeds indicator"
+                                    Unchecked="DisplayRssFeeds_Changed" />
+                                <CheckBox
+                                    x:Name="DisplayWebAppCheckBox"
+                                    Checked="DisplayWebApp_Changed"
+                                    Content="Display Web Application indicator"
+                                    Unchecked="DisplayWebApp_Changed" />
+                            </StackPanel>
+
+                            <!--  Row 4: Bookmarks bar  -->
+                            <TextBlock
+                                Grid.Row="4"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Bookmarks bar:" />
+                            <ComboBox
+                                x:Name="BookmarksBarComboBox"
+                                Grid.Row="4"
+                                Grid.Column="1"
+                                SelectionChanged="BookmarksBarStyle_SelectionChanged">
+                                <ComboBoxItem Content="Text only" />
+                                <ComboBoxItem Content="Icon and text" />
+                                <ComboBoxItem Content="Icon only" />
+                            </ComboBox>
+
+                            <!--  Row 5: Sidebar  -->
+                            <TextBlock
+                                Grid.Row="5"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Sidebar:" />
+                            <CheckBox
+                                x:Name="AutoShowSidebarCheckBox"
+                                Grid.Row="5"
+                                Grid.Column="1"
+                                Checked="AutoShowSidebar_Changed"
+                                Content="Auto-show sidebar in full screen"
+                                Unchecked="AutoShowSidebar_Changed" />
+
+                            <!--  Row 6: Default font  -->
+                            <TextBlock
+                                Grid.Row="6"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Default font:" />
+                            <StackPanel
+                                Grid.Row="6"
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                                <ComboBox x:Name="DefaultFontComboBox" SelectionChanged="DefaultFontFamily_SelectionChanged">
+                                    <ComboBoxItem Content="Segoe UI" />
+                                    <ComboBoxItem Content="Arial" />
+                                    <ComboBoxItem Content="Times New Roman" />
+                                    <ComboBoxItem Content="Consolas" />
+                                </ComboBox>
+                                <Button VerticalAlignment="Center" Content="Customize..." />
+                            </StackPanel>
+
+                            <!--  Row 7: Rendering  -->
+                            <TextBlock
+                                Grid.Row="7"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Rendering:" />
+                            <StackPanel Grid.Row="7" Grid.Column="1">
+                                <CheckBox
+                                    x:Name="Prefer120FpsCheckBox"
+                                    Checked="Prefer120Fps_Changed"
+                                    Content="Prefer page rendering updates near 120fps"
+                                    Unchecked="Prefer120Fps_Changed" />
+                                <CheckBox
+                                    x:Name="DisableTransparencyCheckBox"
+                                    Checked="DisableTransparency_Changed"
+                                    Content="Disable transparency for full screen windows"
+                                    Unchecked="DisableTransparency_Changed" />
+                            </StackPanel>
+
+                            <!--  Row 8: App icon  -->
+                            <TextBlock
+                                Grid.Row="8"
+                                Grid.Column="0"
+                                Margin="0,8,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="App icon:" />
+                            <GridView
+                                x:Name="AppIconGridView"
+                                Grid.Row="8"
+                                Grid.Column="1"
+                                SelectionMode="Single">
+                                <GridView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <ItemsWrapGrid MaximumRowsOrColumns="6" Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </GridView.ItemsPanel>
+                                <GridViewItem IsSelected="True">
+                                    <Image
+                                        Width="48"
+                                        Height="48"
+                                        Source="/Assets/orion-logo.png" />
+                                </GridViewItem>
+                                <GridViewItem>
+                                    <Image
+                                        Width="48"
+                                        Height="48"
+                                        Source="/Assets/orion-logo.png" />
+                                </GridViewItem>
+                                <GridViewItem>
+                                    <Image
+                                        Width="48"
+                                        Height="48"
+                                        Source="/Assets/orion-logo.png" />
+                                </GridViewItem>
+                            </GridView>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Tabs Content  -->
+                <ScrollViewer x:Name="TabsContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Tabs" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Tab layout  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Tab layout:" />
+                            <StackPanel
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                                <RadioButton
+                                    x:Name="StandardTabLayoutRadio"
+                                    Checked="TabLayout_Changed"
+                                    GroupName="TabLayout"
+                                    IsChecked="True">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon FontSize="16" Glyph="&#xE89A;" />
+                                        <TextBlock Text="Standard" />
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton
+                                    x:Name="CompactTabLayoutRadio"
+                                    Checked="TabLayout_Changed"
+                                    GroupName="TabLayout">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon FontSize="16" Glyph="&#xE737;" />
+                                        <TextBlock Text="Compact" />
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton
+                                    x:Name="VerticalTabLayoutRadio"
+                                    Checked="TabLayout_Changed"
+                                    GroupName="TabLayout">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon FontSize="16" Glyph="&#xE71D;" />
+                                        <TextBlock Text="Vertical" />
+                                    </StackPanel>
+                                </RadioButton>
+                            </StackPanel>
+
+                            <!--  Row 1: Tab appearance checkboxes (no label)  -->
+                            <StackPanel Grid.Row="1" Grid.Column="1">
+                                <CheckBox
+                                    x:Name="UseMiniToolbarCheckBox"
+                                    Checked="UseMiniToolbar_Changed"
+                                    Content="Use Mini Toolbar"
+                                    Unchecked="UseMiniToolbar_Changed" />
+                                <CheckBox
+                                    x:Name="ShowTabPreviewCheckBox"
+                                    Checked="ShowTabPreview_Changed"
+                                    Content="Show tab preview on hover"
+                                    Unchecked="ShowTabPreview_Changed" />
+                                <CheckBox
+                                    x:Name="AlwaysShowWebsiteTitlesCheckBox"
+                                    Checked="AlwaysShowWebsiteTitles_Changed"
+                                    Content="Always show website titles in tabs"
+                                    Unchecked="AlwaysShowWebsiteTitles_Changed" />
+                                <CheckBox
+                                    x:Name="ShowFaviconsInTabsCheckBox"
+                                    Checked="ShowFaviconsInTabs_Changed"
+                                    Content="Show favicons inside tabs"
+                                    Unchecked="ShowFaviconsInTabs_Changed" />
+                            </StackPanel>
+
+                            <!--  Row 2: Close window with last tab (no label)  -->
+                            <StackPanel
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Spacing="0">
+                                <CheckBox
+                                    x:Name="CloseWindowWithLastTabCheckBox"
+                                    Checked="CloseWindowWithLastTab_Changed"
+                                    Content="Close window with last tab"
+                                    Unchecked="CloseWindowWithLastTab_Changed" />
+                                <CheckBox
+                                    x:Name="WhenPinnedTabsPresentCheckBox"
+                                    Margin="28,0,0,0"
+                                    Checked="WhenPinnedTabsPresent_Changed"
+                                    Content="When pinned tabs are present"
+                                    Unchecked="WhenPinnedTabsPresent_Changed" />
+                            </StackPanel>
+
+                            <!--  Row 3: Separator  -->
+                            <Border
+                                Grid.Row="3"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,4"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 4: Navigation  -->
+                            <TextBlock
+                                Grid.Row="4"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Navigation:" />
+                            <StackPanel Grid.Row="4" Grid.Column="1">
+                                <CheckBox
+                                    x:Name="OpenNewTabNextToCurrentCheckBox"
+                                    Checked="OpenNewTabNextToCurrent_Changed"
+                                    Content="Open new tab next to current tab"
+                                    Unchecked="OpenNewTabNextToCurrent_Changed" />
+                                <CheckBox
+                                    x:Name="MakeNewTabActiveCheckBox"
+                                    Checked="MakeNewTabActive_Changed"
+                                    Content="When opening a link in a new tab, make it active"
+                                    Unchecked="MakeNewTabActive_Changed" />
+                                <CheckBox
+                                    x:Name="AutoActivatePinnedTabsCheckBox"
+                                    Checked="AutoActivatePinnedTabs_Changed"
+                                    Content="Automatically activate pinned tabs on loading"
+                                    Unchecked="AutoActivatePinnedTabs_Changed" />
+                                <CheckBox
+                                    x:Name="ReturnToLastActiveTabCheckBox"
+                                    Checked="ReturnToLastActiveTab_Changed"
+                                    Content="Return to last active tab when closing current tab"
+                                    Unchecked="ReturnToLastActiveTab_Changed" />
+                                <CheckBox
+                                    x:Name="PreventClosingPinnedTabsCheckBox"
+                                    Checked="PreventClosingPinnedTabs_Changed"
+                                    Content="Prevent closing pinned tabs"
+                                    Unchecked="PreventClosingPinnedTabs_Changed" />
+                                <CheckBox
+                                    x:Name="UndoCloseTabCheckBox"
+                                    Checked="UndoCloseTab_Changed"
+                                    Content="Use Ctrl+Z to undo close tab"
+                                    Unchecked="UndoCloseTab_Changed" />
+                                <CheckBox
+                                    x:Name="CtrlNumberSwitchTabsCheckBox"
+                                    Checked="CtrlNumberSwitchTabs_Changed"
+                                    Content="Use Ctrl+1 to Ctrl+9 to switch tabs"
+                                    Unchecked="CtrlNumberSwitchTabs_Changed" />
+                            </StackPanel>
+
+                            <!--  Row 5: Separator  -->
+                            <Border
+                                Grid.Row="5"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,4"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 6: Vertical tabs  -->
+                            <TextBlock
+                                Grid.Row="6"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Vertical tabs:" />
+                            <StackPanel
+                                Grid.Row="6"
+                                Grid.Column="1"
+                                Spacing="8">
+                                <CheckBox
+                                    x:Name="ShowNestedVerticalTabsCheckBox"
+                                    Checked="ShowNestedVerticalTabs_Changed"
+                                    Content="Show nested vertical tabs"
+                                    Unchecked="ShowNestedVerticalTabs_Changed" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="When closing an expanded tab:" />
+                                    <ComboBox
+                                        x:Name="ClosingExpandedTabComboBox"
+                                        SelectedIndex="0"
+                                        SelectionChanged="ClosingExpandedTab_SelectionChanged">
+                                        <ComboBoxItem Content="Promote child tabs" />
+                                        <ComboBoxItem Content="Convert first child" />
+                                        <ComboBoxItem Content="Preserve tab tree" />
+                                    </ComboBox>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!--  Row 7: Separator  -->
+                            <Border
+                                Grid.Row="7"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,4"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 8: Tab switcher  -->
+                            <TextBlock
+                                Grid.Row="8"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Tab switcher:" />
+                            <StackPanel
+                                Grid.Row="8"
+                                Grid.Column="1"
+                                Spacing="8">
+                                <CheckBox
+                                    x:Name="UseTabSwitcherCheckBox"
+                                    Checked="UseTabSwitcher_Changed"
+                                    Content="Use tab switcher UI for Ctrl + Tab"
+                                    IsChecked="True"
+                                    Unchecked="UseTabSwitcher_Changed" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="Switch tabs using:" />
+                                    <ComboBox
+                                        x:Name="SwitchTabsUsingComboBox"
+                                        SelectedIndex="0"
+                                        SelectionChanged="SwitchTabsUsing_SelectionChanged">
+                                        <ComboBoxItem Content="Most recently used order" />
+                                        <ComboBoxItem Content="Tab order" />
+                                    </ComboBox>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Browsing Content  -->
+                <ScrollViewer x:Name="BrowsingContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Browsing" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Check for SSL website  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Check for SSL website:" />
+                            <CheckBox
+                                x:Name="AutomaticHttpsUpgradeCheckBox"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Checked="AutomaticHttpsUpgrade_Changed"
+                                Content="Automatic HTTPS upgrade"
+                                IsChecked="True"
+                                Unchecked="AutomaticHttpsUpgrade_Changed" />
+
+                            <!--  Row 1: URL display  -->
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="URL display:" />
+                            <StackPanel Grid.Row="1" Grid.Column="1">
+                                <CheckBox
+                                    x:Name="ShowFullWebsiteAddressCheckBox"
+                                    Checked="ShowFullWebsiteAddress_Changed"
+                                    Content="Show full website address"
+                                    Unchecked="ShowFullWebsiteAddress_Changed" />
+                                <CheckBox Content="Show Unicode Domains" />
+                            </StackPanel>
+
+                            <!--  Row 2: Separator  -->
+                            <Border
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,4"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 3: Bookmarks  -->
+                            <TextBlock
+                                Grid.Row="3"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Bookmarks:" />
+                            <CheckBox
+                                x:Name="OpenBookmarksInNewTabsCheckBox"
+                                Grid.Row="3"
+                                Grid.Column="1"
+                                Checked="OpenBookmarksInNewTabs_Changed"
+                                Content="Open bookmarks in new tab"
+                                Unchecked="OpenBookmarksInNewTabs_Changed" />
+
+                            <!--  Row 4: Navigation  -->
+                            <TextBlock
+                                Grid.Row="4"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Navigation:" />
+                            <CheckBox
+                                Grid.Row="4"
+                                Grid.Column="1"
+                                Content="Use Alt+1 to Alt+9 to open favorites"
+                                IsChecked="True" />
+
+                            <!--  Row 5: Window Switcher  -->
+                            <TextBlock
+                                Grid.Row="5"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Window Switcher:" />
+                            <CheckBox
+                                x:Name="SwitchSavedWindowsCheckBox"
+                                Grid.Row="5"
+                                Grid.Column="1"
+                                Checked="SwitchSavedWindows_Changed"
+                                Content="Switch Saved Windows in place"
+                                Unchecked="SwitchSavedWindows_Changed" />
+
+                            <!--  Row 6: Link Preview  -->
+                            <TextBlock
+                                Grid.Row="6"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Link Preview:" />
+                            <CheckBox
+                                x:Name="OpenExternalLinksInPreviewCheckBox"
+                                Grid.Row="6"
+                                Grid.Column="1"
+                                Checked="OpenExternalLinksInPreview_Changed"
+                                Content="Open links from other apps in Preview (hold Shift to open in new tab)"
+                                Unchecked="OpenExternalLinksInPreview_Changed" />
+
+                            <!--  Row 7: Focus Mode  -->
+                            <TextBlock
+                                Grid.Row="7"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Focus Mode:" />
+                            <CheckBox
+                                x:Name="ShowStandardWindowButtonsCheckBox"
+                                Grid.Row="7"
+                                Grid.Column="1"
+                                Checked="ShowStandardWindowButtons_Changed"
+                                Content="Show standard window buttons in Focus Mode"
+                                Unchecked="ShowStandardWindowButtons_Changed" />
+
+                            <!--  Row 8: Picture in Picture  -->
+                            <TextBlock
+                                Grid.Row="8"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Picture in Picture:" />
+                            <CheckBox
+                                x:Name="ConfirmPipClosingCheckBox"
+                                Grid.Row="8"
+                                Grid.Column="1"
+                                Checked="ConfirmPipClosing_Changed"
+                                Content="Confirm closing tabs when Picture in Picture video is playing"
+                                IsChecked="True"
+                                Unchecked="ConfirmPipClosing_Changed" />
+
+                            <!--  Row 9: Spelling and Grammar  -->
+                            <TextBlock
+                                Grid.Row="9"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Spelling and Grammar:" />
+                            <StackPanel Grid.Row="9" Grid.Column="1">
+                                <CheckBox
+                                    x:Name="CheckSpellingCheckBox"
+                                    Checked="CheckSpelling_Changed"
+                                    Content="Check spelling while typing"
+                                    IsChecked="True"
+                                    Unchecked="CheckSpelling_Changed" />
+                                <CheckBox
+                                    x:Name="CorrectSpellingCheckBox"
+                                    Checked="CorrectSpelling_Changed"
+                                    Content="Correct spelling automatically"
+                                    Unchecked="CorrectSpelling_Changed" />
+                            </StackPanel>
+
+                            <!--  Row 10: Accessibility  -->
+                            <TextBlock
+                                Grid.Row="10"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Accessibility:" />
+                            <StackPanel Grid.Row="10" Grid.Column="1">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <CheckBox
+                                        x:Name="MinimumFontSizeCheckBox"
+                                        Checked="MinimumFontSize_Changed"
+                                        Content="Minimum font size"
+                                        Unchecked="MinimumFontSize_Changed" />
+                                    <!--  Items come from SettingsPage.MinimumFontSizeValues  -->
+                                    <ComboBox
+                                        x:Name="MinimumFontSizeComboBox"
+                                        VerticalAlignment="Center"
+                                        IsEnabled="False"
+                                        SelectionChanged="MinimumFontSize_SelectionChanged" />
+                                </StackPanel>
+                                <CheckBox
+                                    x:Name="PressTabToHighlightCheckBox"
+                                    Checked="PressTabToHighlight_Changed"
+                                    Content="Press Tab to highlight each item on a web page"
+                                    Unchecked="PressTabToHighlight_Changed" />
+                                <CheckBox
+                                    x:Name="PreventEscapeFullscreenCheckBox"
+                                    Checked="PreventEscapeFullscreen_Changed"
+                                    Content="Prevent ESC from exiting full screen"
+                                    Unchecked="PreventEscapeFullscreen_Changed" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Sync Content  -->
+                <ScrollViewer x:Name="SyncContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Sync" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Sync  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Sync:" />
+                            <StackPanel
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Spacing="8">
+                                <CheckBox
+                                    x:Name="EnableCrossDeviceSyncCheckBox"
+                                    Checked="EnableCrossDeviceSync_Changed"
+                                    Content="Enable cross-device sync of your tabs, bookmarks, and reading list"
+                                    IsChecked="True"
+                                    Unchecked="EnableCrossDeviceSync_Changed" />
+                            </StackPanel>
+
+                            <!--  Row 1: Export / Import  -->
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Profile Data:" />
+                            <StackPanel
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button
+                                        x:Name="ExportButton"
+                                        Click="ExportButton_Click"
+                                        Content="Export..." />
+                                    <Button
+                                        x:Name="ImportButton"
+                                        Click="ImportButton_Click"
+                                        Content="Import..." />
+                                    <Button
+                                        x:Name="CancelSyncButton"
+                                        Click="CancelSyncButton_Click"
+                                        Content="Cancel"
+                                        Visibility="Collapsed" />
+                                </StackPanel>
+                                <StackPanel
+                                    x:Name="SyncProgressPanel"
+                                    Spacing="4"
+                                    Visibility="Collapsed">
+                                    <ProgressBar x:Name="SyncProgressBar" Maximum="100" />
+                                    <TextBlock
+                                        x:Name="SyncStatusText"
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Passwords Content  -->
+                <ScrollViewer x:Name="PasswordsContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Passwords" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Password provider  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Password provider:" />
+                            <ComboBox
+                                x:Name="PasswordProviderComboBox"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                SelectedIndex="0"
+                                SelectionChanged="PasswordProvider_SelectionChanged">
+                                <ComboBoxItem Content="Orion keychain" />
+                            </ComboBox>
+
+                            <!--  Row 1: Password Autofill  -->
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Password Autofill:" />
+                            <StackPanel
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Spacing="4">
+                                <CheckBox
+                                    x:Name="OfferAutofillCheckBox"
+                                    Checked="OfferAutofill_Changed"
+                                    Content="Offer to AutoFill passwords from Orion's Keychain"
+                                    IsChecked="True"
+                                    Unchecked="OfferAutofill_Changed" />
+                                <CheckBox
+                                    x:Name="OfferSavePasswordsCheckBox"
+                                    Checked="OfferSavePasswords_Changed"
+                                    Content="Offer to save passwords to Orion's Keychain"
+                                    IsChecked="True"
+                                    Unchecked="OfferSavePasswords_Changed" />
+                                <CheckBox
+                                    x:Name="SubmitFormAutomaticallyCheckBox"
+                                    Checked="SubmitFormAutomatically_Changed"
+                                    Content="Submit form automatically"
+                                    Unchecked="SubmitFormAutomatically_Changed" />
+                                <Button Click="ManagePasswords_Click" Content="Manage Passwords..." />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Privacy Content  -->
+                <ScrollViewer x:Name="PrivacyContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Privacy" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Remove trackers  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Remove trackers from URLs:" />
+                            <ComboBox
+                                x:Name="RemoveTrackersComboBox"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                SelectedIndex="0"
+                                SelectionChanged="RemoveTrackers_SelectionChanged">
+                                <ComboBoxItem Content="Always" />
+                                <ComboBoxItem Content="In private browsing" />
+                                <ComboBoxItem Content="Never" />
+                            </ComboBox>
+
+                            <!--  Row 1: Remove history items  -->
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Remove history items:" />
+                            <ComboBox
+                                x:Name="RemoveHistoryItemsComboBox"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                SelectedIndex="4"
+                                SelectionChanged="RemoveHistoryItems_SelectionChanged">
+                                <ComboBoxItem Content="After one day" />
+                                <ComboBoxItem Content="After one week" />
+                                <ComboBoxItem Content="After one month" />
+                                <ComboBoxItem Content="After one year" />
+                                <ComboBoxItem Content="Manually" />
+                            </ComboBox>
+
+                            <!--  Row 2: Auto delete cookies  -->
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Automatically delete cookies:" />
+                            <ComboBox
+                                x:Name="AutoDeleteCookiesComboBox"
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                SelectedIndex="0"
+                                SelectionChanged="AutoDeleteCookies_SelectionChanged">
+                                <ComboBoxItem Content="Never" />
+                                <ComboBoxItem Content="On quit" />
+                                <ComboBoxItem Content="After one day" />
+                                <ComboBoxItem Content="After one week" />
+                                <ComboBoxItem Content="After one month" />
+                            </ComboBox>
+
+                            <!--  Row 3: Cookies and website data  -->
+                            <TextBlock
+                                Grid.Row="3"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Cookies and website data:" />
+                            <StackPanel
+                                Grid.Row="3"
+                                Grid.Column="1"
+                                Spacing="4">
+                                <CheckBox
+                                    x:Name="DisableHistoryCheckBox"
+                                    Checked="DisableHistory_Changed"
+                                    Content="Disable History"
+                                    Unchecked="DisableHistory_Changed" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Reset Orion..." />
+                                    <Button Content="Manage Website Data..." />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!--  Row 4: Share crash reports  -->
+                            <TextBlock
+                                Grid.Row="4"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Share crash reports:" />
+                            <StackPanel Grid.Row="4" Grid.Column="1">
+                                <RadioButton
+                                    x:Name="CrashReportsAskRadio"
+                                    Checked="ShareCrashReports_Changed"
+                                    Content="After asking for approval"
+                                    GroupName="CrashReports"
+                                    IsChecked="True" />
+                                <RadioButton
+                                    x:Name="CrashReportsAlwaysRadio"
+                                    Checked="ShareCrashReports_Changed"
+                                    Content="Always, without asking"
+                                    GroupName="CrashReports" />
+                                <RadioButton
+                                    x:Name="CrashReportsNeverRadio"
+                                    Checked="ShareCrashReports_Changed"
+                                    Content="Never"
+                                    GroupName="CrashReports" />
+                            </StackPanel>
+
+                            <!--  Row 5: Custom user agent  -->
+                            <TextBlock
+                                Grid.Row="5"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Custom user agent:" />
+                            <TextBox
+                                x:Name="CustomUserAgentTextBox"
+                                Grid.Row="5"
+                                Grid.Column="1"
+                                PlaceholderText="Leave empty for default"
+                                TextChanged="CustomUserAgent_TextChanged" />
+
+                            <!--  Row 6: Separator  -->
+                            <Border
+                                Grid.Row="6"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,4"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 7: Content blocker  -->
+                            <TextBlock
+                                Grid.Row="7"
+                                Grid.Column="0"
+                                Margin="0,4,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Content blocker:" />
+                            <StackPanel
+                                Grid.Row="7"
+                                Grid.Column="1"
+                                Spacing="4">
+                                <TextBlock
+                                    x:Name="ContentBlockerLastUpdatedText"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="Last updated: Never" />
+                                <TextBlock
+                                    x:Name="ContentBlockerRuleCountText"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="Active rules: 0" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Update Now" />
+                                    <Button Content="Manage Filter Lists..." />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Search Content  -->
+                <ScrollViewer x:Name="SearchContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Search" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Search engine  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Search engine:" />
+                            <StackPanel
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <!--  Items populated from Models/SearchEngines.cs  -->
+                                    <ComboBox
+                                        x:Name="SearchEngineComboBox"
+                                        SelectedIndex="0"
+                                        SelectionChanged="SearchEngine_SelectionChanged" />
+                                    <Button VerticalAlignment="Center" Content="Manage Search Engines..." />
+                                </StackPanel>
+                                <CheckBox
+                                    x:Name="AlsoUseInPrivateBrowsingCheckBox"
+                                    Checked="AlsoUseInPrivateBrowsing_Changed"
+                                    Content="Also use in Private Browsing"
+                                    Unchecked="AlsoUseInPrivateBrowsing_Changed" />
+                                <CheckBox Content="Show Kagi Privacy Pass on Toolbar" />
+                            </StackPanel>
+
+                            <!--  Row 1: Private Browsing search engine  -->
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Private Browsing search engine:" />
+                            <!--  Items populated from Models/SearchEngines.cs  -->
+                            <ComboBox
+                                x:Name="PrivateBrowsingSearchEngineComboBox"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                SelectedIndex="0"
+                                SelectionChanged="PrivateBrowsingSearchEngine_SelectionChanged" />
+
+                            <!--  Row 2: Autocomplete suggestions  -->
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Autocomplete suggestions:" />
+                            <StackPanel Grid.Row="2" Grid.Column="1">
+                                <CheckBox
+                                    x:Name="AutocompleteTopHitsCheckBox"
+                                    Checked="AutocompleteTopHits_Changed"
+                                    Content="Top Hits"
+                                    IsChecked="True"
+                                    Unchecked="AutocompleteTopHits_Changed" />
+                                <CheckBox
+                                    x:Name="AutocompleteSearchEnginesCheckBox"
+                                    Checked="AutocompleteSearchEngines_Changed"
+                                    Content="Search engine"
+                                    IsChecked="True"
+                                    Unchecked="AutocompleteSearchEngines_Changed" />
+                                <CheckBox
+                                    x:Name="AutocompleteAskFastgptCheckBox"
+                                    Margin="28,0,0,0"
+                                    Checked="AutocompleteAskFastgpt_Changed"
+                                    Content="Ask Kagi"
+                                    IsChecked="True"
+                                    Unchecked="AutocompleteAskFastgpt_Changed" />
+                                <CheckBox
+                                    x:Name="AutocompleteHistoryCheckBox"
+                                    Checked="AutocompleteHistory_Changed"
+                                    Content="History"
+                                    IsChecked="True"
+                                    Unchecked="AutocompleteHistory_Changed" />
+                                <CheckBox
+                                    x:Name="AutocompleteBookmarksCheckBox"
+                                    Checked="AutocompleteBookmarks_Changed"
+                                    Content="Bookmarks"
+                                    IsChecked="True"
+                                    Unchecked="AutocompleteBookmarks_Changed" />
+                                <CheckBox
+                                    x:Name="AutocompleteOpenTabsCheckBox"
+                                    Checked="AutocompleteOpenTabs_Changed"
+                                    Content="Open tabs"
+                                    IsChecked="True"
+                                    Unchecked="AutocompleteOpenTabs_Changed" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Websites Content  -->
+                <ScrollViewer x:Name="WebsitesContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="600"
+                        HorizontalAlignment="Center"
+                        Spacing="16">
+                        <TextBlock
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Websites" />
+                    </StackPanel>
+                </ScrollViewer>
+                <Grid
+                    x:Name="WebsitesGrid"
+                    MaxWidth="800"
+                    HorizontalAlignment="Center"
+                    Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  General Settings List (Left)  -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock
+                            Grid.Row="0"
+                            Margin="0,0,0,12"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Text="General Settings" />
+
+                        <ListView
+                            x:Name="WebsiteSettingsListView"
+                            Grid.Row="1"
+                            SelectionChanged="WebsiteSettingsListView_SelectionChanged">
+                            <ListViewItem Content="Reader Mode" />
+                            <ListViewItem Content="Auto-Play" />
+                            <ListViewItem Content="Page Zoom" />
+                            <ListViewItem Content="Pop-up Windows" />
+                            <ListViewItem Content="Notifications" />
+                            <ListViewItem Content="Downloads" />
+                            <ListViewItem Content="Camera" />
+                            <ListViewItem Content="Microphone" />
+                            <ListViewItem Content="Screen Sharing" />
+                            <ListViewItem Content="Location" />
+                            <ListViewItem Content="Content Blockers" />
+                            <ListViewItem Content="Tracking Prevention" />
+                            <ListViewItem Content="Cookies" />
+                            <ListViewItem Content="JavaScript" />
+                            <ListViewItem Content="Web Fonts" />
+                            <ListViewItem Content="SSL Certificate Check" />
+                            <ListViewItem Content="User Agent" />
+                            <ListViewItem Content="Compatibility Mode" />
+                            <ListViewItem Content="External Apps" />
+                            <ListViewItem Content="Picture in Picture" />
+                            <ListViewItem Content="Clipboard" />
+                            <ListViewItem Content="Device Info" />
+                            <ListViewItem Content="Media Key System" />
+                            <ListViewItem Content="Pointer Lock" />
+                            <ListViewItem Content="Website Data Access" />
+                            <ListViewItem
+                                Margin="0,12,0,0"
+                                Content="Extension Settings"
+                                FontWeight="SemiBold"
+                                IsEnabled="False" />
+                            <ListViewItem Content="Momentum" />
+                        </ListView>
+                    </Grid>
+
+                    <!--  Website Setting Detail (Right)  -->
+                    <Grid Grid.Column="1" Padding="24,0,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!--  Setting-specific content  -->
+                        <Grid Grid.Row="0">
+                            <TextBlock
+                                x:Name="WebsiteSettingPlaceholder"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Select a setting to configure" />
+
+                            <StackPanel
+                                x:Name="WebsiteSettingDetailContent"
+                                MaxWidth="480"
+                                HorizontalAlignment="Left"
+                                Spacing="16"
+                                Visibility="Collapsed">
+                                <TextBlock
+                                    x:Name="WebsiteSettingTitle"
+                                    FontSize="18"
+                                    FontWeight="SemiBold" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Default settings for all websites:" />
+                                    <ComboBox x:Name="WebsiteDefaultComboBox" SelectionChanged="WebsiteDefaultComboBox_SelectionChanged" />
+                                </StackPanel>
+                                <StackPanel
+                                    x:Name="WebsiteCustomUserAgentPanel"
+                                    Spacing="4"
+                                    Visibility="Collapsed">
+                                    <TextBlock Text="Custom user agent string:" />
+                                    <TextBox
+                                        x:Name="WebsiteCustomUserAgentTextBox"
+                                        PlaceholderText="Enter custom user agent string"
+                                        TextChanged="WebsiteCustomUserAgent_TextChanged" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+
+                        <!--  Configured Websites  -->
+                        <TextBlock
+                            x:Name="ConfiguredWebsitesHeader"
+                            Grid.Row="1"
+                            Margin="0,24,0,8"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Text="Configured Websites"
+                            Visibility="Collapsed" />
+                        <Grid
+                            x:Name="ConfiguredWebsitesPanel"
+                            Grid.Row="2"
+                            Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ListView x:Name="ConfiguredWebsitesListView" Grid.Row="0" />
+                            <Button
+                                Grid.Row="1"
+                                Margin="0,4,0,0"
+                                Click="AddConfiguredWebsite_Click"
+                                Content="+"
+                                FontSize="16" />
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+                <!--  Advanced Content  -->
+                <ScrollViewer x:Name="AdvancedContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Advanced" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Rendering  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Rendering:" />
+                            <CheckBox
+                                x:Name="EnableJsonFormattingCheckBox"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Checked="EnableJsonFormatting_Changed"
+                                Content="Enable JSON formatting"
+                                Unchecked="EnableJsonFormatting_Changed" />
+
+                            <!--  Row 1: Separator  -->
+                            <Border
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,4"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 2: Extensions  -->
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Extensions:" />
+                            <StackPanel
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Spacing="4">
+                                <CheckBox
+                                    x:Name="AllowChromeExtensionsCheckBox"
+                                    Checked="AllowChromeExtensions_Changed"
+                                    Content="Allow installation of 3rd-party Chrome extensions"
+                                    Unchecked="AllowChromeExtensions_Changed" />
+                                <CheckBox
+                                    x:Name="AllowFirefoxExtensionsCheckBox"
+                                    Checked="AllowFirefoxExtensions_Changed"
+                                    Content="Allow installation of 3rd-party Firefox extensions"
+                                    Unchecked="AllowFirefoxExtensions_Changed" />
+                                <Button Content="Manage Extensions..." />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Extensions Content  -->
+                <ScrollViewer x:Name="ExtensionsContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="600"
+                        Padding="0,0,0,32"
+                        HorizontalAlignment="Center"
+                        Spacing="16">
+                        <TextBlock
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Extensions" />
+                        <TextBlock
+                            x:Name="NoExtensionsText"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="No extensions installed."
+                            Visibility="Collapsed" />
+                        <Button Click="OpenPopularExtensions_Click" Content="Get Popular Extensions..." />
+                        <ListView
+                            x:Name="InstalledExtensionsList"
+                            IsItemClickEnabled="False"
+                            SelectionMode="None">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="models:ExtensionEntry">
+                                    <Grid Padding="4,8" ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel
+                                            Grid.Column="0"
+                                            VerticalAlignment="Center"
+                                            Spacing="2">
+                                            <TextBlock FontWeight="SemiBold" Text="{x:Bind Name, Mode=OneWay}" />
+                                            <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                                <Run Text="{x:Bind TypeLabel}" />
+                                                <Run Text=" · " />
+                                                <Run Text="{x:Bind Version, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <ToggleSwitch
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
+                                            OffContent=""
+                                            OnContent=""
+                                            Toggled="ExtensionToggle_Toggled" />
+                                        <Button
+                                            Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            Click="UninstallExtension_Click"
+                                            Content="Uninstall"
+                                            Tag="{x:Bind Id}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Plus Content  -->
+                <ScrollViewer x:Name="PlusContent" Visibility="Collapsed">
+                    <StackPanel
+                        MaxWidth="620"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="24"
+                            FontWeight="SemiBold"
+                            Text="Orion+" />
+
+                        <Grid ColumnSpacing="12" RowSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Row 0: Status  -->
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Text="Status:" />
+                            <TextBlock
+                                x:Name="PlusStatusText"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Text="Not subscribed" />
+
+                            <!--  Row 1: Separator  -->
+                            <Border
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Height="1"
+                                Margin="0,8"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <!--  Row 2: Features  -->
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Text="Features:" />
+                            <StackPanel
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Spacing="8">
+                                <TextBlock Text="Orion+ unlocks premium features including advanced content blockers, sync across unlimited devices, and more." TextWrapping="Wrap" />
+                                <HyperlinkButton Content="Learn more about Orion+" NavigateUri="https://browser.kagi.com/orionplus.html" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  About Content  -->
+                <StackPanel
+                    x:Name="AboutContent"
+                    MaxWidth="600"
+                    HorizontalAlignment="Center"
+                    Spacing="16"
+                    Visibility="Collapsed">
+                    <Image
+                        Width="64"
+                        Height="64"
+                        HorizontalAlignment="Left"
+                        Source="/Assets/orion-logo.png" />
+                    <TextBlock
+                        FontSize="24"
+                        FontWeight="Bold"
+                        Text="Orion Browser" />
+                    <TextBlock x:Name="AboutVersionText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="A WebKit-based browser for Windows" />
+                    <HyperlinkButton Content="Visit Website" NavigateUri="https://orionbrowser.com/" />
+                </StackPanel>
+
+                <!--  Profiles Content  -->
+                <Grid
+                    x:Name="ProfilesContent"
+                    MaxWidth="800"
+                    HorizontalAlignment="Center"
+                    Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="280" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Profile List (Left)  -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock
+                            Grid.Row="0"
+                            Margin="0,0,0,12"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Text="Profiles" />
+
+                        <ListView
+                            x:Name="ProfileListView"
+                            Grid.Row="1"
+                            AllowDrop="True"
+                            CanDragItems="True"
+                            CanReorderItems="True"
+                            DragItemsCompleted="ProfileListView_DragItemsCompleted"
+                            SelectionChanged="ProfileListView_SelectionChanged">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="models:Profile">
+                                    <Grid Padding="4,8" ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Grid.Column="0"
+                                            Width="28"
+                                            VerticalAlignment="Center"
+                                            FontFamily="Segoe UI Emoji"
+                                            FontSize="{x:Bind IconFontSize, Mode=OneWay}"
+                                            Foreground="{x:Bind IconForeground, Mode=OneWay}"
+                                            HorizontalTextAlignment="Center"
+                                            Text="{x:Bind DisplayIcon, Mode=OneWay}" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Text="{x:Bind Name, Mode=OneWay}" />
+                                        <Border
+                                            Grid.Column="2"
+                                            Padding="6,2"
+                                            VerticalAlignment="Center"
+                                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                            CornerRadius="4"
+                                            Visibility="{x:Bind IsDefault, Mode=OneWay}">
+                                            <TextBlock
+                                                FontSize="11"
+                                                Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                                Text="Default" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <StackPanel
+                            Grid.Row="2"
+                            Margin="0,8,0,0"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                            <Button Click="AddProfile_Click" Content="Add Profile" />
+                            <Button Click="DeleteProfile_Click" Content="Delete" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Profile Detail (Right)  -->
+                    <ScrollViewer Grid.Column="1" Padding="24,0,0,0">
+                        <StackPanel
+                            x:Name="ProfileDetailPanel"
+                            MaxWidth="480"
+                            HorizontalAlignment="Left"
+                            Spacing="16"
+                            Visibility="Collapsed">
+
+                            <TextBlock
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Text="Profile Settings" />
+
+                            <!--  Name  -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Name" />
+                                <TextBox x:Name="ProfileNameTextBox" TextChanged="ProfileName_TextChanged" />
+                            </StackPanel>
+
+                            <!--  Browser Engine  -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Browser Engine" />
+                                <ComboBox x:Name="BrowserEngineComboBox" SelectionChanged="BrowserEngine_SelectionChanged">
+                                    <ComboBoxItem Content="WebKit" Tag="webkit" />
+                                    <ComboBoxItem Content="Blink (Chromium)" Tag="blink" />
+                                </ComboBox>
+                                <TextBlock
+                                    FontSize="12"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="Each profile runs in its own process with its own engine. Takes effect the next time this profile's window is opened."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <!--  Icon  -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Icon" />
+                                <StackPanel
+                                    VerticalAlignment="Top"
+                                    Orientation="Horizontal"
+                                    Spacing="2">
+                                    <GridView
+                                        x:Name="ProfileColorGridView"
+                                        Padding="0"
+                                        VerticalAlignment="Center"
+                                        SelectionChanged="ProfileColor_SelectionChanged"
+                                        SelectionMode="Single">
+                                        <GridView.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <ItemsWrapGrid MaximumRowsOrColumns="8" Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </GridView.ItemsPanel>
+                                    </GridView>
+                                    <Button
+                                        Padding="6"
+                                        VerticalAlignment="Center"
+                                        Click="OpenEmojiPicker_Click">
+                                        <TextBlock
+                                            x:Name="EmojiButtonLabel"
+                                            FontFamily="Segoe UI Emoji"
+                                            FontSize="16"
+                                            Text="🚀" />
+                                    </Button>
+                                    <TextBox
+                                        x:Name="EmojiCaptureTextBox"
+                                        Width="0"
+                                        Height="0"
+                                        MinWidth="0"
+                                        MinHeight="0"
+                                        Canvas.ZIndex="-1"
+                                        GotFocus="EmojiCaptureTextBox_GotFocus"
+                                        Opacity="0"
+                                        TextChanged="EmojiCapture_TextChanged" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!--  Toggles  -->
+                            <ToggleSwitch
+                                x:Name="ShowInAddressBarToggle"
+                                Header="Show in Address Bar"
+                                Toggled="ShowInAddressBar_Toggled" />
+
+                            <ToggleSwitch
+                                x:Name="ShowBadgeInAppIconToggle"
+                                Header="Show Badge in App Icon"
+                                Toggled="ShowBadgeInAppIcon_Toggled" />
+
+                            <!--  Keyboard Shortcut  -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Keyboard Shortcut" />
+                                <models:ShortcutRecorderBox x:Name="KeyboardShortcutRecorder" HorizontalAlignment="Left" />
+                                <TextBlock
+                                    x:Name="KeyboardShortcutError"
+                                    FontSize="12"
+                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                    Visibility="Collapsed" />
+                            </StackPanel>
+
+                            <!--  Set as Default  -->
+                            <Button
+                                x:Name="SetDefaultButton"
+                                Click="SetDefault_Click"
+                                Content="Set as Default Profile" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+            </Grid>
+        </NavigationView>
+    </Grid>
+</UserControl>

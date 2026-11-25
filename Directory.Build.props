@@ -1,0 +1,102 @@
+<Project>
+  <PropertyGroup>
+    <OrionVersion>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim())</OrionVersion>
+    <Version>$(OrionVersion)</Version>
+    <AssemblyVersion>$([System.Text.RegularExpressions.Regex]::Match('$(OrionVersion)', '^\d+\.\d+\.\d+').Value).0</AssemblyVersion>
+    <InformationalVersion>$(OrionVersion)</InformationalVersion>
+  </PropertyGroup>
+
+  <!-- Pinned MSVC toolset version. All devs and CI build with this toolset, and
+       triplets/x64-windows.cmake hashes this file into every vcpkg ABI in place
+       of the compiler binary, so binary cache hits are shared across machines
+       and invalidated only by bumping it. The .vsconfig ensures this toolset is
+       installed. -->
+  <PropertyGroup>
+    <VCToolsVersion>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)MSVC_VERSION').Trim())</VCToolsVersion>
+  </PropertyGroup>
+
+  <!-- Single switch for bundling the API test extensions (the core module's
+       extensions/ tree, packaged by its `webextensions` CMake target). Every
+       build contains the WebKit engine now that engines load
+       at runtime, so this defaults on everywhere. This one property gates
+       everything that must stay in sync:
+         - Orion.csproj: ORION_TEST_EXTENSIONS C# define (auto-reinstall in
+           App.xaml.cs), the `webextensions` project reference, and the
+           .xpi/.crx None items (copied to output AND publish directories)
+         - OrionBackend.vcxproj: ORION_TEST_EXTENSIONS preprocessor define
+           (core debug mode in InitOrionCore)
+       Never condition test-extension code or content on anything else. -->
+  <PropertyGroup>
+    <OrionTestExtensions Condition="'$(OrionTestExtensions)' == ''">true</OrionTestExtensions>
+  </PropertyGroup>
+
+  <!-- vcpkg binary caching and gsutil PATH setup.
+       MSBuild blocks System.Environment.SetEnvironmentVariable as a property function,
+       so we use an inline task to set env vars in the MSBuild process before vcpkg runs.
+       Requires: gcloud auth login (for GCS credentials) -->
+  <PropertyGroup>
+    <_VcpkgBinarySources>clear;x-gcs,gs://kagi-orion-windows-artifacts/,readwrite</_VcpkgBinarySources>
+    <VcpkgAdditionalInstallOptions>--z-tool-data-file="$(MSBuildThisFileDirectory)vcpkg-tools.json"</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
+  <UsingTask TaskName="_SetEnvVar" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Name ParameterType="System.String" Required="true" />
+      <Value ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs">System.Environment.SetEnvironmentVariable(Name, Value);</Code>
+    </Task>
+  </UsingTask>
+  <!-- vcpkg's MSBuild integration only watches vcpkg.json and vcpkg-configuration.json.
+       Add overlay port files so that portfile/triplet changes trigger a vcpkg reinstall. -->
+  <ItemGroup>
+    <_ZVcpkgInstallManifestDependenciesInputs Include="$(MSBuildThisFileDirectory)ports\webkit-win\portfile.cmake" />
+    <_ZVcpkgInstallManifestDependenciesInputs Include="$(MSBuildThisFileDirectory)ports\webkit-win\WEBKIT_REF" />
+    <_ZVcpkgInstallManifestDependenciesInputs Include="$(MSBuildThisFileDirectory)ports\webkit-win\vcpkg.json" />
+    <_ZVcpkgInstallManifestDependenciesInputs Include="$(MSBuildThisFileDirectory)ports\webkit-win\webkit-options.cmake" />
+    <_ZVcpkgInstallManifestDependenciesInputs Include="$(MSBuildThisFileDirectory)ports\zlib-ng\portfile.cmake" />
+    <_ZVcpkgInstallManifestDependenciesInputs Include="$(MSBuildThisFileDirectory)ports\zlib-ng\vcpkg.json" />
+    <_ZVcpkgInstallManifestDependenciesInputs Include="$(MSBuildThisFileDirectory)triplets\x64-windows.cmake" />
+    <_ZVcpkgInstallManifestDependenciesInputs Include="$(MSBuildThisFileDirectory)MSVC_VERSION" />
+  </ItemGroup>
+
+  <!-- After vcpkg install, regenerate WebKit VS browsing projects if stale.
+       Uses the same inputs as vcpkg install so it only re-runs when the
+       portfile, triplet, or manifest changes. -->
+  <PropertyGroup>
+    <_WkVsDir>$(MSBuildThisFileDirectory)external\vcpkg\buildtrees\webkit-win\VS\Source</_WkVsDir>
+  </PropertyGroup>
+  <!--<Target Name="_UpdateWebKitSolution"
+          AfterTargets="VcpkgInstallManifestDependencies"
+          Inputs="@(_ZVcpkgInstallManifestDependenciesInputs)"
+          Outputs="$(_WkVsDir)\JavaScriptCore\JavaScriptCore.vcxproj;$(_WkVsDir)\WebCore\WebCore.vcxproj;$(_WkVsDir)\WebCore\WebCoreBindings.vcxproj;$(_WkVsDir)\WebInspectorUI\WebInspectorUI.vcxproj;$(_WkVsDir)\WebKit\GPUProcess.vcxproj;$(_WkVsDir)\WebKit\NetworkProcess.vcxproj;$(_WkVsDir)\WebKit\WebKit.vcxproj;$(_WkVsDir)\WebKit\WebProcess.vcxproj;$(_WkVsDir)\WTF\wtf\WTF.vcxproj"
+          Condition="'$(VcpkgEnabled)' == 'true' and '$(VcpkgEnableManifest)' == 'true'">
+    <Message Text="Regenerating WebKit VS browsing projects..." Importance="High" />
+    <Exec Command="call &quot;$(MSBuildThisFileDirectory)update_wk_solution.py.cmd&quot;" />
+  </Target>-->
+
+  <Target Name="_FetchWebKitSource" BeforeTargets="VcpkgInstallManifestDependencies"
+          Inputs="$(MSBuildThisFileDirectory)ports\webkit-win\WEBKIT_REF"
+          Outputs="$(MSBuildThisFileDirectory)external\vcpkg\downloads\webkit-src-$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)ports\webkit-win\WEBKIT_REF').Trim()).tar.zst"
+          Condition="'$(VcpkgEnabled)' == 'true' and '$(VcpkgEnableManifest)' == 'true'">
+    <Exec Command="call &quot;$(MSBuildThisFileDirectory)scripts\fetch_webkit_src.py.cmd&quot;" />
+  </Target>
+
+  <Target Name="_SetupVcpkgEnv" BeforeTargets="VcpkgInstallManifestDependencies">
+    <!-- Prepend VS-bundled tools so that all developers get identical ABI hashes
+         regardless of standalone tool versions in their PATH.
+         MSVC (cl.exe) must come before LLVM because CMake's Ninja generator uses
+         NAMES_PER_DIR: it tries all candidate compiler names per directory before
+         moving to the next, so clang.exe in the LLVM dir would be found before
+         cl.exe if LLVM were first.
+         Prepend scripts/ for gsutil.cmd (GCS binary cache transport). -->
+    <_SetEnvVar Name="PATH" Value="$(VCToolsInstallDir)bin\Hostx64\x64;$(VSINSTALLDIR)VC\Tools\Llvm\x64\bin;$(VSINSTALLDIR)Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;$(VSINSTALLDIR)Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;$(MSBuildThisFileDirectory)scripts;$(PATH)" />
+    <_SetEnvVar Name="VCPKG_BINARY_SOURCES" Value="$(_VcpkgBinarySources)" />
+    <_SetEnvVar Name="VCPKG_FORCE_DOWNLOADED_BINARIES" Value="1" />
+    <Exec Command="gcloud auth print-access-token" ConsoleToMSBuild="true"
+          StandardOutputImportance="low" ContinueOnError="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GcloudToken" />
+    </Exec>
+    <_SetEnvVar Name="GSUTIL_CMD_CURL_AUTHTOKEN" Value="$(_GcloudToken)" />
+  </Target>
+</Project>

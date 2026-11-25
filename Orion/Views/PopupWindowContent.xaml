@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Orion.PopupWindowContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Orion">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Title bar (drag region)  -->
+        <Border
+            x:Name="TitleBarElement"
+            Grid.Row="0"
+            Height="32"
+            Background="Transparent">
+            <TextBlock
+                x:Name="TitleBarText"
+                Margin="12,0"
+                VerticalAlignment="Center"
+                FontSize="12"
+                Text="Popup" />
+        </Border>
+
+        <!--  Non-editable URL bar (origin hint)  -->
+        <Border
+            x:Name="LocationBar"
+            Grid.Row="1"
+            Padding="8,4"
+            Background="{ThemeResource LayerFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="0,1"
+            Visibility="Collapsed">
+            <TextBlock
+                x:Name="LocationBarText"
+                VerticalAlignment="Center"
+                FontFamily="Consolas"
+                FontSize="12"
+                IsTextSelectionEnabled="True"
+                Text="" />
+        </Border>
+
+        <!--  Embedded web HWND in cell (0,0); the DevTools pane docks into the trailing row or column  -->
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <controls:HwndHostPanel x:Name="WebViewHost" />
+
+            <!--  Media-capture consent prompt (anchors below the title bar)  -->
+            <controls:PermissionPrompt x:Name="PermissionPromptControl" />
+
+            <controls:DevToolsPane x:Name="DevToolsPane" />
+        </Grid>
+    </Grid>
+</UserControl>

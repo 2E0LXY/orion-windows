@@ -1,0 +1,162 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="LocalDebug" />
+    <BuildType Name="Release" />
+    <BuildType Name="Release-Packaged" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/OrionCore/">
+    <Project Path="external/orion-gtk/app/src/core_module/build/core_module/common/orion_common.vcxproj" Id="3243b418-53b3-303b-ac89-36dae8930e57">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+    </Project>
+    <Project Path="external/orion-gtk/app/src/core_module/build/core_module/orion_core.vcxproj" Id="4321eabe-815a-3b15-8892-c8b7d5bf5b83">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+    </Project>
+    <Project Path="external/orion-gtk/app/src/core_module/build/core_module/orion_core_codegen.vcxproj" Id="84757b0d-0a54-3270-911a-cdb648ef6b48">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+    </Project>
+    <Project Path="external/orion-gtk/app/src/core_module/build/core_module/sync/net/orion_net.vcxproj" Id="b595f80c-c0cf-3e59-9449-e47d80138851">
+      <BuildDependency Project="external/orion-gtk/app/src/core_module/build/core_module/common/orion_common.vcxproj" />
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+    </Project>
+    <Project Path="external/orion-gtk/app/src/core_module/build/core_module/sync/orion_sync.vcxproj" Id="f84b9fb4-8699-3556-83b5-7ae2feb04964">
+      <BuildDependency Project="external/orion-gtk/app/src/core_module/build/core_module/common/orion_common.vcxproj" />
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/Dependencies/">
+    <Project Path="build/VS/Dependencies/libuv/libuv.vcxproj" Id="daea29fc-cb64-5e9c-aebe-968545d6065f">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="build/VS/Dependencies/libzip/libzip.vcxproj" Id="efa54d9b-4235-579b-bb95-b6221c26cf16">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="build/VS/Dependencies/pugixml/pugixml.vcxproj" Id="28d90c32-ace6-5950-b7d9-7398b97d87c8">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="build/VS/Dependencies/reflectcpp/reflectcpp.vcxproj" Id="6266d78e-e491-5aa7-aa67-f8f32497be11">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="build/VS/Dependencies/yyjson/yyjson.vcxproj" Id="20fe9549-b1f2-5996-b6c2-cbbb51b0e740">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/WebKit/">
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/JavaScriptCore/JavaScriptCore.vcxproj" Id="e49b52a4-4815-314f-8900-b6b2c8edc458">
+      <BuildType Solution="Debug|*" Project="MinSizeRel" />
+      <BuildType Solution="LocalDebug|*" Project="MinSizeRel" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/WebCore/WebCore.vcxproj" Id="11a771db-cc9a-3cbf-b1d3-20d1cc742194">
+      <BuildType Solution="Debug|*" Project="MinSizeRel" />
+      <BuildType Solution="LocalDebug|*" Project="MinSizeRel" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/WebCore/WebCoreBindings.vcxproj" Id="9f8e8c42-26d1-3aaa-9111-cc858d615242">
+      <BuildType Solution="Debug|*" Project="MinSizeRel" />
+      <BuildType Solution="LocalDebug|*" Project="MinSizeRel" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/WebInspectorUI/WebInspectorUI.vcxproj" Id="0b0df933-0aec-3cf2-b7f5-cdb643b4f4c8">
+      <BuildType Solution="Debug|*" Project="MinSizeRel" />
+      <BuildType Solution="LocalDebug|*" Project="MinSizeRel" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/WebKit/GPUProcess.vcxproj" Id="e5db062b-7f2e-36fe-b32f-1834e2db3771">
+      <BuildType Solution="Debug|*" Project="MinSizeRel" />
+      <BuildType Solution="LocalDebug|*" Project="MinSizeRel" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/WebKit/NetworkProcess.vcxproj" Id="b2752e72-7ee9-3128-bc9e-2b8973223fc1">
+      <BuildType Solution="Debug|*" Project="MinSizeRel" />
+      <BuildType Solution="LocalDebug|*" Project="MinSizeRel" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/WebKit/WebKit.vcxproj" Id="b8525b1d-9603-344d-a336-cf433cb0ea0c">
+      <BuildType Solution="LocalDebug|*" Project="Debug" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/WebKit/WebProcess.vcxproj" Id="496a5516-705c-3762-8ff3-7d45b931c590">
+      <BuildType Solution="Debug|*" Project="MinSizeRel" />
+      <BuildType Solution="LocalDebug|*" Project="MinSizeRel" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="external/vcpkg/buildtrees/webkit-win/VS/Source/WTF/wtf/WTF.vcxproj" Id="80ed8adf-5261-3b91-a988-5927f558832b">
+      <BuildType Solution="Debug|*" Project="MinSizeRel" />
+      <BuildType Solution="LocalDebug|*" Project="MinSizeRel" />
+      <BuildType Solution="Release-Packaged|*" Project="Release" />
+      <Build Project="false" />
+    </Project>
+  </Folder>
+  <Project Path="external/orion-gtk/app/src/core_module/build/core_module/webextensions.vcxproj" Id="6f0c3a5e-7b1d-4c2e-9a8f-2d4e6b8c0a12">
+    <BuildType Solution="LocalDebug|*" Project="Debug" />
+    <BuildType Solution="Release-Packaged|*" Project="Release" />
+  </Project>
+  <Project Path="Orion/Orion.csproj">
+    <BuildDependency Project="OrionBackend/OrionBackend.vcxproj" />
+    <BuildDependency Project="OrionBackend/OrionEngineB.vcxproj" />
+    <BuildDependency Project="OrionBackend/OrionEngineWK.vcxproj" />
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="OrionBackend/OrionBackend.vcxproj" Id="e62382bc-4330-4f79-b61e-42e7ab178d7b">
+    <BuildType Solution="LocalDebug|*" Project="Debug" />
+    <BuildType Solution="Release-Packaged|*" Project="Release" />
+  </Project>
+  <Project Path="OrionBackend/OrionEngineB.vcxproj" Id="379e995b-f9a6-4104-a86b-b65c92441bd3">
+    <BuildType Solution="LocalDebug|*" Project="Debug" />
+    <BuildType Solution="Release-Packaged|*" Project="Release" />
+  </Project>
+  <Project Path="OrionBackend/OrionEngineWK.vcxproj" Id="ff39e72e-867d-4067-84e6-ab5214ca33d3">
+    <BuildType Solution="Release-Packaged|*" Project="Release" />
+  </Project>
+  <Project Path="OrionCefSetup/OrionCefSetup.vcxproj" Id="b2c3d4e5-f6a7-8901-bcde-f12345678902">
+    <BuildType Solution="LocalDebug|*" Project="Debug" />
+    <BuildType Solution="Release-Packaged|*" Project="Release" />
+  </Project>
+  <Project Path="OrionCodeGen/OrionCodeGen.vcxproj" Id="d1c2b3a4-e5f6-7890-abcd-1234567890ab">
+    <BuildDependency Project="OrionCoreGen/OrionCoreGen.vcxproj" />
+    <BuildType Solution="LocalDebug|*" Project="Debug" />
+    <BuildType Solution="Release-Packaged|*" Project="Release" />
+  </Project>
+  <Project Path="OrionCoreGen/OrionCoreGen.vcxproj">
+    <BuildType Solution="LocalDebug|*" Project="Debug" />
+    <BuildType Solution="Release-Packaged|*" Project="Release" />
+  </Project>
+  <Project Path="OrionPackage/OrionPackage.wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5">
+    <BuildType Project="Release" />
+    <Build Solution="Debug|*" Project="false" />
+    <Build Solution="LocalDebug|*" Project="false" />
+    <Build Solution="Release|*" Project="false" />
+    <Deploy Solution="Release-Packaged|*" />
+  </Project>
+  <Project Path="UnitTest/UnitTest.csproj">
+    <BuildDependency Project="OrionBackend/OrionBackend.vcxproj" />
+    <BuildType Solution="LocalDebug|*" Project="Debug" />
+    <BuildType Solution="Release-Packaged|*" Project="Release" />
+    <Platform Project="x64" />
+  </Project>
+</Solution>

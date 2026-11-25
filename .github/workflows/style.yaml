@@ -1,0 +1,26 @@
+---
+name: style checks
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+
+jobs:
+  dotnet-format:
+    runs-on: ubuntu-latest
+    steps:
+    - run: git config --global core.autocrlf false
+    - uses: actions/checkout@v6
+    - run: dotnet format whitespace Orion.slnx --verify-no-changes --verbosity diagnostic
+  xstyler:
+    # could run on ubuntu, but xstyler has CRLF issues there, so use windows
+    runs-on: windows-2025-vs2026
+    steps:
+    - run: git config --global core.autocrlf false
+    - uses: actions/checkout@v6
+    - run: dotnet tool restore
+    - shell: bash
+      run: |
+        ci/xstyler.sh
+        git diff --color=always --diff-algorithm=histogram --exit-code

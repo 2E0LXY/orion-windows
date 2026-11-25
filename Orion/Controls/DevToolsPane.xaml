@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Orion.DevToolsPane"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Orion">
+
+    <Grid Background="{ThemeResource LayerFillColorDefaultBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Resize handles; the one on the page-facing edge is shown  -->
+        <controls:DevToolsPaneSplitter
+            x:Name="TopSplitter"
+            Grid.Row="0"
+            Grid.Column="1"
+            Height="5"
+            Background="{ThemeResource DividerStrokeColorDefaultBrush}"
+            ManipulationDelta="TopSplitter_ManipulationDelta"
+            ManipulationMode="TranslateY" />
+        <controls:DevToolsPaneSplitter
+            x:Name="LeftSplitter"
+            Grid.RowSpan="3"
+            Grid.Column="0"
+            Width="5"
+            Background="{ThemeResource DividerStrokeColorDefaultBrush}"
+            IsVertical="True"
+            ManipulationDelta="LeftSplitter_ManipulationDelta"
+            ManipulationMode="TranslateX"
+            Visibility="Collapsed" />
+
+        <!--  Header: the only DevTools chrome (both engines' frontends run without dock/close controls)  -->
+        <Grid
+            Grid.Row="1"
+            Grid.Column="1"
+            Height="32"
+            Padding="8,0,4,0"
+            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="0,0,0,1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                VerticalAlignment="Center"
+                FontSize="12"
+                Text="Developer Tools" />
+            <Button
+                x:Name="DockSideButton"
+                Grid.Column="1"
+                Width="28"
+                Height="28"
+                Padding="0"
+                Click="DockSideButton_Click">
+                <Grid>
+                    <FontIcon
+                        x:Name="DockRightIcon"
+                        FontSize="12"
+                        Glyph="&#xE90D;" />
+                    <FontIcon
+                        x:Name="DockBottomIcon"
+                        FontSize="12"
+                        Glyph="&#xE90E;"
+                        Visibility="Collapsed" />
+                </Grid>
+            </Button>
+            <Button
+                Grid.Column="2"
+                Width="28"
+                Height="28"
+                Margin="4,0,0,0"
+                Padding="0"
+                Click="CloseButton_Click"
+                ToolTipService.ToolTip="Close">
+                <FontIcon FontSize="12" Glyph="&#xE711;" />
+            </Button>
+        </Grid>
+
+        <controls:HwndHostPanel
+            x:Name="Host"
+            Grid.Row="2"
+            Grid.Column="1" />
+    </Grid>
+</UserControl>

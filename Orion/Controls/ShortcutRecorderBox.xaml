@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Orion.ShortcutRecorderBox"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    MinWidth="140"
+    IsTabStop="True"
+    ToolTipService.ToolTip="Click, then press a key combination. Backspace removes the shortcut, Esc cancels."
+    UseSystemFocusVisuals="True">
+
+    <Border
+        x:Name="Box"
+        Padding="10,5"
+        Background="{ThemeResource TextControlBackground}"
+        BorderBrush="{ThemeResource TextControlBorderBrush}"
+        BorderThickness="1"
+        CornerRadius="4">
+        <TextBlock x:Name="ComboText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Border>
+</UserControl>

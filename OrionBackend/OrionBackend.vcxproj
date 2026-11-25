@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{e62382bc-4330-4f79-b61e-42e7ab178d7b}</ProjectGuid>
+    <RootNamespace>OrionBackend</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>OrionBackend</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(SolutionDir)external\vcpkg\scripts\buildsystems\msbuild\vcpkg.props" Condition="Exists('$(SolutionDir)external\vcpkg\scripts\buildsystems\msbuild\vcpkg.props')" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <!-- Three projects share this directory; keep intermediates apart. -->
+  <PropertyGroup>
+    <IntDir>x64\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <!-- vcpkg integration -->
+  <UsingTask TaskName="SetEnvironmentVariableTask" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Name ParameterType="System.String" Required="true" />
+      <Value ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        Environment.SetEnvironmentVariable(Name, Value);
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="SetVcpkgEnv" BeforeTargets="VcpkgInstallManifestDependencies">
+    <SetEnvironmentVariableTask Name="VCPKG_FORCE_DOWNLOADED_BINARIES" Value="1" />
+  </Target>
+  <PropertyGroup>
+    <VcpkgEnabled>true</VcpkgEnabled>
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgManifestRoot>$(SolutionDir)</VcpkgManifestRoot>
+    <VcpkgRoot>$(SolutionDir)external\vcpkg</VcpkgRoot>
+    <VcpkgAutoLink>false</VcpkgAutoLink>
+    <VcpkgInstalledDir>$(SolutionDir)vcpkg_installed\</VcpkgInstalledDir>
+    <VcpkgAdditionalInstallOptions>--debug --z-tool-data-file="$(SolutionDir)vcpkg-tools.json"</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <VcpkgConfiguration>Debug</VcpkgConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <VcpkgConfiguration>Release</VcpkgConfiguration>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;ORIONBACKEND_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)external\orion-gtk\app\src;$(SolutionDir)external\orion-gtk\app\src\core_module\common;$(SolutionDir)external\orion-gtk\app\src\core_module;$(SolutionDir)external\orion-gtk\app\src\core_module\build;$(SolutionDir)external\orion-gtk\app\src\core_module\build\install\include;$(SolutionDir)external\orion-gtk\app\src\core_module\build\core_module;$(SolutionDir)vcpkg_installed\$(Platform)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;userenv.lib;psapi.lib;shlwapi.lib;Comctl32.lib;Dbghelp.lib;uv.lib;sqlite3.lib;zip.lib;zlibd.lib;pugixml.lib;reflectcpp.lib;yyjson.lib;libcurl_imp.lib;ssl.lib;crypto.lib;Crypt32.lib;Normaliz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\$(Platform)-windows\debug\lib;$(SolutionDir)external\orion-gtk\app\src\core_module\build\install\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PreBuildEvent>
+      <Command>call $(SolutionDir)scripts\ensure_vcpkg.bat || exit /b 1</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;ORIONBACKEND_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)external\orion-gtk\app\src;$(SolutionDir)external\orion-gtk\app\src\core_module\common;$(SolutionDir)external\orion-gtk\app\src\core_module;$(SolutionDir)external\orion-gtk\app\src\core_module\build;$(SolutionDir)external\orion-gtk\app\src\core_module\build\install\include;$(SolutionDir)external\orion-gtk\app\src\core_module\build\core_module;$(SolutionDir)vcpkg_installed\$(Platform)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;userenv.lib;psapi.lib;shlwapi.lib;Comctl32.lib;Dbghelp.lib;uv.lib;sqlite3.lib;zip.lib;zlib.lib;pugixml.lib;reflectcpp.lib;yyjson.lib;libcurl_imp.lib;ssl.lib;crypto.lib;Crypt32.lib;Normaliz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\$(Platform)-windows\lib;$(SolutionDir)external\orion-gtk\app\src\core_module\build\install\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PreBuildEvent>
+      <Command>call $(SolutionDir)scripts\ensure_vcpkg.bat || exit /b 1</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <!-- Test extension support: $(OrionTestExtensions) is the single switch,
+       defined in Directory.Build.props. The same property gates the C# define,
+       the `webextensions` project reference, and the .xpi/.crx package items
+       in Orion.csproj, so compiled code and copied packages cannot desync. -->
+  <ItemDefinitionGroup Condition="'$(OrionTestExtensions)' == 'true'">
+    <ClCompile>
+      <PreprocessorDefinitions>ORION_TEST_EXTENSIONS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="browser_engine.h" />
+    <ClInclude Include="browser_engine_types.h" />
+    <ClInclude Include="context_menu_types.h" />
+    <ClInclude Include="download_bridge.h" />
+    <ClInclude Include="media_permission_types.h" />
+    <ClInclude Include="bridge_hosts.h" />
+    <ClInclude Include="notification_bridge.h" />
+    <ClInclude Include="common_db.h" />
+    <ClInclude Include="dpapi_password_storage.h" />
+    <ClInclude Include="engine_loader.h" />
+    <ClInclude Include="host_api.h" />
+    <ClInclude Include="host_services.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="common_db.cpp" />
+    <ClCompile Include="dpapi_password_storage.cpp" />
+    <ClCompile Include="engine_loader.cpp" />
+    <ClCompile Include="exports.cpp" />
+    <ClCompile Include="bridge_hosts.cpp" />
+    <ClCompile Include="notification_bridge.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OrionCodeGen\OrionCodeGen.vcxproj">
+      <Project>{D1C2B3A4-E5F6-7890-ABCD-1234567890AB}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\OrionCoreGen\OrionCoreGen.vcxproj">
+      <Project>{74A38B13-8F34-DBDC-D6E5-55996F3AD7EE}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\external\orion-gtk\app\src\core_module\build\core_module\orion_core.vcxproj">
+      <Project>{94c61e6a-9d71-3faa-8e9d-3e2e32b67946}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="$(SolutionDir)OrionCodeGen\bin\OrionCodeGen.exe">
+      <Message>Generating native_types.h and NativeTypes.cs</Message>
+      <Command>%(FullPath) $(SolutionDir)</Command>
+      <Outputs>$(ProjectDir)generated\native_types.h;$(SolutionDir)Orion\Interop\Generated\NativeTypes.cs</Outputs>
+      <LinkObjects>false</LinkObjects>
+    </CustomBuild>
+    <CustomBuild Include="$(SolutionDir)VERSION">
+      <Message>Generating orion_version.h</Message>
+      <Command>"$(SolutionDir)scripts\gen_version_header.py.cmd" "%(FullPath)" "$(ProjectDir)generated\orion_version.h"</Command>
+      <AdditionalInputs>$(SolutionDir)scripts\gen_version_header.py.cmd</AdditionalInputs>
+      <Outputs>$(ProjectDir)generated\orion_version.h</Outputs>
+      <LinkObjects>false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(SolutionDir)external\vcpkg\scripts\buildsystems\msbuild\vcpkg.targets" Condition="Exists('$(SolutionDir)external\vcpkg\scripts\buildsystems\msbuild\vcpkg.targets')" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

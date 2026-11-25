@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
+    <UseWinUI>true</UseWinUI>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Orion</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Mirrors Orion's GlobalUsings.cs so linked sources can call the Log
+         stub (Stubs/Log.cs) unqualified, same as they do the real Log. -->
+    <Using Include="Orion.Log" Static="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260209005" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Only the source files needed for the tests we're writing.
+       NativeWebView and Log are replaced by no-op stubs (see Stubs/) so there is
+       no dependency on OrionBackend.dll or Win32 at compile time.
+       NativeTypes.cs is included for generated enums and record structs.
+       BookmarkTreeNode.cs is excluded because it calls OrionBackend P/Invoke directly.
+       Wildcards pick up new models automatically; add explicit entries for new areas. -->
+  <ItemGroup>
+    <Compile Include="../Orion/Models/*.cs"
+             Exclude="../Orion/Models/NativeWebView.cs;../Orion/Models/HistoryEntry.cs;../Orion/Models/BookmarkTreeNode.cs;../Orion/Models/ReadingListEntry.cs"
+             Link="Models/%(Filename)%(Extension)" />
+    <Compile Include="../Orion/ViewModels/*.cs" Link="ViewModels/%(Filename)%(Extension)" />
+    <Compile Include="../Orion/Adapters/*.cs"   Link="Adapters/%(Filename)%(Extension)" />
+    <Compile Include="../Orion/Interop/Generated/NativeTypes.cs" Link="Generated/NativeTypes.cs" />
+  </ItemGroup>
+</Project>

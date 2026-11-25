@@ -1,0 +1,5 @@
+<Project>
+  <Target Name="Publish" Condition="'$(MSBuildProjectExtension)' == '.vcxproj'" />
+  <Target Name="CreateManifestResourceNames" Condition="'$(MSBuildProjectExtension)' == '.vcxproj'" />
+  <Target Name="GetTargetFrameworks" Condition="'$(MSBuildProjectExtension)' == '.vcxproj'" />
+</Project>

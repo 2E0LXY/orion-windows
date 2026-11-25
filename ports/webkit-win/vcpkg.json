@@ -1,0 +1,100 @@
+{
+  "name": "webkit-win",
+  "version-string": "0",
+  "description": "WebKit browser engine (Orion Windows port)",
+  "homepage": "https://github.com/kagisearch/webkit",
+  "license": "LGPL-2.1-only",
+  "supports": "windows & x64",
+  "dependencies": [
+    "icu",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    }
+  ],
+  "default-features": [
+    "web",
+    "skia",
+    "woff2",
+    "jpeg-xl",
+    "lcms"
+  ],
+  "features": {
+    "web": {
+      "description": "Core web engine dependencies",
+      "dependencies": [
+        "brotli",
+        {
+          "name": "curl",
+          "features": [
+            "http3",
+            "ipv6",
+            "libressl"
+          ]
+        },
+        "libjpeg-turbo",
+        "libpng",
+        "libpsl",
+        "libressl",
+        "libwebp",
+        {
+          "name": "libxml2",
+          "default-features": false,
+          "features": [
+            "icu"
+          ]
+        },
+        "libxslt",
+        "nghttp2",
+        "nghttp3",
+        {
+          "name": "ngtcp2",
+          "features": [
+            "openssl"
+          ]
+        },
+        {
+          "name": "sqlite3",
+          "features": [
+            "fts5",
+            "json1",
+            "rtree",
+            "math"
+          ]
+        },
+        "zlib"
+      ]
+    },
+    "skia": {
+      "description": "Skia graphics backend",
+      "dependencies": [
+        {
+          "name": "harfbuzz",
+          "default-features": false,
+          "features": [
+            "directwrite",
+            "icu"
+          ]
+        }
+      ]
+    },
+    "woff2": {
+      "description": "WOFF2 font support",
+      "dependencies": [
+        "woff2"
+      ]
+    },
+    "jpeg-xl": {
+      "description": "JPEG XL image support",
+      "dependencies": [
+        "libjxl"
+      ]
+    },
+    "lcms": {
+      "description": "Little-CMS color management",
+      "dependencies": [
+        "lcms"
+      ]
+    }
+  }
+}

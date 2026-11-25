@@ -1,0 +1,6 @@
+M:System.Diagnostics.Debug.WriteLine(System.String);Use OrionBackend.Log*() instead
+M:System.Diagnostics.Debug.WriteLine(System.String,System.String);Use OrionBackend.Log*() instead
+M:System.Diagnostics.Debug.WriteLine(System.Object);Use OrionBackend.Log*() instead
+M:System.Diagnostics.Debug.WriteLine(System.Object,System.String);Use OrionBackend.Log*() instead
+M:System.Console.WriteLine(System.String);Use OrionBackend.Log*() instead
+M:System.Console.Write(System.String);Use OrionBackend.Log*() instead

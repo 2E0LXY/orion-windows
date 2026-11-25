@@ -1,0 +1,5 @@
+file(TO_CMAKE_PATH "$ENV{VCPKG_INSTALLED_DIR}" _VCPKG_INC)
+if(_VCPKG_INC STREQUAL "")
+    set(_VCPKG_INC "${CMAKE_CURRENT_LIST_DIR}/../vcpkg_installed/x64-windows-webkit")
+endif()
+set(CMAKE_CXX_FLAGS "/I${_VCPKG_INC}/include/WebKit /I${_VCPKG_INC}/include" CACHE STRING "" FORCE)

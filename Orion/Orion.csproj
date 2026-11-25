@@ -1,0 +1,389 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <LangVersion>preview</LangVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <RootNamespace>Orion</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\orion.ico</ApplicationIcon>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <WinUISDKReferences>false</WinUISDKReferences>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable;MVVMTK0045</WarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <NoWarn>$(NoWarn);EnableGenerateDocumentationFile</NoWarn>
+    <Configurations>Debug;LocalDebug;Release;Release-Packaged</Configurations>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <CreateHardLinksForCopyFilesToOutputDirectoryIfPossible>true</CreateHardLinksForCopyFilesToOutputDirectoryIfPossible>
+  </PropertyGroup>
+
+  <!-- NativeConfiguration: which OrionBackend/OrionEngineB configuration to
+       build. Packaged reuses the unpackaged output; LocalDebug only differs
+       for the WebKit engine plugin (WkEngineConfiguration). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release-Packaged'">
+    <NativeConfiguration>Release</NativeConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'LocalDebug'">
+    <NativeConfiguration>Debug</NativeConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(NativeConfiguration)' == ''">
+    <NativeConfiguration>$(Configuration)</NativeConfiguration>
+  </PropertyGroup>
+  <PropertyGroup>
+    <WkEngineConfiguration Condition="'$(Configuration)' == 'LocalDebug'">LocalDebug</WkEngineConfiguration>
+    <WkEngineConfiguration Condition="'$(WkEngineConfiguration)' == ''">$(NativeConfiguration)</WkEngineConfiguration>
+  </PropertyGroup>
+
+  <!-- VcpkgConfiguration: which prebuilt vcpkg binaries to copy.
+       Debug configs use debug binaries; release configs use release binaries. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'LocalDebug'">
+    <VcpkgConfiguration>Debug</VcpkgConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VcpkgConfiguration)' == ''">
+    <VcpkgConfiguration>Release</VcpkgConfiguration>
+  </PropertyGroup>
+
+  <!-- Unpackaged mode: self-contained WinAppSDK (bundles DLLs, no framework package required) -->
+  <PropertyGroup Condition="'$(Configuration)' != 'Release-Packaged'">
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKVCRTForwarders>true</WindowsAppSDKVCRTForwarders>
+    <!-- WinAppSDK 1.8: disable Deployment Manager auto-init; self-contained apps don't use Main/Singleton packages -->
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <DefineConstants>$(DefineConstants);WINAPPSDKSELFCONTAINED;UNPACKAGED</DefineConstants>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ProjectPriFileName>$(AssemblyName).pri</ProjectPriFileName>
+  </PropertyGroup>
+
+  <!-- Copy PDB files when publishing debug configurations -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'LocalDebug'">
+    <CopyOutputSymbolsToPublishDirectory>true</CopyOutputSymbolsToPublishDirectory>
+    <ExcludeSymbolsFromPublish>false</ExcludeSymbolsFromPublish>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'LocalDebug'">
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+    <XamlDebuggingInformation>True</XamlDebuggingInformation>
+    <DisableXbfLineInfo>False</DisableXbfLineInfo>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release-Packaged'">
+    <DefineConstants>$(DefineConstants);PACKAGED</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Test extension: gated by the single $(OrionTestExtensions) switch from
+       Directory.Build.props (also gates the test-extension packaging project
+       reference and the .xpi/.zip items below). -->
+  <PropertyGroup Condition="'$(OrionTestExtensions)' == 'true'">
+    <DefineConstants>$(DefineConstants);ORION_TEST_EXTENSIONS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <AdditionalFiles Include="BannedSymbols.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.11.0-beta1.25173.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7463" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260209005" />
+  </ItemGroup>
+
+  <!-- Native (.vcxproj) references used only for build ordering and to copy the
+       native DLL to output; they contribute nothing to the C# compile. The
+       dotnet CLI's MSBuild (MSBuildRuntimeType 'Core') lacks the C++ targets and
+       errors trying to load them (dotnet format), so include them only under full
+       MSBuild.exe ('Full'/'Framework') — which is what every real Orion build and
+       publish uses (ci/build_*, publish.bat via vsenv). dotnet-CLI paths that see
+       'Core' here (dotnet format, dotnet test) don't need the native DLL. -->
+  <ItemGroup Condition="'$(MSBuildRuntimeType)' != 'Core'">
+    <!-- Test extensions are packaged by the core module's CMake target `webextensions`
+         (external/orion-gtk/app/src/core_module/cmake/PackageWebExtensions.cmake) into
+         build\core_module\*.crx / *.xpi; this reference only orders the build. -->
+    <ProjectReference Include="..\external\orion-gtk\app\src\core_module\build\core_module\webextensions.vcxproj" Condition="'$(OrionTestExtensions)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SetConfiguration>Configuration=$(NativeConfiguration)</SetConfiguration>
+    </ProjectReference>
+    <ProjectReference Include="..\OrionBackend\OrionBackend.vcxproj">
+      <Project>{e62382bc-4330-4f79-b61e-42e7ab178d7b}</Project>
+      <Name>OrionBackend</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SetConfiguration>Configuration=$(NativeConfiguration)</SetConfiguration>
+    </ProjectReference>
+    <ProjectReference Include="..\OrionBackend\OrionEngineWK.vcxproj">
+      <Project>{ff39e72e-867d-4067-84e6-ab5214ca33d3}</Project>
+      <Name>OrionEngineWK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SetConfiguration>Configuration=$(WkEngineConfiguration)</SetConfiguration>
+    </ProjectReference>
+    <ProjectReference Include="..\OrionBackend\OrionEngineB.vcxproj">
+      <Project>{379e995b-f9a6-4104-a86b-b65c92441bd3}</Project>
+      <Name>OrionEngineB</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SetConfiguration>Configuration=$(NativeConfiguration)</SetConfiguration>
+    </ProjectReference>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals" />
+
+  <!-- vcpkg-installed binaries (hidden from Solution Explorer) -->
+  <PropertyGroup Condition="'$(VcpkgConfiguration)' == 'Debug'">
+    <VcpkgBinDir>..\vcpkg_installed\$(Platform)-windows\debug\bin</VcpkgBinDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VcpkgConfiguration)' != 'Debug'">
+    <VcpkgBinDir>..\vcpkg_installed\$(Platform)-windows\bin</VcpkgBinDir>
+  </PropertyGroup>
+  <!-- vcpkg debug DLLs that carry a 'd' in the file name -->
+  <PropertyGroup>
+    <ZlibDllName Condition="'$(VcpkgConfiguration)' == 'Debug'">zlibd1.dll</ZlibDllName>
+    <ZlibDllName Condition="'$(ZlibDllName)' == ''">zlib1.dll</ZlibDllName>
+    <Bz2DllName Condition="'$(VcpkgConfiguration)' == 'Debug'">bz2d.dll</Bz2DllName>
+    <Bz2DllName Condition="'$(Bz2DllName)' == ''">bz2.dll</Bz2DllName>
+  </PropertyGroup>
+
+  <!-- App root: the facade DLL and its dependency closure (facade imports +
+       orion_net → libcurl chain). Explicit list, not a wildcard: a missing
+       file must fail the build here rather than surface later as a
+       DllNotFoundException at startup. Engine-specific binaries live in
+       engines\webkit\ and engines\blink\ — both engines ship libEGL.dll /
+       libGLESv2.dll, so a flat layout would collide. -->
+  <ItemGroup>
+    <None Include="..\x64\$(NativeConfiguration)\OrionBackend.dll">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="$(VcpkgBinDir)\uv.dll;$(VcpkgBinDir)\sqlite3.dll;$(VcpkgBinDir)\zip.dll;$(VcpkgBinDir)\$(ZlibDllName);$(VcpkgBinDir)\$(Bz2DllName);$(VcpkgBinDir)\yyjson.dll;$(VcpkgBinDir)\pugixml.dll;$(VcpkgBinDir)\libcurl.dll;$(VcpkgBinDir)\ssl-60.dll;$(VcpkgBinDir)\crypto-57.dll;$(VcpkgBinDir)\brotlicommon.dll;$(VcpkgBinDir)\brotlidec.dll;$(VcpkgBinDir)\nghttp2.dll;$(VcpkgBinDir)\nghttp3.dll;$(VcpkgBinDir)\ngtcp2.dll;$(VcpkgBinDir)\ngtcp2_crypto_quictls.dll">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <!-- Core-module shared library. orion_net is built SHARED by the
+         orion-linux CMake build (the rest of the core module is static), so it
+         lives in the CMake build tree, not in the vcpkg bin dir. -->
+    <None Include="..\external\orion-gtk\app\src\core_module\build\core_module\sync\net\$(VcpkgConfiguration)\orion_net.dll">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <!-- Engine plugins: plain items, not ProjectReference output injection —
+       injected items are invisible to the IDE up-to-date check
+       (docs_ai/msbuild_custom_build_steps.md). -->
+  <ItemGroup>
+    <None Include="..\x64\$(WkEngineConfiguration)\OrionEngineWK.dll">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\webkit\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="..\x64\$(NativeConfiguration)\OrionEngineB.dll">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\blink\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <!-- engines\webkit\: the full vcpkg runtime (WebKit and its dependency
+       closure — including duplicates of root DLLs that WebKit imports
+       itself, so the directory is self-sufficient for the helper
+       processes), WebKit's helper exes, and WebKit.resources.
+       WebCore.dll resolves WebKit.resources/ relative to its own directory. -->
+  <ItemGroup>
+    <None Include="$(VcpkgBinDir)\*.dll">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\webkit\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="$(VcpkgBinDir)\WebKitWebProcess.exe;$(VcpkgBinDir)\WebKitNetworkProcess.exe;$(VcpkgBinDir)\WebKitGPUProcess.exe">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\webkit\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="$(VcpkgBinDir)\*.pdb">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+      <Link>engines\webkit\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'LocalDebug'">
+    <None Include="..\vcpkg_installed\$(Platform)-windows\share\webkit\WebKit.resources\**\*">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\webkit\WebKit.resources\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <!-- LocalDebug: WebKit binaries from the local ../webkit/ build replace
+       the vcpkg-built ones (vcpkg still provides WebKit's dependencies). -->
+  <ItemGroup Condition="'$(Configuration)' == 'LocalDebug'">
+    <None Remove="$(VcpkgBinDir)\JavaScriptCore.*;$(VcpkgBinDir)\WebCore.*;$(VcpkgBinDir)\WebKit2.*;$(VcpkgBinDir)\MiniBrowserInjectedBundle.*;$(VcpkgBinDir)\libEGL.*;$(VcpkgBinDir)\libGLESv2.*;$(VcpkgBinDir)\WebKitWebProcess.*;$(VcpkgBinDir)\WebKitNetworkProcess.*;$(VcpkgBinDir)\WebKitGPUProcess.*" />
+    <None Include="..\..\webkit\WebKitBuild\Debug\bin\*.dll">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\webkit\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="..\..\webkit\WebKitBuild\Debug\bin\WebKitWebProcess.exe;..\..\webkit\WebKitBuild\Debug\bin\WebKitNetworkProcess.exe;..\..\webkit\WebKitBuild\Debug\bin\WebKitGPUProcess.exe">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\webkit\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="..\..\webkit\WebKitBuild\Debug\bin\WebKit.resources\**\*">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\webkit\WebKit.resources\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <!-- engines\blink\: CEF runtime files. vendor/cef/ is populated by
+       cef.py.cmd setup (official/GCS) or cef.py.cmd build (local source).
+       Official builds split Release/ and Resources/; source builds put
+       everything flat in Release/ — CefResourceDir resolves to whichever
+       directory contains the .pak files. Explicit file list since the
+       source-build dir contains many non-runtime artifacts. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'LocalDebug'">
+    <CefSourceDir>..\vendor\cef\Debug\</CefSourceDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(CefSourceDir)' == ''">
+    <CefSourceDir>..\vendor\cef\Release\</CefSourceDir>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CefResourceDir Condition="Exists('..\vendor\cef\Resources\icudtl.dat')">..\vendor\cef\Resources\</CefResourceDir>
+    <CefResourceDir Condition="'$(CefResourceDir)' == ''">..\vendor\cef\Release\</CefResourceDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- DLLs -->
+    <None Include="$(CefSourceDir)libcef.dll;$(CefSourceDir)chrome_elf.dll;$(CefSourceDir)d3dcompiler_47.dll;$(CefSourceDir)dxcompiler.dll;$(CefSourceDir)dxil.dll;$(CefSourceDir)libEGL.dll;$(CefSourceDir)libGLESv2.dll;$(CefSourceDir)vk_swiftshader.dll;$(CefSourceDir)vulkan-1.dll">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\blink\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <!-- EXEs -->
+    <None Include="$(CefSourceDir)bootstrap.exe;$(CefSourceDir)bootstrapc.exe">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\blink\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <!-- Data files -->
+    <None Include="$(CefSourceDir)v8_context_snapshot.bin;$(CefSourceDir)vk_swiftshader_icd.json">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\blink\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <!-- Resources (PAKs, ICU data, locales) — in Resources/ for official, Release/ for source -->
+    <None Include="$(CefResourceDir)chrome_100_percent.pak;$(CefResourceDir)chrome_200_percent.pak;$(CefResourceDir)resources.pak;$(CefResourceDir)icudtl.dat">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\blink\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="$(CefResourceDir)locales\*.pak">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>engines\blink\locales\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <!-- Debug symbols (optional, from cef.py.cmd symbols) -->
+    <None Include="$(CefSourceDir)*.pdb" Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'LocalDebug'">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <Link>engines\blink\%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <!-- Extension list data file. The core module embeds this same file and serves
+       it (plus its debug-mode entries) via WebExtensionsRuntime::get_extension_list;
+       PopularExtensionsWindowContent still reads the copied file directly. -->
+  <ItemGroup>
+    <None Include="..\external\orion-gtk\app\src\core_module\core\webextensions\extension_list.json">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>Data\extension_list.json</Link>
+    </None>
+  </ItemGroup>
+
+  <!-- API test extension packages (core module `webextensions` target output;
+       Firefox flavor .xpi, Chrome flavor .crx). None (not Content) keeps them out of the PRI
+       layout, whose fast-up-to-date-check treats every copied Content file as an
+       input; CopyToPublishDirectory preserves their publish/package inclusion
+       when $(OrionTestExtensions) is on. They are loaded at runtime by path. -->
+  <ItemGroup Condition="'$(OrionTestExtensions)' == 'true'">
+    <None Include="..\external\orion-gtk\app\src\core_module\build\core_module\orion-api-test.xpi">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+    <None Include="..\external\orion-gtk\app\src\core_module\build\core_module\orion-api-test.crx">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+  <!-- Assets for unpackaged mode -->
+  <ItemGroup>
+    <Content Include="Assets\**\*">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
+  <!-- Internal browser pages (error pages, etc.) -->
+  <ItemGroup>
+    <None Include="InternalPages\**\*">
+      <CopyToOutputDirectory>IfDifferent</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>InternalPages\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+  <!-- Publish Properties -->
+  <!-- ReadyToRun is disabled: R2R embeds pre-compiled native code alongside IL in every
+       managed DLL, adding ~30-50MB. Without R2R the JIT compiles on first run instead,
+       with negligible startup cost for a browser app that is already I/O-bound at launch.
+       Trimming is also disabled: WinUI 3 / CsWinRT uses runtime reflection that the
+       trimmer strips even in partial mode, causing crashes. -->
+  <PropertyGroup>
+    <PublishReadyToRun>False</PublishReadyToRun>
+    <PublishTrimmed>False</PublishTrimmed>
+  </PropertyGroup>
+
+  <Target Name="IncludeExtraFilesInPublish" AfterTargets="ComputeFilesToPublish" Condition="'$(WindowsPackageType)' == 'None'">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(TargetDir)$(ProjectPriFileName)">
+        <RelativePath>$(ProjectPriFileName)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+</Project>

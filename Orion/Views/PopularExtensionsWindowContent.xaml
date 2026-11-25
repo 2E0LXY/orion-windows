@@ -1,0 +1,204 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Orion.PopularExtensionsWindowContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Orion"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Loaded="OnLoaded"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <Style x:Key="ExtensionCardBorder" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+        <Style x:Key="ExtensionIconBorder" TargetType="Border">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{ThemeResource LayerFillColorDefaultBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <DataTemplate x:Key="ExtensionCardTemplate" x:DataType="local:PopularExtensionItem">
+            <Border Style="{StaticResource ExtensionCardBorder}">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource ExtensionIconBorder}">
+                        <FontIcon
+                            FontSize="20"
+                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                            Glyph="{x:Bind CategoryGlyph}" />
+                    </Border>
+                    <StackPanel
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Spacing="2">
+                        <TextBlock FontWeight="SemiBold" Text="{x:Bind Label}" />
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="{x:Bind Description}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            FontSize="11"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Text="{x:Bind TypeVersion}" />
+                    </StackPanel>
+                    <Grid Grid.Column="2" VerticalAlignment="Center">
+                        <Button
+                            Command="{x:Bind InstallCommand}"
+                            Content="{x:Bind ButtonText, Mode=OneWay}"
+                            Visibility="{x:Bind NotInstallingVisibility, Mode=OneWay}" />
+                        <ProgressBar
+                            Width="80"
+                            Maximum="100"
+                            Visibility="{x:Bind InstallingVisibility, Mode=OneWay}"
+                            Value="{x:Bind DownloadProgress, Mode=OneWay}" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TitleBar x:Name="AppTitleBar" Grid.Row="0">
+            <TitleBar.RightHeader>
+                <Button
+                    Padding="8,4"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Click="ManageExtensions_Click"
+                    FontSize="12">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon FontSize="14" Glyph="&#xE713;" />
+                        <TextBlock Text="Manage Extensions" />
+                    </StackPanel>
+                </Button>
+            </TitleBar.RightHeader>
+        </TitleBar>
+
+        <NavigationView
+            x:Name="CategoryNavigationView"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="False"
+            OpenPaneLength="200"
+            PaneDisplayMode="Left"
+            SelectionChanged="CategoryNavigationView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Password Managers" Tag="PasswordManagers">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8D7;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Ads &amp; Tracking" Tag="AdsTracking">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8F7;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Browse Better" Tag="BrowseBetter">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE734;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="Chrome Web Store" Tag="ChromeStore">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8A7;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Firefox Add-ons" Tag="FirefoxStore">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8A7;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+
+            <ScrollViewer x:Name="ContentScrollViewer" ViewChanged="ContentScrollViewer_ViewChanged">
+                <StackPanel Padding="32,24,32,32" Spacing="24">
+
+                    <!--  Header  -->
+                    <TextBlock
+                        FontSize="28"
+                        FontWeight="Bold"
+                        Text="Popular Extensions" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap">
+                        Orion supports both Chrome and Firefox extensions. We made a
+                        selection of a few popular ones below. To add an extension, just click
+                        "Get" to install and enable the extension.
+                    </TextBlock>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap">
+                        You can install any other extension directly from the store website.
+                    </TextBlock>
+
+                    <!--  Password Managers  -->
+                    <TextBlock
+                        x:Name="PasswordManagersHeader"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Text="Password Managers" />
+                    <ItemsRepeater x:Name="PasswordManagersRepeater" ItemTemplate="{StaticResource ExtensionCardTemplate}">
+                        <ItemsRepeater.Layout>
+                            <UniformGridLayout
+                                ItemsStretch="Fill"
+                                MaximumRowsOrColumns="2"
+                                MinColumnSpacing="16"
+                                MinRowSpacing="16" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+
+                    <!--  Ads & Tracking  -->
+                    <TextBlock
+                        x:Name="AdsTrackingHeader"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Text="Ads &amp; Tracking" />
+                    <ItemsRepeater x:Name="AdsTrackingRepeater" ItemTemplate="{StaticResource ExtensionCardTemplate}">
+                        <ItemsRepeater.Layout>
+                            <UniformGridLayout
+                                ItemsStretch="Fill"
+                                MaximumRowsOrColumns="2"
+                                MinColumnSpacing="16"
+                                MinRowSpacing="16" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+
+                    <!--  Browse Better  -->
+                    <TextBlock
+                        x:Name="BrowseBetterHeader"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Text="Browse Better" />
+                    <ItemsRepeater x:Name="BrowseBetterRepeater" ItemTemplate="{StaticResource ExtensionCardTemplate}">
+                        <ItemsRepeater.Layout>
+                            <UniformGridLayout
+                                ItemsStretch="Fill"
+                                MaximumRowsOrColumns="2"
+                                MinColumnSpacing="16"
+                                MinRowSpacing="16" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+
+                </StackPanel>
+            </ScrollViewer>
+        </NavigationView>
+    </Grid>
+</UserControl>

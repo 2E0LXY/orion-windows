@@ -1,0 +1,138 @@
+---
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  VS_TARGETPATH: "/c/Program Files/Microsoft Visual Studio/18/Enterprise"
+
+jobs:
+  build:
+    runs-on: windows-larger-runner
+    outputs:
+      vcpkg-cache-miss: ${{ steps.vcpkg.outputs.cache-miss }}
+
+    steps:
+    - run: git config --global core.autocrlf false
+    - uses: actions/checkout@v6
+    - uses: ./.github/actions/setup
+      with:
+        app-id: ${{ vars.KAGI_CI_READ_APP_ID }}
+        private-key: ${{ secrets.KAGI_CI_READ_PRIVATE_KEY }}
+
+    - name: Install vcpkg packages (cached only)
+      id: vcpkg
+      shell: bash
+      run: |
+        if ! ./vcpkg.cmd install --only-binarycaching --x-wait-for-lock; then
+          echo "cache-miss=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    # The merged Release build always provisions CEF (OrionCefSetup); cache
+    # the distribution + libcef_dll_wrapper so a Spotify-CDN outage or
+    # throttle can't fail the run and every push doesn't pay the download.
+    # cef.py.cmd self-gates on the restored tree and becomes a no-op on hit.
+    - name: Cache CEF
+      if: steps.vcpkg.outputs.cache-miss != 'true'
+      uses: actions/cache@v4
+      with:
+        path: vendor/cef
+        key: cef-${{ runner.os }}-${{ hashFiles('vendor/CEF_VERSION', 'MSVC_VERSION') }}
+
+    - name: Configure core module
+      if: steps.vcpkg.outputs.cache-miss != 'true'
+      shell: cmd
+      run: call ci\update_core_module.cmd
+
+    - name: Build
+      id: build
+      if: steps.vcpkg.outputs.cache-miss != 'true'
+      shell: cmd
+      run: call ci\build_release.cmd
+
+    - name: Test
+      if: steps.vcpkg.outputs.cache-miss != 'true'
+      shell: cmd
+      run: call ci\unittest.cmd
+
+    - name: Test results
+      if: steps.build.outcome == 'success' && steps.vcpkg.outputs.cache-miss != 'true'
+      shell: pwsh
+      run: ./ci/test_results.ps1 >> $env:GITHUB_STEP_SUMMARY
+
+    - name: dotnet format
+      if: steps.build.outcome == 'success' && steps.vcpkg.outputs.cache-miss != 'true'
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+
+  build-wk-from-source:
+    needs: build
+    if: needs.build.outputs.vcpkg-cache-miss == 'true'
+    runs-on: windows-giant-runner
+    timeout-minutes: 105
+
+    steps:
+    - run: git config --global core.autocrlf false
+    - uses: actions/checkout@v6
+    - uses: ./.github/actions/setup
+      with:
+        app-id: ${{ vars.KAGI_CI_READ_APP_ID }}
+        private-key: ${{ secrets.KAGI_CI_READ_PRIVATE_KEY }}
+
+    - name: Fetch WebKit source
+      shell: cmd
+      run: call scripts\fetch_webkit_src.py.cmd
+
+    - name: Install vcpkg packages
+      shell: bash
+      run: |
+        ./vcpkg.cmd install --x-wait-for-lock &
+        VCPKG_PID=$!
+        # vcpkg buffers port build output into buildtrees logs; tail them so
+        # webkit build progress is visible in the CI log. -F picks the files
+        # up when they appear; --pid ends the tail when vcpkg exits.
+        logs=external/vcpkg/buildtrees/webkit-win
+        tail -F --pid=$VCPKG_PID \
+            "$logs/config-x64-windows-out.log" \
+            "$logs/build-x64-windows-dbg-out.log" \
+            "$logs/build-x64-windows-rel-out.log" &
+        wait $VCPKG_PID
+
+    - name: Cache CEF
+      uses: actions/cache@v4
+      with:
+        path: vendor/cef
+        key: cef-${{ runner.os }}-${{ hashFiles('vendor/CEF_VERSION', 'MSVC_VERSION') }}
+
+    - name: Configure core module
+      shell: cmd
+      run: call ci\update_core_module.cmd
+
+    - name: Build
+      id: build
+      shell: cmd
+      run: call ci\build_release.cmd
+
+    - name: Test
+      shell: cmd
+      run: call ci\unittest.cmd
+
+    - name: Test results
+      if: steps.build.outcome == 'success'
+      shell: pwsh
+      run: ./ci/test_results.ps1 >> $env:GITHUB_STEP_SUMMARY
+
+    - name: dotnet format
+      if: steps.build.outcome == 'success'
+      run: dotnet format --verify-no-changes --verbosity diagnostic

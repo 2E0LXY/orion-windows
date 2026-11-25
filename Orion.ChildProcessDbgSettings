@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ChildProcessDebuggingSettings IsEnabled="true" xmlns="http://schemas.microsoft.com/vstudio/ChildProcessDebuggingSettings/2014">
+  <DefaultRule EngineFilter="{3b476d35-a401-11d2-aad4-00c04f990171}" />
+</ChildProcessDebuggingSettings>

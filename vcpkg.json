@@ -1,0 +1,27 @@
+{
+  "name": "orion-windows",
+  "version-string": "0.0.1",
+  "dependencies": [
+    "webkit-win",
+    "libuv",
+    "libzip",
+    "pugixml",
+    "reflectcpp",
+    "sqlite3",
+    "zlib",
+    {
+      "name": "curl",
+      "features": ["libressl"]
+    }
+  ],
+  "overrides": [
+    {
+      "name": "ngtcp2",
+      "version": "1.12.0"
+    },
+    {
+      "name": "reflectcpp",
+      "version": "0.24.0"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+# Shared WebKit build options (cmake initial-cache file).
+# Used via "cmake -C <this-file>" by both the vcpkg portfile and
+# scripts/wk_local_build.py.cmd.
+set(PORT "Win" CACHE STRING "")
+set(CMAKE_C_COMPILER "clang-cl" CACHE STRING "")
+set(CMAKE_CXX_COMPILER "clang-cl" CACHE STRING "")
+set(CMAKE_NINJA_FORCE_RESPONSE_FILE ON CACHE BOOL "")
+set(ENABLE_API_TESTS OFF CACHE BOOL "")
+set(ENABLE_EXPERIMENTAL_FEATURES ON CACHE BOOL "")
+set(ENABLE_MINIBROWSER ON CACHE BOOL "")
+set(USE_SKIA ON CACHE BOOL "")
+set(ENABLE_WK_WEB_EXTENSIONS OFF CACHE BOOL "")
+set(ENABLE_CONTENT_EXTENSIONS OFF CACHE BOOL "")
+set(USE_WOFF2 ON CACHE BOOL "")
+set(USE_JPEGXL ON CACHE BOOL "")
+set(USE_LCMS ON CACHE BOOL "")
+set(CCACHE_FOUND "NOTFOUND" CACHE FILEPATH "")

@@ -1,0 +1,31 @@
+# Visual Studio stuff
+/.vs
+*.user
+*.cache
+
+# Builds
+x64
+obj
+/build
+__pycache__
+
+# Other
+/publish
+/crash_dumps
+myeasylog.log
+
+/.claude
+
+# Downloaded third-party dependencies (not committed; run setup_cef.bat to populate)
+/vendor
+
+# Generated interop files
+Orion/Interop/Generated/
+OrionBackend/generated/
+OrionCodeGen/bin/
+OrionCodeGen/obj/
+UnitTest/bin/
+UnitTest/obj/
+
+# vcpkg installed packages
+vcpkg_installed/

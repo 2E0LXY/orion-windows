@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="LocalDebug|x64">
+      <Configuration>LocalDebug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{ff39e72e-867d-4067-84e6-ab5214ca33d3}</ProjectGuid>
+    <RootNamespace>OrionEngineWK</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>OrionEngineWK</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <!-- LocalDebug: WebKit built from ../webkit/ (headers/libs take priority) -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LocalDebug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(SolutionDir)external\vcpkg\scripts\buildsystems\msbuild\vcpkg.props" Condition="Exists('$(SolutionDir)external\vcpkg\scripts\buildsystems\msbuild\vcpkg.props')" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='LocalDebug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <!-- Three projects share this directory; keep intermediates apart. -->
+  <PropertyGroup>
+    <IntDir>x64\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <!-- LocalDebug: always invoke msbuild so the prebuild's ninja run sees
+       ../webkit edits (see docs_ai/msbuild_custom_build_steps.md) -->
+  <PropertyGroup Condition="'$(Configuration)'=='LocalDebug'">
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+  </PropertyGroup>
+  <!-- vcpkg: manifest recognized for include/lib paths, install owned by OrionBackend -->
+  <PropertyGroup>
+    <VcpkgEnabled>true</VcpkgEnabled>
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgManifestInstall>false</VcpkgManifestInstall>
+    <VcpkgManifestRoot>$(SolutionDir)</VcpkgManifestRoot>
+    <VcpkgRoot>$(SolutionDir)external\vcpkg</VcpkgRoot>
+    <VcpkgAutoLink>false</VcpkgAutoLink>
+    <VcpkgInstalledDir>$(SolutionDir)vcpkg_installed\</VcpkgInstalledDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'LocalDebug'">
+    <VcpkgConfiguration>Debug</VcpkgConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <VcpkgConfiguration>Release</VcpkgConfiguration>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)external\orion-gtk\app\src;$(SolutionDir)external\orion-gtk\app\src\core_module\common;$(SolutionDir)external\orion-gtk\app\src\core_module;$(SolutionDir)external\orion-gtk\app\src\core_module\build;$(SolutionDir)external\orion-gtk\app\src\core_module\build\install\include;$(SolutionDir)external\orion-gtk\app\src\core_module\build\core_module;$(SolutionDir)vcpkg_installed\$(Platform)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;userenv.lib;psapi.lib;shlwapi.lib;Comctl32.lib;Dbghelp.lib;WebKit2.lib;WebCore.lib;JavaScriptCore.lib;Crypt32.lib;Normaliz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\$(Platform)-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='LocalDebug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)..\webkit\WebKitBuild\Debug\JavaScriptCore\Headers;$(SolutionDir)..\webkit\WebKitBuild\Debug\WebKit\Headers;$(SolutionDir)..\webkit\WebKitBuild\Debug\WebCore\PrivateHeaders;$(SolutionDir)..\webkit\WebKitBuild\Debug\WTF\Headers;$(SolutionDir)..\webkit\WebKitBuild\Debug\bmalloc\Headers;$(SolutionDir)external\orion-gtk\app\src;$(SolutionDir)external\orion-gtk\app\src\core_module\common;$(SolutionDir)external\orion-gtk\app\src\core_module;$(SolutionDir)external\orion-gtk\app\src\core_module\build;$(SolutionDir)external\orion-gtk\app\src\core_module\build\install\include;$(SolutionDir)external\orion-gtk\app\src\core_module\build\core_module;$(SolutionDir)vcpkg_installed\$(Platform)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;userenv.lib;psapi.lib;shlwapi.lib;Comctl32.lib;Dbghelp.lib;WebKit2.lib;WebCore.lib;JavaScriptCore.lib;Crypt32.lib;Normaliz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\webkit\WebKitBuild\Debug\lib;$(SolutionDir)vcpkg_installed\$(Platform)-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PreBuildEvent>
+      <Command>call $(SolutionDir)scripts\wk_local_build.py.cmd || exit /b 1</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)external\orion-gtk\app\src;$(SolutionDir)external\orion-gtk\app\src\core_module\common;$(SolutionDir)external\orion-gtk\app\src\core_module;$(SolutionDir)external\orion-gtk\app\src\core_module\build;$(SolutionDir)external\orion-gtk\app\src\core_module\build\install\include;$(SolutionDir)external\orion-gtk\app\src\core_module\build\core_module;$(SolutionDir)vcpkg_installed\$(Platform)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;userenv.lib;psapi.lib;shlwapi.lib;Comctl32.lib;Dbghelp.lib;WebKit2.lib;WebCore.lib;JavaScriptCore.lib;Crypt32.lib;Normaliz.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\$(Platform)-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="browser_engine.h" />
+    <ClInclude Include="browser_engine_types.h" />
+    <ClInclude Include="engine_impl.h" />
+    <ClInclude Include="extension_scheme_webkit.h" />
+    <ClInclude Include="host_api.h" />
+    <ClInclude Include="host_services.h" />
+    <ClInclude Include="host_shim.h" />
+    <ClInclude Include="forwarding_engine.h" />
+    <ClInclude Include="script_bridge.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="webkit\BrowserWindow.h" />
+    <ClInclude Include="webkit\Common.h" />
+    <ClInclude Include="webkit\Common2.h" />
+    <ClInclude Include="webkit\DialogHelper.h" />
+    <ClInclude Include="webkit\MiniBrowserLibResource.h" />
+    <ClInclude Include="webkit\MiniBrowserReplace.h" />
+    <ClInclude Include="webkit\WebKitBrowserWindow.h" />
+    <ClInclude Include="webkit\WebkitCommon.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(SolutionDir)external\orion-gtk\app\src\window\orion_webview_tabview_widgets\scripts\autofill_scripts.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="extension_scheme_webkit.cpp" />
+    <ClCompile Include="host_shim.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="script_bridge_webkit.cpp" />
+    <ClCompile Include="webkit.cpp" />
+    <ClCompile Include="webkit_engine_plugin.cpp" />
+    <ClCompile Include="webkit\Common.cpp" />
+    <ClCompile Include="webkit\Common2.cpp" />
+    <ClCompile Include="webkit\WebKitBrowserWindow.cpp" />
+    <ClCompile Include="webkit\WebkitCommon.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Ordering only: vcpkg install + generated/orion_version.h come from the
+         facade build; the plugin never links OrionBackend.lib. -->
+    <ProjectReference Include="OrionBackend.vcxproj">
+      <Project>{e62382bc-4330-4f79-b61e-42e7ab178d7b}</Project>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+      <!-- OrionBackend has no LocalDebug configuration; the mapping in
+           Orion.slnx only applies to solution builds, so project-level
+           builds (msbuild OrionEngineWK.vcxproj) need it here too. -->
+      <SetConfiguration Condition="'$(Configuration)'=='LocalDebug'">Configuration=Debug</SetConfiguration>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(SolutionDir)external\vcpkg\scripts\buildsystems\msbuild\vcpkg.targets" Condition="Exists('$(SolutionDir)external\vcpkg\scripts\buildsystems\msbuild\vcpkg.targets')" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

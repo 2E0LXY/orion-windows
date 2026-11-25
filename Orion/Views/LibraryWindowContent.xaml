@@ -1,0 +1,1010 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Orion.LibraryWindowContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Orion"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid
+            x:Name="AppTitleBar"
+            Grid.Row="0"
+            Height="32"
+            Background="{ThemeResource LayerFillColorDefaultBrush}">
+            <TextBlock
+                x:Name="TitleBarText"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                FontSize="12"
+                Text="History" />
+        </Grid>
+
+        <NavigationView
+            x:Name="CategoryNavigationView"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="False"
+            OpenPaneLength="200"
+            PaneDisplayMode="Left"
+            SelectionChanged="CategoryNavigationView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="History" Tag="History">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE81C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Bookmarks" Tag="Bookmarks">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE728;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Reading List" Tag="ReadingList">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE736;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Passwords" Tag="Passwords">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8D7;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Extensions" Tag="Extensions">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE74C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Profiles" Tag="Profiles">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE77B;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+                <!--  History Content  -->
+                <Grid x:Name="HistoryContent">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!--  Top Bar  -->
+                    <Grid Grid.Row="0" Padding="24,20,24,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="24"
+                            FontWeight="Bold"
+                            Text="History" />
+
+                        <AutoSuggestBox
+                            x:Name="SearchBox"
+                            Grid.Column="1"
+                            MaxWidth="400"
+                            Margin="24,0"
+                            VerticalAlignment="Center"
+                            PlaceholderText="Search history..."
+                            QueryIcon="Find"
+                            TextChanged="SearchBox_TextChanged" />
+
+                        <Button
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Click="ClearAll_Click"
+                            Content="Clear All" />
+                    </Grid>
+
+                    <!--  Column Headers  -->
+                    <Grid
+                        x:Name="ColumnHeader"
+                        Grid.Row="1"
+                        Padding="72,4,24,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="3*" />
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="40" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="1"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Title" />
+                        <TextBlock
+                            Grid.Column="2"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="URL" />
+                        <TextBlock
+                            Grid.Column="3"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Date &amp; Time" />
+                    </Grid>
+
+                    <!--  History Tree  -->
+                    <TreeView
+                        x:Name="HistoryTreeView"
+                        Grid.Row="2"
+                        Padding="24,0,24,24"
+                        ItemInvoked="HistoryTreeView_ItemInvoked"
+                        ItemsSource="{x:Bind _treeNodes}"
+                        SelectionMode="Single">
+                        <TreeView.ItemTemplate>
+                            <DataTemplate x:DataType="local:HistoryTreeNode">
+                                <TreeViewItem IsExpanded="{x:Bind IsGroup}" ItemsSource="{x:Bind Children}">
+                                    <Grid>
+                                        <!--  Group header  -->
+                                        <TextBlock
+                                            Margin="0,8,0,4"
+                                            FontSize="16"
+                                            FontWeight="SemiBold"
+                                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                            Text="{x:Bind GroupName}"
+                                            Visibility="{x:Bind local:LibraryWindowContent.BoolToVisible(IsGroup)}" />
+
+                                        <!--  Entry row  -->
+                                        <Grid ColumnSpacing="12" Visibility="{x:Bind local:LibraryWindowContent.BoolToCollapsed(IsGroup)}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20" />
+                                                <ColumnDefinition Width="2*" />
+                                                <ColumnDefinition Width="3*" />
+                                                <ColumnDefinition Width="160" />
+                                                <ColumnDefinition Width="40" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Image
+                                                Grid.Column="0"
+                                                Width="16"
+                                                Height="16"
+                                                VerticalAlignment="Center"
+                                                Source="{x:Bind FaviconImage, Mode=OneWay}"
+                                                Stretch="UniformToFill" />
+
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Text="{x:Bind Title}"
+                                                TextTrimming="CharacterEllipsis" />
+
+                                            <TextBlock
+                                                Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{x:Bind Url}"
+                                                TextTrimming="CharacterEllipsis" />
+
+                                            <TextBlock
+                                                Grid.Column="3"
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                Text="{x:Bind DateTimeText}" />
+
+                                            <Button
+                                                Grid.Column="4"
+                                                Width="32"
+                                                Height="32"
+                                                Padding="0"
+                                                VerticalAlignment="Center"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                Click="DeleteEntry_Click"
+                                                Tag="{x:Bind EntryId}"
+                                                ToolTipService.ToolTip="Remove from history">
+                                                <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                            </Button>
+                                        </Grid>
+                                    </Grid>
+                                </TreeViewItem>
+                            </DataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+
+                    <!--  Empty State  -->
+                    <StackPanel
+                        x:Name="EmptyState"
+                        Grid.Row="2"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            HorizontalAlignment="Center"
+                            FontSize="48"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xE81C;" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="No history entries" />
+                    </StackPanel>
+                </Grid>
+
+                <!--  Bookmarks Content  -->
+                <Grid x:Name="BookmarksContent" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!--  Top Bar  -->
+                    <Grid Grid.Row="0" Padding="24,20,24,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="24"
+                            FontWeight="Bold"
+                            Text="Bookmarks" />
+
+                        <AutoSuggestBox
+                            x:Name="BookmarksSearchBox"
+                            Grid.Column="1"
+                            MaxWidth="400"
+                            Margin="24,0"
+                            VerticalAlignment="Center"
+                            PlaceholderText="Search bookmarks..."
+                            QueryIcon="Find"
+                            TextChanged="BookmarksSearchBox_TextChanged" />
+
+                        <Button
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Click="AddBookmarkFolder_Click"
+                            Content="New Folder" />
+                    </Grid>
+
+                    <!--  Column Headers  -->
+                    <Grid
+                        x:Name="BookmarksColumnHeader"
+                        Grid.Row="1"
+                        Padding="72,4,24,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="3*" />
+                            <ColumnDefinition Width="40" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Title" />
+                        <TextBlock
+                            Grid.Column="1"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="URL" />
+                    </Grid>
+
+                    <!--  Bookmarks Tree  -->
+                    <TreeView
+                        x:Name="BookmarksTreeView"
+                        Grid.Row="2"
+                        Padding="24,0,24,24"
+                        AllowDrop="True"
+                        CanDragItems="True"
+                        CanReorderItems="True"
+                        DragItemsCompleted="BookmarksTreeView_DragItemsCompleted"
+                        ItemInvoked="BookmarksTreeView_ItemInvoked"
+                        ItemsSource="{x:Bind _bookmarkNodes}"
+                        SelectionMode="Single">
+                        <TreeView.ItemTemplate>
+                            <DataTemplate x:DataType="local:BookmarkTreeNode">
+                                <TreeViewItem
+                                    AllowDrop="{x:Bind IsFolder}"
+                                    IsExpanded="{x:Bind IsFolder}"
+                                    ItemsSource="{x:Bind FolderChildren}"
+                                    PointerPressed="BookmarkTreeItem_PointerPressed">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="3*" />
+                                            <ColumnDefinition Width="40" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid
+                                            Grid.Column="0"
+                                            Width="16"
+                                            Height="16"
+                                            VerticalAlignment="Center">
+                                            <FontIcon
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontSize="14"
+                                                Glyph="{x:Bind IconGlyph}" />
+                                            <Image
+                                                Width="16"
+                                                Height="16"
+                                                Source="{x:Bind FaviconImage, Mode=OneWay}"
+                                                Stretch="UniformToFill" />
+                                        </Grid>
+
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            FontWeight="{x:Bind local:BookmarkTreeNode.FolderFontWeight(IsFolder)}"
+                                            Text="{x:Bind Title}"
+                                            TextTrimming="CharacterEllipsis" />
+
+                                        <TextBlock
+                                            Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind Url}"
+                                            TextTrimming="CharacterEllipsis" />
+
+                                        <Button
+                                            Grid.Column="3"
+                                            Width="32"
+                                            Height="32"
+                                            Padding="0"
+                                            VerticalAlignment="Center"
+                                            Background="Transparent"
+                                            BorderBrush="Transparent"
+                                            Click="DeleteBookmark_Click"
+                                            IsEnabled="{x:Bind IsDeleteEnabled}"
+                                            Tag="{x:Bind EntryId}"
+                                            ToolTipService.ToolTip="Remove bookmark">
+                                            <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                        </Button>
+                                    </Grid>
+                                </TreeViewItem>
+                            </DataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+
+                    <!--  Empty State  -->
+                    <StackPanel
+                        x:Name="BookmarksEmptyState"
+                        Grid.Row="2"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            HorizontalAlignment="Center"
+                            FontSize="48"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xE728;" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="No bookmarks" />
+                    </StackPanel>
+                </Grid>
+
+                <!--  Reading List Content  -->
+                <Grid x:Name="ReadingListContent" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!--  Top Bar  -->
+                    <Grid Grid.Row="0" Padding="24,20,24,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="24"
+                            FontWeight="Bold"
+                            Text="Reading List" />
+
+                        <AutoSuggestBox
+                            x:Name="ReadingListSearchBox"
+                            Grid.Column="1"
+                            MaxWidth="400"
+                            Margin="24,0"
+                            VerticalAlignment="Center"
+                            PlaceholderText="Search reading list..."
+                            QueryIcon="Find"
+                            TextChanged="ReadingListSearchBox_TextChanged" />
+                    </Grid>
+
+                    <!--  Column Headers  -->
+                    <Grid
+                        x:Name="ReadingListColumnHeader"
+                        Grid.Row="1"
+                        Padding="72,4,24,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="3*" />
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="40" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="1"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Title" />
+                        <TextBlock
+                            Grid.Column="2"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Address" />
+                        <TextBlock
+                            Grid.Column="3"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Added On" />
+                    </Grid>
+
+                    <!--  Reading List Tree  -->
+                    <TreeView
+                        x:Name="ReadingListTreeView"
+                        Grid.Row="2"
+                        Padding="24,0,24,24"
+                        ItemInvoked="ReadingListTreeView_ItemInvoked"
+                        ItemsSource="{x:Bind _readingListNodes}"
+                        SelectionMode="Single">
+                        <TreeView.ItemTemplate>
+                            <DataTemplate x:DataType="local:ReadingListTreeNode">
+                                <TreeViewItem IsExpanded="{x:Bind IsGroup}" ItemsSource="{x:Bind Children}">
+                                    <Grid>
+                                        <!--  Group header  -->
+                                        <TextBlock
+                                            Margin="0,8,0,4"
+                                            FontSize="16"
+                                            FontWeight="SemiBold"
+                                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                            Text="{x:Bind GroupName}"
+                                            Visibility="{x:Bind local:LibraryWindowContent.BoolToVisible(IsGroup)}" />
+
+                                        <!--  Entry row  -->
+                                        <Grid ColumnSpacing="12" Visibility="{x:Bind local:LibraryWindowContent.BoolToCollapsed(IsGroup)}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20" />
+                                                <ColumnDefinition Width="2*" />
+                                                <ColumnDefinition Width="3*" />
+                                                <ColumnDefinition Width="160" />
+                                                <ColumnDefinition Width="40" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Image
+                                                Grid.Column="0"
+                                                Width="16"
+                                                Height="16"
+                                                VerticalAlignment="Center"
+                                                Source="{x:Bind FaviconImage, Mode=OneWay}"
+                                                Stretch="UniformToFill" />
+
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Text="{x:Bind Title}"
+                                                TextTrimming="CharacterEllipsis" />
+
+                                            <TextBlock
+                                                Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{x:Bind Url}"
+                                                TextTrimming="CharacterEllipsis" />
+
+                                            <TextBlock
+                                                Grid.Column="3"
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                Text="{x:Bind DateTimeText}" />
+
+                                            <Button
+                                                Grid.Column="4"
+                                                Width="32"
+                                                Height="32"
+                                                Padding="0"
+                                                VerticalAlignment="Center"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                Click="DeleteReadingListEntry_Click"
+                                                Tag="{x:Bind EntryId}"
+                                                ToolTipService.ToolTip="Remove from reading list">
+                                                <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                            </Button>
+                                        </Grid>
+                                    </Grid>
+                                </TreeViewItem>
+                            </DataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+
+                    <!--  Empty State  -->
+                    <StackPanel
+                        x:Name="ReadingListEmptyState"
+                        Grid.Row="2"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            HorizontalAlignment="Center"
+                            FontSize="48"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xE736;" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="No reading list entries" />
+                    </StackPanel>
+                </Grid>
+
+                <!--  Extensions Content  -->
+                <Grid x:Name="ExtensionsContent" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!--  Top Bar  -->
+                    <Grid Grid.Row="0" Padding="24,20,24,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="24"
+                            FontWeight="Bold"
+                            Text="Extensions" />
+
+                        <AutoSuggestBox
+                            x:Name="ExtensionsSearchBox"
+                            Grid.Column="1"
+                            MaxWidth="400"
+                            Margin="24,0,0,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            PlaceholderText="Search extensions..."
+                            QueryIcon="Find"
+                            TextChanged="ExtensionsSearchBox_TextChanged" />
+                    </Grid>
+
+                    <!--  Extensions List  -->
+                    <ListView
+                        x:Name="ExtensionsListView"
+                        Grid.Row="1"
+                        Padding="16,0"
+                        ItemsSource="{x:Bind _extensionItems}"
+                        SelectionMode="None">
+                        <ListView.ItemContainerStyle>
+                            <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="8,0" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:ExtensionListItem">
+                                <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                                    <Grid
+                                        MinHeight="72"
+                                        Padding="0,12"
+                                        ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!--  Icon circle  -->
+                                        <Border
+                                            Grid.Column="0"
+                                            Width="40"
+                                            Height="40"
+                                            VerticalAlignment="Center"
+                                            Background="{x:Bind IconBrush}"
+                                            CornerRadius="20">
+                                            <TextBlock
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontSize="18"
+                                                FontWeight="Bold"
+                                                Foreground="White"
+                                                Text="{x:Bind IconLetter}" />
+                                        </Border>
+
+                                        <!--  Name, type, action buttons  -->
+                                        <StackPanel
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Spacing="2">
+                                            <TextBlock FontWeight="SemiBold">
+                                                <Run Text="{x:Bind Entry.Name}" /><Run Text=" (" /><Run Text="{x:Bind Entry.Version}" /><Run Text=")" />
+                                            </TextBlock>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock
+                                                    FontSize="12"
+                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                    Text="{x:Bind Entry.TypeLabel}" />
+                                            </StackPanel>
+                                            <StackPanel
+                                                Margin="0,6,0,0"
+                                                Orientation="Horizontal"
+                                                Spacing="6">
+                                                <Button
+                                                    Width="28"
+                                                    Height="28"
+                                                    Padding="0"
+                                                    Click="ReloadExtension_Click"
+                                                    Tag="{x:Bind Entry.Id}"
+                                                    ToolTipService.ToolTip="Reload">
+                                                    <FontIcon FontSize="12" Glyph="&#xE72C;" />
+                                                </Button>
+                                                <DropDownButton
+                                                    Height="28"
+                                                    Padding="8,0"
+                                                    ToolTipService.ToolTip="Options">
+                                                    <FontIcon FontSize="12" Glyph="&#xE713;" />
+                                                    <DropDownButton.Flyout>
+                                                        <MenuFlyout>
+                                                            <MenuFlyoutItem Text="Permissions" />
+                                                        </MenuFlyout>
+                                                    </DropDownButton.Flyout>
+                                                </DropDownButton>
+                                                <Button
+                                                    Height="28"
+                                                    Padding="10,0"
+                                                    Click="UninstallExtension_Click"
+                                                    Content="Uninstall"
+                                                    Tag="{x:Bind Entry.Id}" />
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!--  Enable/disable toggle  -->
+                                        <ToggleSwitch
+                                            Grid.Column="2"
+                                            MinWidth="0"
+                                            VerticalAlignment="Center"
+                                            IsOn="{x:Bind Entry.IsEnabled, Mode=TwoWay}"
+                                            OffContent=""
+                                            OnContent="" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <!--  Empty State  -->
+                    <StackPanel
+                        x:Name="ExtensionsEmptyState"
+                        Grid.Row="1"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            HorizontalAlignment="Center"
+                            FontSize="48"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xE74C;" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="No extensions installed" />
+                    </StackPanel>
+
+                    <!--  Bottom Bar  -->
+                    <Border
+                        Grid.Row="2"
+                        Padding="16,10"
+                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                        BorderThickness="0,1,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Button
+                                Grid.Column="0"
+                                Margin="0,0,8,0"
+                                Click="AddExtension_Click"
+                                Content="Add Extension" />
+
+                            <SplitButton
+                                Grid.Column="1"
+                                Margin="0,0,8,0"
+                                Click="DisableAll_Click"
+                                Content="Disable All">
+                                <SplitButton.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Click="UninstallAll_Click" Text="Uninstall All" />
+                                    </MenuFlyout>
+                                </SplitButton.Flyout>
+                            </SplitButton>
+
+                            <Button
+                                Grid.Column="2"
+                                Click="UpdateExtensions_Click"
+                                Content="Update" />
+
+                            <CheckBox
+                                x:Name="AutomaticUpdatesCheckBox"
+                                Grid.Column="4"
+                                VerticalAlignment="Center"
+                                Content="Automatic updates"
+                                IsChecked="True" />
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!--  Passwords Content  -->
+                <Grid x:Name="PasswordsContent" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!--  Top Bar  -->
+                    <Grid Grid.Row="0" Padding="24,20,24,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="24"
+                            FontWeight="Bold"
+                            Text="Passwords" />
+
+                        <AutoSuggestBox
+                            x:Name="PasswordsSearchBox"
+                            Grid.Column="1"
+                            MaxWidth="400"
+                            Margin="24,0"
+                            VerticalAlignment="Center"
+                            PlaceholderText="Search passwords..."
+                            QueryIcon="Find"
+                            TextChanged="PasswordsSearchBox_TextChanged" />
+
+                        <StackPanel
+                            Grid.Column="2"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                            <Button
+                                VerticalAlignment="Center"
+                                Click="ExportPasswordsCsv_Click"
+                                Content="Export CSV" />
+                            <Button
+                                VerticalAlignment="Center"
+                                Click="AddPassword_Click"
+                                Content="Add Password" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Column Headers  -->
+                    <Grid
+                        x:Name="PasswordsColumnHeader"
+                        Grid.Row="1"
+                        Padding="48,4,24,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="36" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="36" />
+                            <ColumnDefinition Width="36" />
+                            <ColumnDefinition Width="36" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Website" />
+                        <TextBlock
+                            Grid.Column="1"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Username" />
+                        <TextBlock
+                            Grid.Column="3"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Password" />
+                    </Grid>
+
+                    <!--  Password List  -->
+                    <ListView
+                        x:Name="PasswordsListView"
+                        Grid.Row="2"
+                        Padding="24,0,24,24"
+                        DoubleTapped="PasswordsListView_DoubleTapped"
+                        ItemsSource="{x:Bind _passwordItems}"
+                        SelectionMode="Single">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:PasswordEntry">
+                                <Grid Padding="0,6" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="36" />
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="36" />
+                                        <ColumnDefinition Width="36" />
+                                        <ColumnDefinition Width="36" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        VerticalAlignment="Center"
+                                        Text="{x:Bind Url, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis" />
+
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text="{x:Bind Username, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis" />
+
+                                    <Button
+                                        Grid.Column="2"
+                                        Width="32"
+                                        Height="32"
+                                        Padding="0"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        Click="CopyUsername_Click"
+                                        Tag="{x:Bind Username, Mode=OneWay}"
+                                        ToolTipService.ToolTip="Copy username">
+                                        <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                                    </Button>
+
+                                    <TextBlock
+                                        Grid.Column="3"
+                                        VerticalAlignment="Center"
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Text="{x:Bind PasswordDisplay, Mode=OneWay}" />
+
+                                    <Button
+                                        Grid.Column="4"
+                                        Width="32"
+                                        Height="32"
+                                        Padding="0"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        Click="CopyPassword_Click"
+                                        IsEnabled="{x:Bind HasPassword, Mode=OneWay}"
+                                        Tag="{x:Bind Id, Mode=OneWay}"
+                                        ToolTipService.ToolTip="Copy password">
+                                        <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                                    </Button>
+
+                                    <Button
+                                        Grid.Column="5"
+                                        Width="32"
+                                        Height="32"
+                                        Padding="0"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        Click="RevealPassword_Click"
+                                        IsEnabled="{x:Bind HasPassword, Mode=OneWay}"
+                                        Tag="{x:Bind Id, Mode=OneWay}"
+                                        ToolTipService.ToolTip="Show/hide password">
+                                        <FontIcon FontSize="12" Glyph="{x:Bind RevealGlyph, Mode=OneWay}" />
+                                    </Button>
+
+                                    <Button
+                                        Grid.Column="6"
+                                        Width="32"
+                                        Height="32"
+                                        Padding="0"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        Click="DeletePassword_Click"
+                                        Tag="{x:Bind Id, Mode=OneWay}"
+                                        ToolTipService.ToolTip="Delete password">
+                                        <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <!--  Empty State  -->
+                    <StackPanel
+                        x:Name="PasswordsEmptyState"
+                        Grid.Row="2"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            HorizontalAlignment="Center"
+                            FontSize="48"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Glyph="&#xE8D7;" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="No saved passwords" />
+                    </StackPanel>
+                </Grid>
+
+                <!--  Placeholder for other categories  -->
+                <StackPanel
+                    x:Name="PlaceholderContent"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="8"
+                    Visibility="Collapsed">
+                    <FontIcon
+                        x:Name="PlaceholderIcon"
+                        HorizontalAlignment="Center"
+                        FontSize="48"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    <TextBlock
+                        x:Name="PlaceholderText"
+                        HorizontalAlignment="Center"
+                        FontSize="16"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </Grid>
+        </NavigationView>
+    </Grid>
+</UserControl>

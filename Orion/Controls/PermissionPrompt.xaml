@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Orion.PermissionPrompt"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:primitives="using:Microsoft.UI.Xaml.Controls.Primitives">
+
+    <primitives:Popup
+        x:Name="PromptPopup"
+        Closed="PromptPopup_Closed"
+        IsLightDismissEnabled="True"
+        ShouldConstrainToRootBounds="False">
+
+        <Border
+            MinWidth="320"
+            MaxWidth="380"
+            Margin="0,4,0,0"
+            Padding="16"
+            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+            BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <Border.Shadow>
+                <ThemeShadow />
+            </Border.Shadow>
+
+            <StackPanel Spacing="12">
+                <TextBlock
+                    x:Name="HeaderText"
+                    FontSize="14"
+                    FontWeight="SemiBold"
+                    TextWrapping="Wrap" />
+
+                <!--  One row per requested capture type (icon + description)  -->
+                <StackPanel x:Name="RequestRows" Spacing="8" />
+
+                <StackPanel Spacing="4">
+                    <Button
+                        x:Name="AllowAlwaysButton"
+                        HorizontalAlignment="Stretch"
+                        Click="AllowAlwaysButton_Click"
+                        Content="Allow on every visit"
+                        Style="{StaticResource AccentButtonStyle}" />
+                    <Button
+                        x:Name="AllowOnceButton"
+                        HorizontalAlignment="Stretch"
+                        Click="AllowOnceButton_Click"
+                        Content="Allow this time" />
+                    <Button
+                        x:Name="NeverAllowButton"
+                        HorizontalAlignment="Stretch"
+                        Click="NeverAllowButton_Click"
+                        Content="Never allow" />
+                    <Button
+                        x:Name="DenyOnceButton"
+                        HorizontalAlignment="Stretch"
+                        Click="DenyOnceButton_Click"
+                        Content="Don't allow"
+                        Visibility="Collapsed" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </primitives:Popup>
+</UserControl>

@@ -1,0 +1,60 @@
+---
+name: generate-builder-image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+    paths:
+    - .github/workflows/generate-builder-image.yaml
+    - .vsconfig
+
+concurrency:
+  group: generate-image-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  VS_INSTALLER: "/c/Program Files (x86)/Microsoft Visual Studio/Installer"
+  VS_TARGETPATH: "/c/Program Files/Microsoft Visual Studio/18/Enterprise"
+
+jobs:
+  generate:
+    timeout-minutes: 60
+    runs-on: windows-image-generation-runner
+    snapshot: orion-windows-builder
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        sparse-checkout: |
+          .vsconfig
+          MSVC_VERSION
+        path: img-gen-tmp
+
+    - name: Install required VS components
+      shell: bash
+      # update as a first step is required, because otherwise the modify will
+      # exit 0 without installing anything due to self-update triggering.
+      # and, since the installer self-update actually forks the installer which
+      # will hold the installer singleton lock DevdivInstallerUI, we need to
+      # wait for that to complete before calling setup.exe modify (which itself
+      # has no option to wait for the lock).
+      run: |
+        cd img-gen-tmp
+        "$VS_INSTALLER/setup.exe" update --installPath "$(cygpath -w "$VS_TARGETPATH")" --passive --norestart
+        while tasklist //FI "IMAGENAME eq setup.exe" //NH | grep -i setup.exe; do
+          echo "waiting for setup.exe to exit..."
+          sleep 30
+        done
+        "$VS_INSTALLER/setup.exe" modify --installPath "$(cygpath -w "$VS_TARGETPATH")" --config "$(cygpath -w "$PWD/.vsconfig")" --norestart --force --passive
+        if ! [ -f "$VS_TARGETPATH/VC/Tools/MSVC/$(cat MSVC_VERSION)/bin/Hostx64/x64/cl.exe" ]; then
+          echo "MSVC tools $(cat MSVC_VERSION) not found; install must have failed." >&2
+          exit 1
+        fi
+
+    # this still leaves around img-gen-tmp dir itself, because actions/checkout
+    # has it open until the post build step finishes; nothing we can really do
+    # about that
+    - name: Remove checkout
+      shell: bash
+      run: rm -f img-gen-tmp/* img-gen-tmp/.vsconfig

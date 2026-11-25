@@ -1,0 +1,9 @@
+[project]
+name = "gcloudauth"
+version = "0.1.0"
+description = "Ensure gcloud CLI is installed and authenticated for build scripts"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+gcloud-storage = "gcloud_storage:main"

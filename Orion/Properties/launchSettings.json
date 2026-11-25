@@ -1,0 +1,22 @@
+{
+  "profiles": {
+    "Orion": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    },
+    "Orion (native debug)": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    },
+    "Orion (blink)": {
+      "commandName": "Project",
+      "commandLineArgs": "--engine=blink",
+      "nativeDebugging": false
+    },
+    "Orion (blink, native debug)": {
+      "commandName": "Project",
+      "commandLineArgs": "--engine=blink",
+      "nativeDebugging": true
+    }
+  }
+}
