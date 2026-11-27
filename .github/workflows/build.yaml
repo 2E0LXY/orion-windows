@@ -20,7 +20,7 @@ env:
 
 jobs:
   build:
-    runs-on: windows-larger-runner
+    runs-on: windows-2025
     outputs:
       vcpkg-cache-miss: ${{ steps.vcpkg.outputs.cache-miss }}
 
@@ -28,9 +28,6 @@ jobs:
     - run: git config --global core.autocrlf false
     - uses: actions/checkout@v6
     - uses: ./.github/actions/setup
-      with:
-        app-id: ${{ vars.KAGI_CI_READ_APP_ID }}
-        private-key: ${{ secrets.KAGI_CI_READ_PRIVATE_KEY }}
 
     - name: Install vcpkg packages (cached only)
       id: vcpkg
@@ -79,16 +76,13 @@ jobs:
   build-wk-from-source:
     needs: build
     if: needs.build.outputs.vcpkg-cache-miss == 'true'
-    runs-on: windows-giant-runner
+    runs-on: windows-2025
     timeout-minutes: 105
 
     steps:
     - run: git config --global core.autocrlf false
     - uses: actions/checkout@v6
     - uses: ./.github/actions/setup
-      with:
-        app-id: ${{ vars.KAGI_CI_READ_APP_ID }}
-        private-key: ${{ secrets.KAGI_CI_READ_PRIVATE_KEY }}
 
     - name: Fetch WebKit source
       shell: cmd
