@@ -3,7 +3,7 @@ name: build
 
 on:
   push:
-    branches: [main]
+    branches: [main, chatgpt/upstream-webkit]
   pull_request:
   workflow_dispatch:
 
@@ -15,6 +15,7 @@ permissions:
   contents: read
 
 env:
+  VS_TARGETPATH: "/c/Program Files/Microsoft Visual Studio/18/Enterprise"
 
 jobs:
   build:
