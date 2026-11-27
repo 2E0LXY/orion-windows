@@ -21,7 +21,7 @@ jobs:
           ref: chatgpt/cross-platform
           fetch-depth: 0
 
-      - name: Import verified upstream revision and full published history
+      - name: Preserve verified Linux source and original Git bundle
         shell: bash
         env:
           EXPECTED_LINUX_SHA: 3f041d912a86dc5d708afbba6d6d18f08f319f71
@@ -32,18 +32,33 @@ jobs:
 
           git fetch --no-tags https://github.com/kagisearch/orion-linux.git             refs/heads/main:refs/remotes/kagi-linux/main
           test "$(git rev-parse refs/remotes/kagi-linux/main)" = "$EXPECTED_LINUX_SHA"
+          git branch original-orion-linux "$EXPECTED_LINUX_SHA"
+          git bundle create /tmp/orion-linux-original.bundle refs/heads/original-orion-linux
+          git bundle verify /tmp/orion-linux-original.bundle
+          sha256sum /tmp/orion-linux-original.bundle
 
-          # Keep an independent, unmodified copy of Kagi's published Git history.
-          git push origin "$EXPECTED_LINUX_SHA:refs/heads/archive/orion-linux"
-
-          # Import a real source tree into our development branch, preserving
-          # upstream ancestry; this does not run or compile unreviewed code.
+          # Archive source files without executing unreviewed build scripts.
           test ! -e platforms/linux
-          git subtree add --prefix=platforms/linux "$EXPECTED_LINUX_SHA"             -m "Import Orion Linux upstream source and ancestry at $EXPECTED_LINUX_SHA"
-
+          mkdir -p platforms/linux
+          git archive "$EXPECTED_LINUX_SHA" | tar -xf - -C platforms/linux
+          test -f platforms/linux/LICENSE
+          test -f platforms/linux/NOTICE
+          test -f platforms/linux/.github/workflows/core-module.yml
+          git add platforms/linux
+          git commit -m "Vendor unmodified Orion Linux public source snapshot at $EXPECTED_LINUX_SHA"
           git push origin HEAD:refs/heads/chatgpt/cross-platform
 
-          git ls-tree -r --name-only HEAD platforms/linux | grep -q '^platforms/linux/LICENSE$'
-          git ls-tree -r --name-only HEAD platforms/linux | grep -q '^platforms/linux/NOTICE$'
-          git merge-base --is-ancestor "$EXPECTED_LINUX_SHA" HEAD
-          echo "Archived original commit and imported Linux source with ancestry." >> "$GITHUB_STEP_SUMMARY"
+          # Independent archive branch: original source tree and complete,
+          # restorable upstream Git history in a portable bundle file.
+          git switch --orphan archive-linux-preservation
+          mkdir -p linux source-archives
+          git archive "$EXPECTED_LINUX_SHA" | tar -xf - -C linux
+          cp /tmp/orion-linux-original.bundle source-archives/orion-linux-original.bundle
+          printf '%s\n' "$EXPECTED_LINUX_SHA" > source-archives/orion-linux-upstream-commit.txt
+          sha256sum source-archives/orion-linux-original.bundle > source-archives/orion-linux-original.bundle.sha256
+          git add linux source-archives
+          git commit -m "Archive Orion Linux source and complete public Git history"
+          git push origin HEAD:refs/heads/archive/orion-linux
+
+          echo "Linux source committed to chatgpt/cross-platform and archive/orion-linux." >> "$GITHUB_STEP_SUMMARY"
+          echo "Original source commit: $EXPECTED_LINUX_SHA" >> "$GITHUB_STEP_SUMMARY"
