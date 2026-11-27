@@ -1,5 +1,8 @@
 package uk.community.orion;
 import android.app.*;
+import android.graphics.*;
+import android.graphics.drawable.*;
+import android.content.res.ColorStateList;
 import android.os.*;
 import android.view.*;
 import android.view.inputmethod.*;
@@ -11,29 +14,40 @@ import java.util.*;
 
 public class MainActivity extends Activity {
  final ArrayList<WebView> tabs=new ArrayList<>();
- LinearLayout root, bar; FrameLayout content; EditText address; Button count; int selected=-1;
+ LinearLayout root, bar; FrameLayout content; EditText address; Button count; ProgressBar progress; Button back,forward; int selected=-1;
  @Override public void onCreate(Bundle b){super.onCreate(b);
- root=new LinearLayout(this);root.setOrientation(1);
- root.setPadding(0, getResources().getIdentifier("status_bar_height","dimen","android")!=0?getResources().getDimensionPixelSize(getResources().getIdentifier("status_bar_height","dimen","android")):0,0,0);
- bar=new LinearLayout(this);root.addView(bar);
- button("‹",()->{if(current().canGoBack())current().goBack();});
- button("›",()->{if(current().canGoForward())current().goForward();});
- address=new EditText(this);address.setSingleLine(true);address.setHint("Search or HTTPS address");address.setInputType(17);address.setImeOptions(EditorInfo.IME_ACTION_GO);bar.addView(address,new LinearLayout.LayoutParams(0,-2,1));
- address.setOnEditorActionListener((v,a,e)->{if(a==EditorInfo.IME_ACTION_GO){navigate(address.getText().toString());((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(address.getWindowToken(),0);return true;}return false;});
- button("Go",()->navigate(address.getText().toString()));
- LinearLayout tools=new LinearLayout(this);root.addView(tools);bar=tools;
- button("+",()->newTab());count=button("Tabs",()->chooseTab());button("Reload",()->current().reload());button("Save",()->save());button("Bookmarks",()->bookmarks());button("Privacy",()->privacy());
- content=new FrameLayout(this);root.addView(content,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);newTab();
+ getWindow().setStatusBarColor(0xff171d28);getWindow().setNavigationBarColor(0xff171d28);
+ root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(0xff171d28);
+ root.setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets i=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());v.setPadding(i.left,i.top,i.right,i.bottom);}else{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());}return insets;});
+ getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+ getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+ content=new FrameLayout(this);root.addView(content,new LinearLayout.LayoutParams(-1,0,1));
+ progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(100);progress.setProgressTintList(ColorStateList.valueOf(0xff8ab4ff));root.addView(progress,new LinearLayout.LayoutParams(-1,dp(3)));progress.setVisibility(View.INVISIBLE);
+ bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(dp(8),dp(4),dp(8),dp(4));root.addView(bar);
+ address=new EditText(this);address.setSingleLine(true);address.setTextSize(15);address.setTextColor(0xfff1f5f9);address.setHintTextColor(0xffb9c6da);address.setHint("Search or enter address");address.setContentDescription("Address and search");address.setInputType(17);address.setImeOptions(EditorInfo.IME_ACTION_GO);address.setPadding(dp(16),0,dp(12),0);address.setBackground(round(0xff293344,24));bar.addView(address,new LinearLayout.LayoutParams(0,dp(48),1));
+ address.setOnEditorActionListener((v,a,e)->{if(a==EditorInfo.IME_ACTION_GO){submit();return true;}return false;});
+ button("go","Open address",()->submit(),false);
+ bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);root.addView(bar,new LinearLayout.LayoutParams(-1,dp(56)));
+ back=button("back","Back",()->{if(current().canGoBack())current().goBack();},true);
+ forward=button("forward","Forward",()->{if(current().canGoForward())current().goForward();},true);
+ button("home","Home",()->home(current()),true);count=button("tabs","Switch tabs",()->chooseTab(),true);button("menu","Browser menu",()->menu(),true);
+ setContentView(root);root.requestApplyInsets();newTab();
  }
- Button button(String s,Runnable r){Button b=new Button(this);b.setText(s);b.setAllCaps(false);b.setMinWidth(0);b.setMinimumWidth(0);b.setPadding(8,0,8,0);bar.addView(b);b.setOnClickListener(v->r.run());return b;}
+ int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
+ GradientDrawable round(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
+ void submit(){navigate(address.getText().toString());address.clearFocus();((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(address.getWindowToken(),0);}
+ Button button(String glyph,String label,Runnable r,boolean weight){Button b=new Button(this);b.setText("");b.setContentDescription(label);b.setTooltipText(label);b.setMinWidth(0);b.setMinimumWidth(0);b.setPadding(0,0,0,0);b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,24)));b.setCompoundDrawables(null,new Glyph(glyph),null,null);b.setGravity(Gravity.CENTER);b.setPadding(0,dp(12),0,0);bar.addView(b,new LinearLayout.LayoutParams(weight?0:dp(48),dp(48),weight?1:0));b.setOnClickListener(v->r.run());return b;}
+ class Glyph extends Drawable {final String kind;final Paint p=new Paint(3);Glyph(String k){kind=k;setBounds(0,0,dp(24),dp(24));}public void draw(Canvas c){c.save();c.translate(getBounds().left,getBounds().top);c.scale(getBounds().width()/24f,getBounds().height()/24f);p.setColor(0xffdce5f4);p.setStrokeWidth(1.8f);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);p.setStyle(Paint.Style.STROKE);Path a=new Path();switch(kind){case "back":a.moveTo(14,5);a.lineTo(7,12);a.lineTo(14,19);a.moveTo(7,12);a.lineTo(21,12);break;case "forward":case "go":a.moveTo(10,5);a.lineTo(17,12);a.lineTo(10,19);a.moveTo(3,12);a.lineTo(17,12);break;case "home":a.moveTo(3,11);a.lineTo(12,3);a.lineTo(21,11);a.lineTo(21,21);a.lineTo(3,21);a.close();break;case "tabs":c.drawRoundRect(3,3,21,21,4,4,p);p.setStyle(Paint.Style.FILL);p.setTextSize(11);p.setTextAlign(Paint.Align.CENTER);c.drawText(""+tabs.size(),12,16,p);break;default:p.setStyle(Paint.Style.FILL);for(int i=5;i<=19;i+=7)c.drawCircle(12,i,1.6f,p);}c.drawPath(a,p);c.restore();}public void setAlpha(int a){p.setAlpha(a);}public void setColorFilter(ColorFilter f){p.setColorFilter(f);}public int getOpacity(){return PixelFormat.TRANSLUCENT;}}
+ void menu(){String[] items={"New tab","Reload","Save bookmark","Bookmarks","Share link","Privacy and settings"};new AlertDialog.Builder(this).setTitle("Orion").setItems(items,(d,i)->{switch(i){case 0:newTab();break;case 1:current().reload();break;case 2:save();break;case 3:bookmarks();break;case 4:if(allowed(current().getUrl())){Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("text/plain");intent.putExtra(Intent.EXTRA_TEXT,current().getUrl());startActivity(Intent.createChooser(intent,"Share link"));}break;case 5:privacy();break;}}).show();}
+ void home(WebView w){w.loadDataWithBaseURL(null,"<html><meta name='viewport' content='width=device-width, initial-scale=1'><body style='background:#171d28;color:#f1f5f9;font-family:sans-serif;text-align:center;padding:48px 16px'><div style='margin:32px auto;width:64px;height:64px;border-radius:50%;background:#8ab4ff;box-shadow:0 0 0 12px #26354e'></div><h1 style='font-size:32px;margin-bottom:8px'>Orion</h1><p style='color:#b9c6da;letter-spacing:2px;font-size:12px'>COMMUNITY BROWSER</p><p style='color:#b9c6da;margin-top:48px'>Search or enter an address below.</p></body></html>","text/html","UTF-8",null);address.setText("");}
  WebView current(){return tabs.get(selected);}
  boolean allowed(String s){try{Uri u=Uri.parse(s);return "https".equalsIgnoreCase(u.getScheme())&&u.getHost()!=null&&u.getUserInfo()==null;}catch(Exception e){return false;}}
  void navigate(String raw){String s=raw.trim();if(s.isEmpty())return;if(!s.contains(" ")&&!s.contains("://")&&s.contains("."))s="https://"+s;if(!allowed(s)){if(s.contains("://")){Toast.makeText(this,"Only HTTPS pages are supported",0).show();return;}s="https://www.google.com/search?q="+Uri.encode(s);}current().loadUrl(s);}
  void newTab(){WebView w=new WebView(this);WebSettings s=w.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setJavaScriptCanOpenWindowsAutomatically(false);s.setSafeBrowsingEnabled(true);CookieManager.getInstance().setAcceptThirdPartyCookies(w,false);
- w.setWebViewClient(new WebViewClient(){@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !allowed(r.getUrl().toString());}@Override public void onPageFinished(WebView v,String u){if(selected>=0&&v==current())address.setText(u);}});
- w.setWebChromeClient(new WebChromeClient(){@Override public void onPermissionRequest(PermissionRequest r){r.deny();}});
- tabs.add(w);show(tabs.size()-1);w.loadDataWithBaseURL(null,"<html><body style='background:#182235;color:white;font-family:sans-serif;padding:24px'><h1>Orion Community</h1><p>Enter a search or HTTPS address above.</p></body></html>","text/html","UTF-8",null);}
- void show(int i){content.removeAllViews();selected=i;content.addView(current(),new FrameLayout.LayoutParams(-1,-1));address.setText(current().getUrl()==null?"":current().getUrl());count.setText("Tabs "+tabs.size());}
+ w.setWebViewClient(new WebViewClient(){@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !allowed(r.getUrl().toString());}@Override public void onPageFinished(WebView v,String u){if(selected>=0&&v==current()){if(!address.hasFocus())address.setText(allowed(u)?u:"");back.setEnabled(v.canGoBack());forward.setEnabled(v.canGoForward());}}});
+ w.setWebChromeClient(new WebChromeClient(){@Override public void onProgressChanged(WebView v,int p){if(selected>=0&&v==current()){progress.setProgress(p);progress.setVisibility(p<100?View.VISIBLE:View.INVISIBLE);}}@Override public void onPermissionRequest(PermissionRequest r){r.deny();}});
+ tabs.add(w);show(tabs.size()-1);home(w);}
+ void show(int i){content.removeAllViews();selected=i;content.addView(current(),new FrameLayout.LayoutParams(-1,-1));address.setText(allowed(current().getUrl())?current().getUrl():"");count.setContentDescription("Switch tabs, "+tabs.size()+" open");count.invalidate();back.setEnabled(current().canGoBack());forward.setEnabled(current().canGoForward());}
  void chooseTab(){String[] names=new String[tabs.size()];for(int i=0;i<names.length;i++)names[i]=tabs.get(i).getTitle()==null?"New tab":tabs.get(i).getTitle();new AlertDialog.Builder(this).setTitle("Tabs").setItems(names,(d,i)->show(i)).setNeutralButton("Close current",(d,i)->{WebView w=current();content.removeAllViews();tabs.remove(selected);w.destroy();if(tabs.isEmpty())newTab();else show(Math.min(selected,tabs.size()-1));}).show();}
  void save(){String u=current().getUrl();if(!allowed(u))return;Set<String> set=new HashSet<>(getPreferences(0).getStringSet("bookmarks",Collections.emptySet()));set.add(u);getPreferences(0).edit().putStringSet("bookmarks",set).apply();Toast.makeText(this,"Bookmark saved",0).show();}
  void bookmarks(){String[] urls=getPreferences(0).getStringSet("bookmarks",Collections.emptySet()).toArray(new String[0]);Arrays.sort(urls);new AlertDialog.Builder(this).setTitle("Bookmarks").setItems(urls,(d,i)->navigate(urls[i])).setNegativeButton("Close",null).show();}
