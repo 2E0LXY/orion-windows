@@ -3,6 +3,27 @@ name: Setup public build environment
 runs:
   using: composite
   steps:
+  - name: Select installed MSVC toolset for CI
+    shell: pwsh
+    run: |
+      $vs = 'C:\Program Files\Microsoft Visual Studio\18\Enterprise'
+      $root = Join-Path $vs 'VC\Tools\MSVC'
+      $requested = (Get-Content MSVC_VERSION -Raw).Trim()
+      $available = @(Get-ChildItem $root -Directory | Where-Object { $_.Name -match '^\d+\.\d+\.\d+
+    shell: bash
+    run: ./ci/check_msvc.sh
+
+  - name: Initialise public submodules
+    shell: cmd
+    run: call ci\setup_submodules.cmd
+ -and (Test-Path (Join-Path $_.FullName 'bin\Hostx64\x64\cl.exe')) } | Sort-Object { [version]$_.Name } -Descending)
+      if (!$available.Count) { throw 'No usable x64 MSVC toolset installed' }
+      $selected = $available | Where-Object Name -eq $requested | Select-Object -First 1
+      if (!$selected) { $selected = $available[0] }
+      Write-Host "Requested MSVC: $requested; selected: $($selected.Name)"
+      Set-Content MSVC_VERSION $selected.Name -Encoding ascii
+      "MSVC toolset: $($selected.Name) (requested $requested)" >> $env:GITHUB_STEP_SUMMARY
+
   - name: Check that correct MSVC version is installed
     shell: bash
     run: ./ci/check_msvc.sh
