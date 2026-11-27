@@ -1,0 +1,49 @@
+name: Preserve Orion Linux source
+on:
+  push:
+    branches:
+      - chatgpt/cross-platform
+    paths:
+      - .github/workflows/preserve-orion-linux.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out cross-platform branch
+        uses: actions/checkout@v4
+        with:
+          ref: chatgpt/cross-platform
+          fetch-depth: 0
+
+      - name: Import verified upstream revision and full published history
+        shell: bash
+        env:
+          EXPECTED_LINUX_SHA: 3f041d912a86dc5d708afbba6d6d18f08f319f71
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch --no-tags https://github.com/kagisearch/orion-linux.git             refs/heads/main:refs/remotes/kagi-linux/main
+          test "$(git rev-parse refs/remotes/kagi-linux/main)" = "$EXPECTED_LINUX_SHA"
+
+          # Keep an independent, unmodified copy of Kagi's published Git history.
+          git push origin "$EXPECTED_LINUX_SHA:refs/heads/archive/orion-linux"
+
+          # Import a real source tree into our development branch, preserving
+          # upstream ancestry; this does not run or compile unreviewed code.
+          test ! -e platforms/linux
+          git subtree add --prefix=platforms/linux "$EXPECTED_LINUX_SHA"             -m "Import Orion Linux upstream source and ancestry at $EXPECTED_LINUX_SHA"
+
+          git push origin HEAD:refs/heads/chatgpt/cross-platform
+
+          git ls-tree -r --name-only HEAD platforms/linux | grep -q '^platforms/linux/LICENSE$'
+          git ls-tree -r --name-only HEAD platforms/linux | grep -q '^platforms/linux/NOTICE$'
+          git merge-base --is-ancestor "$EXPECTED_LINUX_SHA" HEAD
+          echo "Archived original commit and imported Linux source with ancestry." >> "$GITHUB_STEP_SUMMARY"
