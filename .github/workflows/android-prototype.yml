@@ -5,7 +5,7 @@ on:
     paths: ['platforms/android/**', '.github/workflows/android-prototype.yml']
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -27,3 +27,9 @@ jobs:
           name: orion-community-debug
           path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+      - name: Publish experimental APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="android-dev-${GITHUB_RUN_ID}"
+          gh release create "$tag" platforms/android/app/build/outputs/apk/debug/app-debug.apk --target "$GITHUB_SHA" --prerelease --title "Android experimental build ${GITHUB_RUN_ID}" --notes "Debug build; not security reviewed or device tested."
