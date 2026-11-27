@@ -1,7 +1,7 @@
 name: Android prototype APK
 on:
   push:
-    branches: [chatgpt/android]
+    branches: [chatgpt/android, chatgpt/drive-sync]
     paths: ['platforms/android/**', '.github/workflows/android-prototype.yml']
   workflow_dispatch:
 permissions:
