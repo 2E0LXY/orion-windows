@@ -13,20 +13,20 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
 
 env:
-  VS_TARGETPATH: "/c/Program Files/Microsoft Visual Studio/18/Enterprise"
 
 jobs:
   build:
-    runs-on: windows-2025
+    runs-on: windows-latest
     outputs:
       vcpkg-cache-miss: ${{ steps.vcpkg.outputs.cache-miss }}
 
     steps:
     - run: git config --global core.autocrlf false
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
     - uses: ./.github/actions/setup
 
     - name: Install vcpkg packages (cached only)
@@ -76,12 +76,14 @@ jobs:
   build-wk-from-source:
     needs: build
     if: needs.build.outputs.vcpkg-cache-miss == 'true'
-    runs-on: windows-2025
+    runs-on: windows-latest
     timeout-minutes: 105
 
     steps:
     - run: git config --global core.autocrlf false
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
     - uses: ./.github/actions/setup
 
     - name: Fetch WebKit source
