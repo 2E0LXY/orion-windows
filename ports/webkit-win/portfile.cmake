@@ -1,23 +1,14 @@
-# --- Source acquisition ---
-# The source is a pruned tarball published to GCS by the webkit repo's CI for
-# every orion-windows commit: no test suites, no website content.
-#
-# scripts/fetch_webkit_src.py.cmd puts it in DOWNLOADS before vcpkg runs,
-# because vcpkg builds its own PATH for portfiles and gcloud is not on it.
+# Public upstream WebKit source. This replaces Kagi's private GCS archive.
+# The revision in WEBKIT_REF is an experimental compatibility baseline.
 file(READ "${CMAKE_CURRENT_LIST_DIR}/WEBKIT_REF" WEBKIT_REF)
 string(STRIP "${WEBKIT_REF}" WEBKIT_REF)
-
-set(WEBKIT_ARCHIVE "${DOWNLOADS}/webkit-src-${WEBKIT_REF}.tar.zst")
-if(NOT EXISTS "${WEBKIT_ARCHIVE}")
-    message(FATAL_ERROR
-        "No WebKit source tarball for ${WEBKIT_REF}.\n"
-        "Run scripts/fetch_webkit_src.py.cmd, or push the ref to an "
-        "*orion-windows* branch so its CI publishes one.")
+if(NOT WEBKIT_REF MATCHES "^[0-9a-f]{40}$")
+    message(FATAL_ERROR "WEBKIT_REF must be a 40-character commit SHA")
 endif()
-
-vcpkg_extract_source_archive(SOURCE_PATH
-    ARCHIVE "${WEBKIT_ARCHIVE}"
-    SOURCE_BASE "${WEBKIT_REF}"
+vcpkg_from_git(
+    OUT_SOURCE_PATH SOURCE_PATH
+    URL "https://github.com/WebKit/WebKit.git"
+    REF "${WEBKIT_REF}"
 )
 
 # WebKit requires Perl during the build (code generation scripts)
