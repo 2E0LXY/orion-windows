@@ -1,0 +1,22 @@
+name: Orion Connect tests
+on:
+  push:
+    branches: [chatgpt/drive-sync]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: shared/orion-connect/relay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: false
+      - run: go vet ./...
+      - run: go test -race ./...
