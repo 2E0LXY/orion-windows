@@ -1,0 +1,25 @@
+name: Windows diagnostic
+on:
+  push:
+    paths:
+      - '.github/workflows/windows-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  environment:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect Windows build tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git --version
+          dotnet --info
+          cmake --version
+          ninja --version
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          & $vswhere -all -products '*' -format json
+          Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' -ErrorAction SilentlyContinue
+          Get-PSDrive C
