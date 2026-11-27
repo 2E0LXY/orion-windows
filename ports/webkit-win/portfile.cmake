@@ -2,7 +2,8 @@
 # The revision in WEBKIT_REF is an experimental compatibility baseline.
 file(READ "${CMAKE_CURRENT_LIST_DIR}/WEBKIT_REF" WEBKIT_REF)
 string(STRIP "${WEBKIT_REF}" WEBKIT_REF)
-if(NOT WEBKIT_REF MATCHES "^[0-9a-f]{40}$")
+string(LENGTH "${WEBKIT_REF}" WEBKIT_REF_LENGTH)
+if(NOT WEBKIT_REF_LENGTH EQUAL 40 OR NOT WEBKIT_REF MATCHES "^[0-9a-f]+$")
     message(FATAL_ERROR "WEBKIT_REF must be a 40-character commit SHA")
 endif()
 vcpkg_from_git(
