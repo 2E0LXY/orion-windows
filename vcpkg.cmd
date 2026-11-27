@@ -5,7 +5,7 @@ call "%~dp0scripts\ensure_vcpkg.bat" || exit /b 1
 
 call "%~dp0vsenv.bat" || exit /b 1
 
-if not defined VCPKG_BINARY_SOURCES set "VCPKG_BINARY_SOURCES=clear;x-gcs,gs://kagi-orion-windows-artifacts/,readwrite"
+if not defined VCPKG_BINARY_SOURCES set "VCPKG_BINARY_SOURCES=clear"
 
 set VCPKG_FORCE_DOWNLOADED_BINARIES=1
 

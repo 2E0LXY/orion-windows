@@ -1,46 +1,22 @@
----
-name: Setup build environment
-inputs:
-  app-id:
-    required: true
-  private-key:
-    required: true
+name: Setup public build environment
 runs:
   using: composite
   steps:
-  - uses: actions/create-github-app-token@v3
-    id: app-token
-    with:
-      client-id: ${{ inputs.app-id }}
-      private-key: ${{ inputs.private-key }}
-      owner: kagisearch
-
-  - name: Configure git credentials
-    shell: cmd
-    run: |
-      git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
-      git config --global --add url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "git@github.com:"
-
-  - name: Check that correct MSVC version is installed
-    shell: bash
-    run: ./ci/check_msvc.sh
-
-  - name: Initialize submodules
-    shell: cmd
-    run: call ci\setup_submodules.cmd
-
-  - name: Authenticate to Google Cloud
-    uses: google-github-actions/auth@v3
-    with:
-      service_account: "orion-windows@prod-kagi-lab-685b.iam.gserviceaccount.com"
-      workload_identity_provider: "projects/402173988874/locations/global/workloadIdentityPools/github-com/providers/kagi-search"
-
-  - name: Set up gcloud CLI
-    uses: google-github-actions/setup-gcloud@v3
-
-  - name: Export GCS access token
-    shell: bash
-    run: |
-      token=$(gcloud auth print-access-token)
-      echo "::add-mask::$token"
-      echo "GSUTIL_CMD_CURL_AUTHTOKEN=$token" >>"$GITHUB_ENV"
+    - name: Select installed MSVC toolset
+      shell: pwsh
+      run: |
+        $root = 'C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC'
+        $requested = (Get-Content MSVC_VERSION -Raw).Trim()
+        $available = @(Get-ChildItem $root -Directory | Where-Object { $_.Name -match '^\d+\.\d+\.\d+$' -and (Test-Path (Join-Path $_.FullName 'bin\Hostx64\x64\cl.exe')) } | Sort-Object { [version]$_.Name } -Descending)
+        if (!$available.Count) { throw 'No usable x64 MSVC toolset installed' }
+        $selected = $available | Where-Object Name -eq $requested | Select-Object -First 1
+        if (!$selected) { $selected = $available[0] }
+        Write-Host "Requested MSVC: $requested; selected: $($selected.Name)"
+        Set-Content MSVC_VERSION $selected.Name -Encoding ascii
+        "MSVC toolset: $($selected.Name) (requested $requested)" >> $env:GITHUB_STEP_SUMMARY
+    - name: Check MSVC version
+      shell: bash
+      run: ./ci/check_msvc.sh
+    - name: Initialise public submodules
+      shell: cmd
+      run: call ci\setup_submodules.cmd
