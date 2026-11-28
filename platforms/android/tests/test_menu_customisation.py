@@ -21,7 +21,7 @@ class MenuCustomisationTests(unittest.TestCase):
         self.assertIn('String[] labels=MENU_TITLES.clone();',SRC)
         self.assertIn('String[] ids=MENU_IDS;',SRC)
         self.assertIn('labels[1]=geckoActive?"Return to WebView":"Open in GeckoView";',SRC)
-        self.assertIn('boolean engineUnsupported=geckoActive&&',SRC)
+        self.assertIn('boolean engineUnsupported=false;',SRC)
         self.assertIn('labels[i]+=" · WebView only"',SRC)
         self.assertIn('()->installOrShortcut()',SRC)
     def test_gecko_find_and_download_delegates(self):
@@ -30,7 +30,10 @@ class MenuCustomisationTests(unittest.TestCase):
         self.assertIn('session.getFinder().clear()',SRC)
         self.assertIn('void onExternalResponse(org.mozilla.geckoview.GeckoSession source,org.mozilla.geckoview.WebResponse response)',SRC)
         self.assertIn('downloadPage(url,null,null)',SRC)
-        self.assertIn('boolean engineUnsupported=geckoActive&&(ids[i].equals("reader")||ids[i].equals("print"))',SRC)
+        self.assertIn('boolean engineUnsupported=false;',SRC)
+        self.assertIn('session.getSessionPageExtractor().getPageContent()',SRC)
+        self.assertIn('geckoSession.printPageContent()',SRC)
+        self.assertIn('geckoView.setActivityContextDelegate(()->MainActivity.this);',SRC)
     def test_shortcut_requires_webpage_and_launcher_consent(self):
         self.assertIn('if(geckoIncognito){Toast.makeText(this,"Shortcuts are unavailable in Incognito"',SRC)
         self.assertIn('if(!allowed(url))',SRC)
