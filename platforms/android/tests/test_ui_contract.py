@@ -402,7 +402,7 @@ class OrionRecoveryContract(unittest.TestCase):
     def test_session_never_serialises_private_gecko_and_has_total_history_budget(self):
         write = method("void writeSession()", "boolean restoreSession()")
         self.assertIn('geckoActive&&!geckoIncognito?"gecko":"webview"', write)
-        self.assertIn('if(geckoActive&&!geckoIncognito&&allowed(geckoAddress))state.put("geckoUrl",geckoAddress);', write)
+        self.assertIn('if(geckoActive&&!geckoIncognito&&allowed(geckoAddress)){state.put("geckoUrl",geckoAddress);', write)
         self.assertIn("historyBudget", write)
 
     def test_restore_does_not_double_load_restored_history(self):
@@ -438,3 +438,24 @@ class OrionRecoveryContract(unittest.TestCase):
 
     def test_retry_is_not_offered_twice_after_automatic_fallback(self):
         self.assertIn('if(!transfer.status.contains("standard download queued"))downloadAction(list,"Retry using standard download"', SOURCE)
+
+
+class OrionGeckoSessionContract(unittest.TestCase):
+    def test_gecko_state_is_captured_only_for_normal_sessions(self):
+        i = SOURCE.index("onSessionStateChange")
+        block = SOURCE[i:i + 420]
+        self.assertIn("geckoIncognito||incognito", block)
+        self.assertIn("geckoStateJson=", block)
+
+    def test_gecko_state_is_serialised_only_when_not_private_and_cleared_on_close_and_clear(self):
+        write = method("void writeSession()", "boolean restoreSession()")
+        self.assertIn('if(geckoActive&&!geckoIncognito&&allowed(geckoAddress)){state.put("geckoUrl",geckoAddress);if(geckoStateJson!=null)state.put("geckoState",geckoStateJson);}', write)
+        self.assertIn("geckoActive=false;geckoStateJson=null;", SOURCE)
+        clear = method("void clearSavedSession()", "void loadLazy(")
+        self.assertIn("geckoStateJson=null;", clear)
+
+    def test_gecko_restore_uses_supported_api_and_falls_back_to_url(self):
+        restore = method("boolean restoreGeckoState(", "void closeGecko()")
+        self.assertIn("SessionState.fromString(saved)", restore)
+        self.assertIn("session.restoreState(state)", restore)
+        self.assertIn("if(incognito||!restoreGeckoState(session))session.loadUri(initial);", SOURCE)

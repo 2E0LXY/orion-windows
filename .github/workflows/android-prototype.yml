@@ -1,7 +1,7 @@
 name: Android prototype APK
 on:
   push:
-    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync, chatgpt/android-recovery-session, claude/android-recovery-fixes]
+    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync, chatgpt/android-recovery-session, claude/android-recovery-fixes, claude/android-gecko-session]
     paths:
       - 'platforms/android/**'
       - '.github/workflows/android-prototype.yml'
