@@ -267,7 +267,7 @@ public class MainActivity extends Activity {
  void showHome(boolean gecko){
   hideHome();
   FrameLayout page=new FrameLayout(this);page.setBackgroundColor(0xff171d28);
-  page.setContentDescription(gecko?"Orion Community Browser. Powered by GeckoView. Search or enter an address below.":"Orion Community Browser. Search or enter an address below.");
+  page.setContentDescription(gecko?"Orion Private Browser. Powered by GeckoView. Search or enter an address below.":"Orion Private Browser. Search or enter an address below.");
   ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
   LinearLayout column=new LinearLayout(this);column.setOrientation(LinearLayout.VERTICAL);column.setGravity(Gravity.CENTER_HORIZONTAL);
   int top=getResources().getConfiguration().orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE?dp(16):dp(30);
@@ -277,7 +277,7 @@ public class MainActivity extends Activity {
   TextView title=new TextView(this);title.setText("Orion");title.setTextSize(32);title.setTextColor(0xfff1f5f9);
   title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));title.setGravity(Gravity.CENTER);
   LinearLayout.LayoutParams titleParams=new LinearLayout.LayoutParams(-1,-2);titleParams.topMargin=dp(16);column.addView(title,titleParams);
-  TextView subtitle=new TextView(this);subtitle.setText("COMMUNITY BROWSER");subtitle.setTextSize(12);subtitle.setLetterSpacing(.24f);
+  TextView subtitle=new TextView(this);subtitle.setText("PRIVATE BROWSER");subtitle.setTextSize(12);subtitle.setLetterSpacing(.24f);
   subtitle.setTextColor(0xffb9c6da);subtitle.setGravity(Gravity.CENTER);
   LinearLayout.LayoutParams subParams=new LinearLayout.LayoutParams(-1,-2);subParams.topMargin=dp(8);column.addView(subtitle,subParams);
   TextView instruction=new TextView(this);instruction.setText("Search or enter an address below.");
@@ -420,11 +420,17 @@ public class MainActivity extends Activity {
   label.setTextColor(size>=17?0xfff1f5f9:0xffb9c6da);
   label.setPadding(dp(4),dp(6),dp(4),dp(4));return label;
  }
+ int downloadColour(int percentage){
+  int[] colours={0xff60a5fa,0xff22d3ee,0xfffacc15,0xff4ade80};
+  float position=Math.max(0,Math.min(100,percentage))*3f/100f;
+  int index=Math.min(2,(int)position);
+  return (Integer)new android.animation.ArgbEvaluator().evaluate(position-index,colours[index],colours[index+1]);
+ }
  void downloadProgress(LinearLayout parent,int percentage){
   ProgressBar progressBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
   progressBar.setMax(100);progressBar.setProgress(Math.max(0,Math.min(100,percentage)));
   progressBar.setContentDescription("Download "+percentage+" per cent");
-  progressBar.setProgressTintList(ColorStateList.valueOf(0xff8ab4ff));
+  progressBar.setProgressTintList(ColorStateList.valueOf(downloadColour(percentage)));
   parent.addView(progressBar,new LinearLayout.LayoutParams(-1,dp(9)));
  }
  void downloadRow(LinearLayout parent,String name,String detail,int progress,Runnable cancel){
@@ -436,7 +442,8 @@ public class MainActivity extends Activity {
   if(progress>=0)downloadProgress(card,progress);
   if(cancel!=null){
    Button stop=new Button(this);stop.setText("Cancel download");stop.setAllCaps(false);
-   stop.setTextColor(0xfff1f5f9);stop.setMinHeight(dp(48));
+   stop.setTextColor(0xffffb4b4);stop.setMinHeight(dp(48));
+   GradientDrawable stopBg=round(0xff24344a,12);stopBg.setStroke(dp(1),0xffef7777);stop.setBackground(new RippleDrawable(ColorStateList.valueOf(0x33ef7777),stopBg,null));
    stop.setOnClickListener(v->cancel.run());
    card.addView(stop,new LinearLayout.LayoutParams(-1,dp(48)));
   }
@@ -455,7 +462,8 @@ public class MainActivity extends Activity {
     for(int i=0;i<4;i++){
      long segmentTotal=(i==3?total-total*3/4:total*(i+1)/4-total*i/4);
      int part=(int)Math.min(100,100.0*transfer.segmentBytes.get(i)/Math.max(1,segmentTotal));
-     list.addView(downloadLabel("Connection "+(i+1)+" · "+part+"%",12));
+     list.addView(downloadLabel("Connection "+(i+1)+" · "+part+"%",13));
+     downloadProgress(list,part);
     }
    }
   }
