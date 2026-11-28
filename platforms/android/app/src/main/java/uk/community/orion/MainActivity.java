@@ -341,7 +341,7 @@ public class MainActivity extends Activity {
  TextView title=new TextView(this);title.setText(geckoIncognito?"Orion · Incognito":geckoActive?"Orion · GeckoView":"Orion · WebView");title.setTextSize(22);title.setTextColor(0xfff1f5f9);title.setPadding(dp(8),dp(8),0,dp(12));panel.addView(title);
  ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(1);scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
  String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Settings"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Settings"};
- Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->reloadActive(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->sharePage(),()->startActivity(new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)),()->importBrowserData(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->reloadActive(),()->findPage(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->sharePage(),()->readerMode(),()->printPage(),()->startActivity(new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)),()->settings()};
+ Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->reloadActive(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->sharePage(),()->showDownloadPanel(),()->importBrowserData(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->reloadActive(),()->findPage(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->sharePage(),()->readerMode(),()->printPage(),()->showDownloadPanel(),()->settings()};
  for(int i=0;i<labels.length;i++){final Runnable task=tasks[i];Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);button.setTextColor(0xfff1f5f9);button.setTextSize(16);button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);button.setPadding(dp(16),0,dp(16),0);button.setBackground(new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,12)));actions.addView(button,new LinearLayout.LayoutParams(-1,dp(48)));button.setOnClickListener(v->{dialog.dismiss();task.run();});}
  dialog.setContentView(panel);dialog.show();Window win=dialog.getWindow();win.setBackgroundDrawableResource(android.R.color.transparent);win.setGravity(Gravity.BOTTOM);win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
  }
@@ -405,7 +405,117 @@ public class MainActivity extends Activity {
   }
  }
  void downloadPage(String url,String disposition,String mime){if(!allowed(url)){Toast.makeText(this,"Unsupported download address",0).show();return;}String name=URLUtil.guessFileName(url,disposition,mime).replaceAll("[^a-zA-Z0-9._ -]","_");if(name.isEmpty()||name.equals(".")||name.equals(".."))name="download";final String filename=name;new AlertDialog.Builder(this).setTitle("Download file?").setMessage(filename+"\n"+Uri.parse(url).getHost()).setNegativeButton("Cancel",null).setPositiveButton("Parallel (4)",(d,i)->ParallelDownload.start(this,url,filename,()->standardDownload(url,filename))).setNeutralButton("Standard",(d,i)->standardDownload(url,filename)).show();}
- void standardDownload(String url,String filename){try{android.app.DownloadManager.Request req=new android.app.DownloadManager.Request(Uri.parse(url));req.setTitle(filename);req.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,filename);((android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(req);Toast.makeText(this,"Download queued",0).show();}catch(Exception e){Toast.makeText(this,"Unable to queue download",0).show();}}
+ void standardDownload(String url,String filename){try{android.app.DownloadManager.Request req=new android.app.DownloadManager.Request(Uri.parse(url));req.setTitle(filename);req.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,filename);long downloadId=((android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(req);rememberDownload(downloadId);Toast.makeText(this,"Download queued · swipe up from the bottom toolbar for status",Toast.LENGTH_LONG).show();}catch(Exception e){Toast.makeText(this,"Unable to queue download",0).show();}}
+
+ // Standard download IDs survive app restarts; the system owns their transfer state.
+ void rememberDownload(long id){
+  ArrayList<String> ids=new ArrayList<>();ids.add(Long.toString(id));
+  for(String value:getPreferences(0).getString("download_ids","").split(",")){
+   if(!value.isEmpty()&&!value.equals(Long.toString(id))&&ids.size()<20)ids.add(value);
+  }
+  getPreferences(0).edit().putString("download_ids",android.text.TextUtils.join(",",ids)).apply();
+ }
+ TextView downloadLabel(String text,int size){
+  TextView label=new TextView(this);label.setText(text);label.setTextSize(size);
+  label.setTextColor(size>=17?0xfff1f5f9:0xffb9c6da);
+  label.setPadding(dp(4),dp(6),dp(4),dp(4));return label;
+ }
+ void downloadProgress(LinearLayout parent,int percentage){
+  ProgressBar progressBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
+  progressBar.setMax(100);progressBar.setProgress(Math.max(0,Math.min(100,percentage)));
+  progressBar.setContentDescription("Download "+percentage+" per cent");
+  progressBar.setProgressTintList(ColorStateList.valueOf(0xff8ab4ff));
+  parent.addView(progressBar,new LinearLayout.LayoutParams(-1,dp(9)));
+ }
+ void downloadRow(LinearLayout parent,String name,String detail,int progress,Runnable cancel){
+  LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);
+  card.setPadding(dp(14),dp(10),dp(14),dp(12));card.setBackground(round(0xff24344a,14));
+  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(12);parent.addView(card,lp);
+  card.addView(downloadLabel(name,17));
+  card.addView(downloadLabel(detail,13));
+  if(progress>=0)downloadProgress(card,progress);
+  if(cancel!=null){
+   Button stop=new Button(this);stop.setText("Cancel download");stop.setAllCaps(false);
+   stop.setTextColor(0xfff1f5f9);stop.setMinHeight(dp(48));
+   stop.setOnClickListener(v->cancel.run());
+   card.addView(stop,new LinearLayout.LayoutParams(-1,dp(48)));
+  }
+ }
+ void updateDownloadRows(LinearLayout list){
+  list.removeAllViews();boolean any=false;
+  ParallelDownload.State transfer=ParallelDownload.snapshot();
+  if(transfer!=null){
+   any=true;long total=transfer.total,done=transfer.done.get();
+   int percentage=total>0?(int)Math.min(100,100.0*done/total):-1;
+   String details=transfer.status+(total>0?" · "+percentage+"%":"");
+   if(!transfer.finished&&total>0)details+=String.format(Locale.UK," · %.2f MB/s",transfer.bytesPerSecond/1048576.0);
+   downloadRow(list,transfer.name,details,percentage,transfer.finished?null:()->ParallelDownload.cancel());
+   if(!transfer.finished&&total>0){
+    long segmentSize=total/4;
+    for(int i=0;i<4;i++){
+     long segmentTotal=(i==3?total-total*3/4:total*(i+1)/4-total*i/4);
+     int part=(int)Math.min(100,100.0*transfer.segmentBytes.get(i)/Math.max(1,segmentTotal));
+     list.addView(downloadLabel("Connection "+(i+1)+" · "+part+"%",12));
+    }
+   }
+  }
+  android.app.DownloadManager manager=(android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+  for(String value:getPreferences(0).getString("download_ids","").split(",")){
+   if(value.isEmpty()||manager==null)continue;
+   long id;try{id=Long.parseLong(value);}catch(NumberFormatException e){continue;}
+   android.app.DownloadManager.Query query=new android.app.DownloadManager.Query();query.setFilterById(id);
+   try(android.database.Cursor cursor=manager.query(query)){
+    if(cursor==null||!cursor.moveToFirst())continue;
+    any=true;
+    int nameColumn=cursor.getColumnIndex(android.app.DownloadManager.COLUMN_TITLE);
+    int statusColumn=cursor.getColumnIndex(android.app.DownloadManager.COLUMN_STATUS);
+    int bytesColumn=cursor.getColumnIndex(android.app.DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+    int totalColumn=cursor.getColumnIndex(android.app.DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+    String name=nameColumn>=0?cursor.getString(nameColumn):"Download";
+    int status=statusColumn>=0?cursor.getInt(statusColumn):0;
+    long bytes=bytesColumn>=0?cursor.getLong(bytesColumn):0,total=totalColumn>=0?cursor.getLong(totalColumn):-1;
+    int percentage=total>0?(int)Math.min(100,100.0*bytes/total):-1;
+    String state=status==android.app.DownloadManager.STATUS_SUCCESSFUL?"Complete":status==android.app.DownloadManager.STATUS_FAILED?"Failed":status==android.app.DownloadManager.STATUS_PAUSED?"Paused":status==android.app.DownloadManager.STATUS_RUNNING?"Downloading":"Queued";
+    String description=state+(total>0?" · "+percentage+"%":"")+(status==android.app.DownloadManager.STATUS_RUNNING?" · Android managed":"");
+    boolean active=status==android.app.DownloadManager.STATUS_RUNNING||status==android.app.DownloadManager.STATUS_PAUSED||status==android.app.DownloadManager.STATUS_PENDING;
+    downloadRow(list,name,description,percentage,active?()->manager.remove(id):null);
+   }catch(Exception ignored){list.addView(downloadLabel("Unable to inspect a system download",13));}
+  }
+  if(!any)list.addView(downloadLabel("No downloads yet. Start a download to see progress here.",15));
+ }
+ void showDownloadPanel(){
+  final Dialog dialog=new Dialog(this);
+  LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);
+  panel.setPadding(dp(18),dp(12),dp(18),dp(16));panel.setBackground(round(0xff17263d,20));
+  LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
+  TextView title=downloadLabel("Downloads",22);header.addView(title,new LinearLayout.LayoutParams(0,dp(52),1));
+  Button close=geckoButton("×","Close downloads",()->dialog.dismiss());
+  header.addView(close,new LinearLayout.LayoutParams(dp(52),dp(52)));panel.addView(header);
+  TextView hint=downloadLabel("Swipe up from the bottom toolbar to reopen this panel.",13);panel.addView(hint);
+  ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);
+  LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);
+  list.setPadding(0,dp(12),0,dp(12));scroll.addView(list);
+  panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+  Button system=geckoButton("Open system Downloads","Open Android downloads",()->{
+   try{startActivity(new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS));}
+   catch(Exception e){Toast.makeText(this,"No system Downloads app available",Toast.LENGTH_SHORT).show();}
+  });
+  panel.addView(system,new LinearLayout.LayoutParams(-1,dp(50)));
+  final Handler refreshHandler=new Handler(Looper.getMainLooper());
+  final Runnable[] refresh=new Runnable[1];
+  refresh[0]=()->{
+   if(!dialog.isShowing()||isFinishing()||isDestroyed())return;
+   updateDownloadRows(list);
+   refreshHandler.postDelayed(refresh[0],900);
+  };
+  dialog.setOnDismissListener(d->refreshHandler.removeCallbacks(refresh[0]));
+  dialog.setContentView(panel);
+  dialog.show();
+  Window win=dialog.getWindow();win.setBackgroundDrawableResource(android.R.color.transparent);
+  win.setGravity(Gravity.BOTTOM);
+  win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
+  refreshHandler.post(refresh[0]);
+ }
  void readerMode(){WebView target=current();if(!allowed(target.getUrl()))return;target.evaluateJavascript("(function(){var e=document.querySelector('article,main,[role=main]')||document.body;return e?e.innerText.slice(0,150000):'';})()",value->{if(isDestroyed()||target!=current())return;String body;try{Object parsed=new org.json.JSONTokener(value).nextValue();body=parsed instanceof String?(String)parsed:"";}catch(Exception e){body="";}if(body.trim().isEmpty()){Toast.makeText(this,"No readable text found",0).show();return;}Dialog dialog=new Dialog(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(1);panel.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("Close reader");close.setOnClickListener(v->dialog.dismiss());panel.addView(close);ScrollView scroll=new ScrollView(this);TextView article=new TextView(this);article.setText(body);article.setTextColor(0xfff1f5f9);article.setTextSize(18);article.setLineSpacing(dp(5),1.2f);article.setPadding(dp(24),dp(16),dp(24),dp(24));article.setTextIsSelectable(true);scroll.addView(article);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));dialog.setContentView(panel);dialog.show();dialog.getWindow().setLayout(-1,-1);});}
  void printPage(){if(!allowed(current().getUrl()))return;android.print.PrintManager manager=(android.print.PrintManager)getSystemService(PRINT_SERVICE);if(manager!=null)manager.print("Orion webpage",current().createPrintDocumentAdapter("Orion webpage"),new android.print.PrintAttributes.Builder().build());}
  void sharePage(){String u=geckoActive?geckoAddress:current().getUrl();if(allowed(u)){Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("text/plain");intent.putExtra(Intent.EXTRA_TEXT,u);startActivity(Intent.createChooser(intent,"Share link"));}}
