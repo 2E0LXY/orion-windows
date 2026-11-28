@@ -161,7 +161,8 @@ class OrionUiContract(unittest.TestCase):
 
     def test_shared_menu_without_replay(self):
         menu = method("void menu()", "void incognitoExplained()")
-        self.assertIn('geckoActive?new String[]{', menu)
+        self.assertIn('String[] labels=MENU_TITLES.clone();', menu)
+        self.assertIn('labels[1]=geckoActive?"Return to WebView":"Open in GeckoView";', menu)
         self.assertNotIn("Replay boot animation", menu)
         self.assertNotIn('"Privacy and permissions","DNS and network"', menu)
         self.assertIn("readingList()", menu)
