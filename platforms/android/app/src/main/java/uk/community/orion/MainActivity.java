@@ -73,11 +73,61 @@ public class MainActivity extends Activity {
    Toast.makeText(this,"Open Android Settings to choose your default browser",Toast.LENGTH_LONG).show();
   }
  }
+ OrionAiBridge aiBridge;
+ boolean aiCanControl(){return !geckoIncognito&&!isFinishing()&&!isDestroyed()&&hasWindowFocus();}
+ String aiPageInfo(){
+  if(geckoIncognito)return "Private tabs cannot be shared";
+  if(homeOverlay!=null)return "Orion start page";
+  String url=geckoActive?geckoAddress:selected>=0?current().getUrl():"";
+  if(!allowed(url))return "No shareable webpage";
+  String title=geckoActive?"GeckoView page":current().getTitle();
+  return "Title: "+(title==null?"":title.substring(0,Math.min(120,title.length())))+"\nURL: "+url;
+ }
  void aiConnectSettings(){
-  // No network listener, token, accessibility service or model access is installed.
-  new AlertDialog.Builder(this).setTitle("Orion AI Connect")
-   .setMessage("Remote control is not connected. No AI can read or operate Orion through this setting yet.\n\nPlanned: explicit pairing, a visible connected indicator, separate read and navigation permissions, one-action confirmation for input and downloads, session expiry and a disconnect control. Private tabs, passwords and cookies will never be exposed.")
-   .setPositiveButton("OK",null).show();
+  if(aiBridge==null)aiBridge=new OrionAiBridge(this,new OrionAiBridge.Host(){
+   @Override public boolean canControl(){return aiCanControl();}
+   @Override public String describePage(){return aiPageInfo();}
+   @Override public String currentUrl(){return geckoActive?geckoAddress:selected>=0?current().getUrl():"";}
+   @Override public void openUrl(String url){if(!geckoIncognito&&aiCanControl())navigate(url);}
+   @Override public void requestApproval(String tool,String detail,OrionAiBridge.Approval cb){
+    if(!aiCanControl()){cb.complete(false);return;}
+    new AlertDialog.Builder(MainActivity.this)
+     .setTitle("AI request: "+tool)
+     .setMessage(detail+"\n\nAllow this one request? AI sharing is restricted to normal browser tabs.")
+     .setNegativeButton("Deny",(d,w)->cb.complete(false))
+     .setPositiveButton("Allow once",(d,w)->cb.complete(true))
+     .setOnCancelListener(d->cb.complete(false)).show();
+   }
+  });
+  Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);
+  LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setPadding(dp(16),dp(20),dp(16),dp(20));page.setBackgroundColor(0xff171d28);
+  Button close=new Button(this);close.setAllCaps(false);close.setText("‹  Orion AI Connect");close.setContentDescription("Close Orion AI Connect");close.setOnClickListener(v->dialog.dismiss());page.addView(close,new LinearLayout.LayoutParams(-1,dp(56)));
+  ScrollView scroll=new ScrollView(this);LinearLayout items=new LinearLayout(this);items.setOrientation(LinearLayout.VERTICAL);scroll.addView(items);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+  section(items,"LOCAL CONNECTION");
+  settingRow(items,"Status",aiBridge.status(),()->{dialog.dismiss();aiConnectSettings();});
+  if(!aiBridge.running()){
+   settingRow(items,"Start AI sharing","Local device only · expires after 15 minutes · confirm every action",()->{
+    if(geckoIncognito){Toast.makeText(this,"Close Incognito before sharing",Toast.LENGTH_LONG).show();return;}
+    aiBridge.start();dialog.dismiss();aiConnectSettings();
+   });
+  }else{
+   settingRow(items,"Stop and disconnect","Revoke the active token immediately",()->{aiBridge.stop();dialog.dismiss();aiConnectSettings();});
+   section(items,"PAIRING");
+   settingRow(items,"Connection address","http://127.0.0.1:"+aiBridge.port()+"/mcp",()->{});
+   settingRow(items,"Copy session token","Secret: share only with a trusted local MCP client",()->{
+    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+    if(clipboard!=null&&aiBridge.token()!=null){clipboard.setPrimaryClip(ClipData.newPlainText("Orion AI session token",aiBridge.token()));Toast.makeText(this,"Temporary token copied; clipboard access is sensitive",Toast.LENGTH_LONG).show();}
+   });
+  }
+  section(items,"PERMISSIONS");
+  settingRow(items,"Read current title and URL","Ask on each request · normal tab only",()->{});
+  settingRow(items,"Navigate to HTTPS URL","Ask on each request · user can deny",()->{});
+  disabledSettingRow(items,"Read webpage content","Not enabled in this first secure connection");
+  disabledSettingRow(items,"Click, type, screenshots, downloads","Not enabled until fine-grained permissions and checks are implemented");
+  section(items,"BOUNDARIES");
+  TextView guidance=new TextView(this);guidance.setText("The listener accepts only this device's loopback connections. A desktop AI cannot reach it directly; use a trusted local bridge or connector. ChatGPT, Claude and Gemini require their own MCP/client connection. Incognito, passwords and cookies are excluded. Close this panel using the top control; sharing continues until disconnect or expiry.");
+  guidance.setTextSize(15);guidance.setTextColor(0xfff1f5f9);guidance.setPadding(dp(16),dp(12),dp(16),dp(16));items.addView(guidance);
+  dialog.setContentView(page);dialog.show();dialog.getWindow().setLayout(-1,-1);
  }
  String installedVersion(){try{android.content.pm.PackageInfo p=getPackageManager().getPackageInfo(getPackageName(),0);return "Version "+p.versionName+" · Build "+(Build.VERSION.SDK_INT>=28?p.getLongVersionCode():p.versionCode);}catch(Exception e){return "Version unavailable";}}
  int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
@@ -156,6 +206,7 @@ public class MainActivity extends Activity {
 
  void openGecko(){openGecko(false);}
  void openIncognito(){
+  if(aiBridge!=null)aiBridge.stop();
   if(geckoActive){closeGecko();}
   openGecko(true);
  }
@@ -781,8 +832,7 @@ public class MainActivity extends Activity {
  section(panel,"ACCOUNT");disabledSettingRow(panel,"Sync","Google sign-in and cross-device syncing are not connected");
  section(panel,"GENERAL");settingRow(panel,"Search engine",engines[Math.max(0,Math.min(engines.length-1,getPreferences(0).getInt("engine",0)))],()->new AlertDialog.Builder(this).setTitle("Search engine").setSingleChoiceItems(engines,getPreferences(0).getInt("engine",0),(d,i)->{getPreferences(0).edit().putInt("engine",i).apply();d.dismiss();dialog.dismiss();settings();}).setNegativeButton("Cancel",null).show());
  settingRow(panel,"Default browser",isDefaultBrowser()?"Orion is the default":"Choose Orion in Android's browser selector",()->requestDefaultBrowser());
- section(panel,"AI CONTROL");disabledSettingRow(panel,"Orion AI Connect","Unavailable · secure AI pairing and permissions are not implemented");
- settingRow(panel,"AI Connect security plan","Review what future AI connections may access",()->aiConnectSettings());
+ section(panel,"AI CONTROL");settingRow(panel,"Orion AI Connect",aiBridge!=null&&aiBridge.running()?"Active local session · disconnect or inspect permissions":"Off · enable local MCP and approve each action",()->{dialog.dismiss();aiConnectSettings();});
  section(panel,"DISPLAY");settingRow(panel,"Homepage weather","ECMWF IFS forecast · location, visibility and saved area",()->HomeWeather.settings(this));settingRow(panel,"Toolbar shortcut","Choose Home, Bookmark or Reload",()->new AlertDialog.Builder(this).setTitle("Toolbar shortcut").setSingleChoiceItems(new String[]{"Home","Bookmark","Reload"},getPreferences(0).getInt("shortcut",0),(d,i)->{getPreferences(0).edit().putInt("shortcut",i).apply();updateToolbar();d.dismiss();}).setNegativeButton("Cancel",null).show());toggle(panel,"Swipe across address bar to switch tabs","tab_swipe",true);toggle(panel,"Dark web pages (WebView · experimental)","darkpages",false);settingRow(panel,"Text size",getPreferences(0).getInt("zoom",100)+"%",()->{String[] labels={"75%","100%","125%","150%","200%"};int[] sizes={75,100,125,150,200};new AlertDialog.Builder(this).setTitle("Text size").setItems(labels,(d,i)->{getPreferences(0).edit().putInt("zoom",sizes[i]).apply();applyAll();dialog.dismiss();settings();}).show();});toggle(panel,"Desktop websites (WebView)","desktop",false);
  settingRow(panel,"Security and privacy","Use the Orion icon at the right of the bottom toolbar",()->{dialog.dismiss();securityPrivacy();});
  section(panel,"BROWSER DATA");settingRow(panel,"Bookmarks","Saved websites",()->bookmarks());settingRow(panel,"Reading list","Saved pages and read status",()->readingList());settingRow(panel,"Browsing history","Recent visited pages",()->historyLibrary());
@@ -824,5 +874,5 @@ public class MainActivity extends Activity {
  void privacy(){new AlertDialog.Builder(this).setTitle("Privacy protections").setMessage("HTTPS is preferred, but HTTP remains available after a warning. HTTP is unencrypted. WebView blocks third-party cookies; GeckoView uses its own cookie controls. Camera, microphone and location choices apply to secure HTTPS sites in both engines and require Android system permissions. GeckoView notification requests are blocked in this test build. Incognito uses GeckoView private mode with separate temporary site data; normal WebView tabs are unaffected. It does not conceal traffic from websites or networks, and downloads can remain on the device.").setNeutralButton("Site permissions",(d,i)->sitePermissions()).setPositiveButton("OK",null).show();}
  void clearBrowsingData(){new AlertDialog.Builder(this).setTitle("Clear browsing data?").setMessage("Clear normal WebView cookies, site storage, cache and tab history, plus Orion recent URL history. GeckoView data may require separate clearing. This may sign you out. Bookmarks are retained.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,i)->{WebStorage.getInstance().deleteAllData();getPreferences(0).edit().remove("recent_history").apply();for(WebView w:tabs){w.clearCache(true);w.clearHistory();w.clearFormData();}CookieManager cookies=CookieManager.getInstance();cookies.removeAllCookies(removed->{cookies.flush();if(!isFinishing()&&!isDestroyed())Toast.makeText(this,"Normal WebView cookies, site data and Orion recent history cleared",Toast.LENGTH_LONG).show();});}).show();}
  @Override public void onBackPressed(){if(address.hasFocus()){address.clearFocus();return;}if(geckoActive){if(geckoCanGoBack)geckoGoBack();else closeGecko();return;}if(selected>=0&&current().canGoBack()){current().goBack();return;}super.onBackPressed();}
- @Override protected void onDestroy(){homeHandler.removeCallbacks(openHomeAfterTap);if(geckoActive)closeGecko();hideHome();content.removeAllViews();homeTabs.clear();if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);for(WebView w:tabs)w.destroy();super.onDestroy();}
+ @Override protected void onDestroy(){if(aiBridge!=null)aiBridge.stop();homeHandler.removeCallbacks(openHomeAfterTap);if(geckoActive)closeGecko();hideHome();content.removeAllViews();homeTabs.clear();if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);for(WebView w:tabs)w.destroy();super.onDestroy();}
 }
