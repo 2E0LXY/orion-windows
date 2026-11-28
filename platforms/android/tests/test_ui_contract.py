@@ -6,6 +6,7 @@ APP = pathlib.Path(__file__).resolve().parents[1]
 SOURCE = (APP / "app/src/main/java/uk/community/orion/MainActivity.java").read_text(encoding="utf-8")
 DNS = (APP / "app/src/main/java/uk/community/orion/DnsSettings.java").read_text(encoding="utf-8")
 MANIFEST = (APP / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
+WEATHER = (APP / "app/src/main/java/uk/community/orion/HomeWeather.java").read_text(encoding="utf-8")
 
 
 def method(name, next_name):
@@ -66,27 +67,35 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('TRR_MODE_ONLY', DNS)
         self.assertIn('TRR_MODE_FIRST', DNS)
 
-    def test_startup_not_restricted_to_first_activity_state(self):
+    def test_boot_overlay_is_completely_removed(self):
+        self.assertNotIn("showStartup()", SOURCE)
+        self.assertNotIn("StartupView", SOURCE)
+        self.assertNotIn("Replay boot animation", SOURCE)
+        self.assertNotIn("Replay launch animation", SOURCE)
         oncreate = method("public void onCreate(Bundle b)", "String installedVersion()")
-        self.assertIn("newTab();showStartup();", oncreate)
-        self.assertNotIn("if(b==null)showStartup()", oncreate)
+        self.assertIn("newTab();", oncreate)
+        self.assertNotIn("newTab();showStartup();", oncreate)
 
-    def test_boot_logo_has_real_animation_and_reduced_motion(self):
-        start = method("void showStartup()", "class StartupView")
-        self.assertIn("ValueAnimator.areAnimatorsEnabled()", start)
-        self.assertIn("splash.firstFrame=", start)
-        self.assertIn("SystemClock.uptimeMillis()", start)
-        self.assertIn("motion?5000L:1800L", start)
-        self.assertIn("splash.postOnAnimation(this)", start)
-        self.assertIn("elapsed>=duration", start)
-        self.assertIn("splash.isAttachedToWindow()", start)
-        self.assertIn("splash.invalidate()", start)
-        splash = method("class StartupView extends View", "int dp(float n)")
-        self.assertIn('c.drawText("Orion"', splash)
-        self.assertIn('c.drawText("COMMUNITY BROWSER"', splash)
-        self.assertIn("Math.cos(angle)", splash)
-        self.assertIn("if(firstFrame!=null)", splash)
-        self.assertIn("phase*Math.PI*6", splash)
+    def test_shared_native_home_weather_card(self):
+        home = method("void showHome(boolean gecko)", "class GeckoMark")
+        self.assertIn("HomeWeather.attach(this,column)", home)
+        self.assertIn('title.setText("Orion")', home)
+        self.assertIn('powered.setText("Powered by GeckoView")', home)
+        self.assertIn("homeWeather.dispose()", SOURCE)
+        self.assertIn("HomeWeather.settings(this)", SOURCE)
+        self.assertIn("if(code==HomeWeather.LOCATION_REQUEST)", SOURCE)
+        self.assertIn("requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}", WEATHER)
+        self.assertIn("LocationManager.NETWORK_PROVIDER", WEATHER)
+        self.assertIn("Choose a town", WEATHER)
+        self.assertIn("geocoding-api.open-meteo.com", WEATHER)
+        self.assertIn("api.open-meteo.com/v1/ecmwf", WEATHER)
+        self.assertIn("forecast_days=5", WEATHER)
+        self.assertIn("timeformat=unixtime", WEATHER)
+        self.assertIn("CACHE_TTL_MS=90L*60*1000", WEATHER)
+        self.assertIn("ECMWF IFS", WEATHER)
+        self.assertIn("static final class WeatherIcon extends View", WEATHER)
+        self.assertIn("Math.round(location.getLatitude()*100.0)/100.0", WEATHER)
+        self.assertIn("void dispose()", WEATHER)
 
     def test_gecko_permissions_are_connected_and_described(self):
         gecko = method("void openGecko()", "void closeGecko()")
@@ -149,10 +158,10 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn("loadGeckoUrl(url)", navigate)
         self.assertIn("loadWebUrl(current(),url)", navigate)
 
-    def test_shared_menu_and_replay(self):
+    def test_shared_menu_without_replay(self):
         menu = method("void menu()", "void downloadPage(")
         self.assertIn('geckoActive?new String[]{', menu)
-        self.assertIn("Replay boot animation", menu)
+        self.assertNotIn("Replay boot animation", menu)
         self.assertIn("sitePermissions()", menu)
         self.assertIn("readingList()", menu)
 
