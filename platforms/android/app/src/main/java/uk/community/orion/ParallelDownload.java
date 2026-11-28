@@ -17,6 +17,8 @@ final class ParallelDownload {
  static volatile State state;
  static final class State {
   final String name;
+  final String url;
+  volatile String error="";
   final AtomicBoolean cancelled=new AtomicBoolean();
   final AtomicLong done=new AtomicLong();
   final AtomicLongArray segmentBytes=new AtomicLongArray(4);
@@ -24,7 +26,7 @@ final class ParallelDownload {
   volatile double bytesPerSecond=0;
   volatile String status="Checking server support";
   volatile boolean finished=false,success=false;
-  State(String n){name=n;}
+  State(String n,String u){name=n;url=u;}
  }
  static State snapshot(){return state;}
  static void cancel(){State s=state;if(s!=null&&!s.finished)s.cancelled.set(true);}
@@ -38,7 +40,7 @@ final class ParallelDownload {
  static void start(Activity a,String url,String name,Fallback fallback){
   if(Build.VERSION.SDK_INT<29||!"https".equalsIgnoreCase(android.net.Uri.parse(url).getScheme())){fallback.run();return;}
   if(!busy.compareAndSet(false,true)){Toast.makeText(a,"A parallel download is already running",Toast.LENGTH_SHORT).show();return;}
-  final State transfer=new State(name);
+  final State transfer=new State(name,url);
   state=transfer;
   Toast.makeText(a,"Download started · swipe up on the bottom toolbar for progress",Toast.LENGTH_LONG).show();
   new Thread(()->{
@@ -88,19 +90,20 @@ final class ParallelDownload {
     }
     values.clear();values.put(MediaStore.Downloads.IS_PENDING,0);a.getContentResolver().update(output,values,null,null);success=true;
    }catch(Exception e){
+    transfer.error=e.getClass().getSimpleName()+": "+(e.getMessage()==null?"transfer interrupted":e.getMessage());
     if(output!=null)a.getContentResolver().delete(output,null,null);
    }finally{
     if(pool!=null){pool.shutdownNow();try{pool.awaitTermination(25,TimeUnit.SECONDS);}catch(InterruptedException ignored){Thread.currentThread().interrupt();}}
     if(temp!=null)temp.delete();
-    boolean fallbackNeeded=!eligible&&!transfer.cancelled.get();
+    boolean fallbackNeeded=!success&&!transfer.cancelled.get();
     transfer.success=success;
     transfer.finished=true;
-    transfer.status=success?"Complete":transfer.cancelled.get()?"Cancelled":fallbackNeeded?"Switching to system downloader":"Failed · retry using standard download";
+    transfer.status=success?"Complete":transfer.cancelled.get()?"Cancelled":fallbackNeeded?"Parallel failed · switching to standard download":"Failed";
     busy.set(false);
     final boolean ok=success;
     a.runOnUiThread(()->{
      if(a.isFinishing()||a.isDestroyed())return;
-     if(fallbackNeeded)fallback.run();
+     if(fallbackNeeded){try{fallback.run();}catch(Exception e){transfer.status="Automatic fallback failed · retry manually";transfer.error=e.getClass().getSimpleName();}}
      else Toast.makeText(a,ok?"Download complete":transfer.cancelled.get()?"Download cancelled":"Parallel download failed; retry with standard download",Toast.LENGTH_LONG).show();
     });
    }
