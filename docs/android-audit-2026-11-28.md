@@ -30,6 +30,14 @@ Reviewed the current Android development branch `chatgpt/geckoview-home-splash`:
 
 Disabled does **not** mean broken: a feature can be on the roadmap but have no working implementation. Conversely, features implemented in source may still require a device acceptance test.
 
+## Extended audit findings and build hardening
+
+- **Bookmark import bug (MEDIUM):** `BookmarkImporter` stripped the literal characters `\\uFEFF`, not the actual UTF-8 BOM character. UTF-8 BOM-prefixed HTML and JSON exports could be rejected. The BOM conversion was corrected and a source regression guard added.
+- **Android Lint (24 errors observed):** Existing Java files used 17 raw `setOrientation(1)` calls and seven raw `Toast.makeText(..., 0)` duration values; Android Lint identified these as `WrongConstant` errors. All were replaced with `LinearLayout.VERTICAL` and `Toast.LENGTH_SHORT` respectively, with static regression checks. Green compilation does not imply green Lint; verify the latest CI run.
+- **Android data extraction (security hardening):** The manifest already disabled backup, but did not define Android 12+ extraction rules. Added explicit cloud-backup and device-transfer exclusions for local browser data, credentials and preferences. Real-device data-transfer tests remain **UNVERIFIED**.
+- **Android Lint CI:** `lintDebug` is now an enforced APK gate before packaging/release. The workflow also prints its report on failure; no Lint errors are suppressed or baselined.
+- **Nonblocking Lint warnings:** Initial lint surfaced 50 warnings, mostly non-localised hard-coded labels, plus touch accessibility, view allocation, old target SDK, ChromeOS ABI scope and WebView JavaScript security caution. These remain to be addressed or deliberately documented by their appropriate release gate; do not claim a warning-free build.
+
 ## Other limitations / remaining risk (not represented as verified fixes)
 
 1. **WebView vs GeckoView:** UI parity is partial. WebView caching, JavaScript/image controls, reader, print, ad-filter interception and cookie import do not automatically apply to GeckoView. Feature labels must state scope.
