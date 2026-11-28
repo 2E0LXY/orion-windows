@@ -6,6 +6,12 @@ Experimental **native Java** Android browser combining **Android System WebView*
 
 **Android 8.0+ (API 26)** · **ARM64 development APKs** · **Draft [PR #3](https://github.com/2E0LXY/orion-windows/pull/3)** · [Root README](../../README.md) · [Android roadmap](ROADMAP.md)
 
+## Android default browser and AI control
+
+**Default browser (development branch):** Settings → General → Default browser opens Android's system-managed browser-role prompt (Android 10+) or the default-apps settings screen on older devices. Orion advertises HTTP and HTTPS `VIEW` intents, accepts shared external website links on launch and while running, validates schemes, and closes an Incognito GeckoView session before opening a normal external link. Android retains the final choice. This has not yet been checked on a physical device.
+
+**Orion AI Connect is not connected.** Its settings entry remains disabled. The adjacent security-plan entry explains the intended opt-in permissions. No MCP endpoint, token pairing, remote navigation, page extraction, screenshots, click control, downloads, or ChatGPT/Claude/Gemini connection is present in this build. Those must not be advertised as working until implemented and tested. Private browsing and stored credentials must stay outside a future remote-control interface.
+
 ## Download and install
 
 **[Download the latest Orion Android ARM64 APK directly](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — a standalone APK file with **no ZIP extraction** after the first successful direct-release CI run. The [Actions history](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) shows source tests, Gradle compilation and release status.
