@@ -37,7 +37,7 @@ type Server struct {
 	DB              *sql.DB
 	Verifier        *Verifier
 	Now             func() time.Time
-	EnableSensitive bool // server switch; a device must also be paired (pairing arrives in a later phase)
+	EnableSensitive bool // server switch; a device must also declare client-side encryption at login
 	limiter         *limiter
 }
 
@@ -100,6 +100,13 @@ func decode(w http.ResponseWriter, r *http.Request, v any) bool {
 	return true
 }
 
+func b2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 func randomToken(n int) string {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
@@ -118,6 +125,9 @@ type loginReq struct {
 		Name     string `json:"name"`
 		Platform string `json:"platform"`
 		PubKey   string `json:"pubkey"`
+		// Encrypted: the client holds the account data key (fetched from the user's own Google Drive app-data folder)
+		// and encrypts every record before upload. The server cannot verify this; it only gates the sensitive categories.
+		Encrypted bool `json:"encrypted"`
 	} `json:"device"`
 }
 
@@ -169,7 +179,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	deviceID := randomToken(12)
-	if _, err := tx.Exec(`INSERT INTO devices(id,account,name,platform,pubkey,created,last_seen) VALUES(?,?,?,?,?,?,?)`, deviceID, account, d.Name, d.Platform, d.PubKey, now, now); err != nil {
+	if _, err := tx.Exec(`INSERT INTO devices(id,account,name,platform,pubkey,paired,created,last_seen) VALUES(?,?,?,?,?,?,?,?)`, deviceID, account, d.Name, d.Platform, d.PubKey, b2i(d.Encrypted), now, now); err != nil {
 		fail(w, 500, "server error")
 		return
 	}

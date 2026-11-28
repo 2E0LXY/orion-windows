@@ -177,7 +177,7 @@ func TestCategoryRules(t *testing.T) {
 			t.Errorf("unknown category: %d", c)
 		}
 		for _, cat := range []string{"passwords", "cookies"} {
-			// Unpaired device: forbidden even when the server switch is on.
+			// Device not declaring client-side encryption: forbidden even when the server switch is on.
 			if c, _ := e.do("PUT", "/v1/sync/"+cat, s, put("x", 1)); c != 403 {
 				t.Errorf("%s sensitive=%v: %d want 403", cat, sensitive, c)
 			}
@@ -185,9 +185,19 @@ func TestCategoryRules(t *testing.T) {
 	}
 	e := newEnv(t, true)
 	s, dev := e.login("u")
-	e.srv.DB.Exec(`UPDATE devices SET paired=1 WHERE id=?`, dev)
-	if c, _ := e.do("PUT", "/v1/sync/passwords", s, put("x", 1)); c != 200 {
-		t.Errorf("paired device with sensitive enabled should be allowed: %d", c)
+	_ = dev
+	if c, _ := e.do("PUT", "/v1/sync/passwords", s, put("x", 1)); c != 403 {
+		t.Errorf("device not declaring encryption must be refused: %d", c)
+	}
+	n := "nonce-eeeeeeeeeeeeeeee"
+	code, out := e.do("POST", "/v1/auth/google", "", map[string]any{"id_token": e.idToken("u", n, nil, "RS256", e.key), "nonce": n, "device": map[string]any{"name": "enc", "platform": "android", "encrypted": true}})
+	if code != 200 {
+		t.Fatalf("login: %d", code)
+	}
+	for _, cat := range []string{"passwords", "cookies"} {
+		if c, _ := e.do("PUT", "/v1/sync/"+cat, out["session"].(string), put("x", 1)); c != 200 {
+			t.Errorf("%s with encrypted device and sensitive enabled should be allowed: %d", cat, c)
+		}
 	}
 }
 
