@@ -15,7 +15,7 @@ import java.util.*;
 public class MainActivity extends Activity {
  final ArrayList<WebView> tabs=new ArrayList<>();
  static final int BOOKMARK_IMPORT_REQUEST=807, PASSWORD_IMPORT_REQUEST=808, PASSWORD_EXPORT_REQUEST=809, COOKIE_IMPORT_REQUEST=810, DNS_VPN_REQUEST=811;
- LinearLayout root, bar, navigation, tabletTabs; FrameLayout content, homeOverlay; HomeWeather homeWeather; EditText address; Button count; ProgressBar progress; Button back,forward; int selected=-1;
+ LinearLayout root, bar, navigation, tabletTabs; FrameLayout content, homeOverlay; HomeWeather homeWeather; EditText address; Button count; ProgressBar progress; Button back,forward; TextView aiBanner; int selected=-1;
  final Set<WebView> homeTabs=Collections.newSetFromMap(new IdentityHashMap<WebView,Boolean>());
  @Override public void onCreate(Bundle b){super.onCreate(b);AdBlocker.load(this,getPreferences(0));
  getWindow().setStatusBarColor(0xff171d28);getWindow().setNavigationBarColor(0xff171d28);
@@ -30,6 +30,14 @@ public class MainActivity extends Activity {
  address.setOnEditorActionListener((v,a,e)->{if(a==EditorInfo.IME_ACTION_GO){submit();return true;}return false;});
  button("go","Open address",()->submit(),false);
  navigation=new LinearLayout(this);navigation.setGravity(Gravity.CENTER_VERTICAL);root.addView(navigation,new LinearLayout.LayoutParams(-1,dp(56)));bar=navigation;
+ aiBanner=new TextView(this);
+ aiBanner.setText("AI SHARING ACTIVE · TAP TO DISCONNECT");
+ aiBanner.setTextSize(14);aiBanner.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
+ aiBanner.setTextColor(0xffffffff);aiBanner.setGravity(Gravity.CENTER);
+ aiBanner.setBackground(round(0xff22537c,8));aiBanner.setMinHeight(dp(48));
+ aiBanner.setContentDescription("AI sharing is active. Tap to disconnect or manage permissions");
+ aiBanner.setOnClickListener(v->aiConnectSettings());
+ aiBanner.setVisibility(View.GONE);root.addView(aiBanner,new LinearLayout.LayoutParams(-1,dp(48)));
  back=button("back","Back",()->{if(geckoActive)geckoGoBack();else if(current().canGoBack())current().goBack();},true);
  forward=button("forward","Forward",()->{if(geckoActive)geckoGoForward();else if(current().canGoForward())current().goForward();},true);
  Button homeButton=button("home","Home. Hold to save current page; triple tap to reset",()->homeTap(),true);homeButton.setOnLongClickListener(v->{saveCurrentHomepage();return true;});count=button("tabs","Switch tabs",()->chooseTab(),true);button("menu","Browser menu",()->menu(),true);Button orionSecurity=button("orion","Orion security and privacy",()->securityPrivacy(),true);Drawable officialOrion=getDrawable(R.drawable.orion_icon);if(officialOrion!=null){officialOrion.setBounds(0,0,dp(24),dp(24));orionSecurity.setCompoundDrawables(null,officialOrion,null,null);}updateToolbar();tabletTabs=new LinearLayout(this);root.addView(tabletTabs,0,new LinearLayout.LayoutParams(-1,dp(48)));tabletTabs.setVisibility(View.GONE);
@@ -74,6 +82,12 @@ public class MainActivity extends Activity {
   }
  }
  OrionAiBridge aiBridge;
+ void updateAiBanner(){
+  if(aiBanner==null)return;
+  boolean active=aiBridge!=null&&aiBridge.running();
+  aiBanner.setVisibility(active?View.VISIBLE:View.GONE);
+  if(active)aiBanner.setText("AI SHARING ACTIVE · TAP TO DISCONNECT");
+ }
  boolean aiInForeground=false;
  @Override protected void onStart(){super.onStart();aiInForeground=true;}
  @Override protected void onStop(){aiInForeground=false;super.onStop();}
@@ -89,6 +103,7 @@ public class MainActivity extends Activity {
  void aiConnectSettings(){
   if(aiBridge==null)aiBridge=new OrionAiBridge(this,new OrionAiBridge.Host(){
    @Override public boolean canControl(){return aiCanControl();}
+   @Override public void onStatusChanged(){updateAiBanner();}
    @Override public String describePage(){return aiPageInfo();}
    @Override public String currentUrl(){return geckoActive?geckoAddress:selected>=0?current().getUrl():"";}
    @Override public void openUrl(String url){if(!geckoIncognito&&aiCanControl())navigate(url);}
@@ -111,10 +126,10 @@ public class MainActivity extends Activity {
   if(!aiBridge.running()){
    settingRow(items,"Start AI sharing","Local device only · expires after 15 minutes · confirm every action",()->{
     if(geckoIncognito){Toast.makeText(this,"Close Incognito before sharing",Toast.LENGTH_LONG).show();return;}
-    aiBridge.start();dialog.dismiss();aiConnectSettings();
+    aiBridge.start();updateAiBanner();dialog.dismiss();aiConnectSettings();
    });
   }else{
-   settingRow(items,"Stop and disconnect","Revoke the active token immediately",()->{aiBridge.stop();dialog.dismiss();aiConnectSettings();});
+   settingRow(items,"Stop and disconnect","Revoke the active token immediately",()->{aiBridge.stop();updateAiBanner();dialog.dismiss();aiConnectSettings();});
    section(items,"PAIRING");
    settingRow(items,"Connection address","http://127.0.0.1:"+aiBridge.port()+"/mcp",()->{});
    settingRow(items,"Copy session token","Secret: share only with a trusted local MCP client",()->{
@@ -209,7 +224,7 @@ public class MainActivity extends Activity {
 
  void openGecko(){openGecko(false);}
  void openIncognito(){
-  if(aiBridge!=null)aiBridge.stop();
+  if(aiBridge!=null)aiBridge.stop();updateAiBanner();
   if(geckoActive){closeGecko();}
   openGecko(true);
  }
