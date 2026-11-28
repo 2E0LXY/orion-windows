@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
  navigation=new LinearLayout(this);navigation.setGravity(Gravity.CENTER_VERTICAL);root.addView(navigation,new LinearLayout.LayoutParams(-1,dp(56)));bar=navigation;
  back=button("back","Back",()->{if(geckoActive)geckoGoBack();else if(current().canGoBack())current().goBack();},true);
  forward=button("forward","Forward",()->{if(geckoActive)geckoGoForward();else if(current().canGoForward())current().goForward();},true);
- button("home","Home",()->homeActive(),true);count=button("tabs","Switch tabs",()->chooseTab(),true);button("menu","Browser menu",()->menu(),true);updateToolbar();tabletTabs=new LinearLayout(this);root.addView(tabletTabs,0,new LinearLayout.LayoutParams(-1,dp(48)));tabletTabs.setVisibility(View.GONE);
+ Button homeButton=button("home","Home. Hold to save current page; triple tap to reset",()->homeTap(),true);homeButton.setOnLongClickListener(v->{saveCurrentHomepage();return true;});count=button("tabs","Switch tabs",()->chooseTab(),true);button("menu","Browser menu",()->menu(),true);updateToolbar();tabletTabs=new LinearLayout(this);root.addView(tabletTabs,0,new LinearLayout.LayoutParams(-1,dp(48)));tabletTabs.setVisibility(View.GONE);
  address.setOnTouchListener(new View.OnTouchListener(){float x,y;public boolean onTouch(View v,android.view.MotionEvent e){if(!getPreferences(0).getBoolean("tab_swipe",true))return false;if(e.getActionMasked()==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();}if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(e.getX()-x)>dp(80)&&Math.abs(e.getY()-y)<dp(40)&&tabs.size()>1){show((selected+(e.getX()>x?-1:1)+tabs.size())%tabs.size());return true;}return false;}});setContentView(root);root.requestApplyInsets();newTab();showStartup();
  }
  String installedVersion(){try{android.content.pm.PackageInfo p=getPackageManager().getPackageInfo(getPackageName(),0);return "Version "+p.versionName+" · Build "+(Build.VERSION.SDK_INT>=28?p.getLongVersionCode():p.versionCode);}catch(Exception e){return "Version unavailable";}}
@@ -230,7 +230,26 @@ public class MainActivity extends Activity {
  void geckoGoBack(){if(geckoSession!=null&&geckoCanGoBack)geckoSession.goBack();}
  void geckoGoForward(){if(geckoSession!=null&&geckoCanGoForward)geckoSession.goForward();}
  void reloadActive(){if(geckoActive&&geckoSession!=null)geckoSession.reload();else current().reload();}
- void homeActive(){if(geckoActive&&geckoSession!=null){geckoAddress="";showHome(true);}else home(current());}
+ private static final String PREF_HOMEPAGE="custom_homepage";
+ private final Handler homeHandler=new Handler(Looper.getMainLooper());
+ private int homeTapCount=0;
+ private final Runnable openHomeAfterTap=()->{homeTapCount=0;if(!isFinishing()&&!isDestroyed())homeActive();};
+ void homeTap(){
+  homeHandler.removeCallbacks(openHomeAfterTap);
+  if(++homeTapCount>=3){
+   homeTapCount=0;getPreferences(0).edit().remove(PREF_HOMEPAGE).apply();
+   originalHome();Toast.makeText(this,"Orion homepage restored",Toast.LENGTH_SHORT).show();
+  }else homeHandler.postDelayed(openHomeAfterTap,350);
+ }
+ void saveCurrentHomepage(){
+  homeHandler.removeCallbacks(openHomeAfterTap);homeTapCount=0;
+  String url=homeOverlay!=null?"":(geckoActive?geckoAddress:(selected>=0?current().getUrl():""));
+  if(!allowed(url)){Toast.makeText(this,"Open a website before saving a homepage",Toast.LENGTH_SHORT).show();return;}
+  getPreferences(0).edit().putString(PREF_HOMEPAGE,url).apply();
+  Toast.makeText(this,"Homepage saved",Toast.LENGTH_SHORT).show();
+ }
+ void homeActive(){String url=getPreferences(0).getString(PREF_HOMEPAGE,"");if(allowed(url))navigate(url);else originalHome();}
+ void originalHome(){if(geckoActive&&geckoSession!=null){geckoAddress="";showHome(true);}else home(current());}
  void hideHome(){
   if(homeOverlay!=null){
    if(homeOverlay.getParent() instanceof ViewGroup)((ViewGroup)homeOverlay.getParent()).removeView(homeOverlay);
@@ -465,5 +484,5 @@ public class MainActivity extends Activity {
  void privacy(){new AlertDialog.Builder(this).setTitle("Privacy protections").setMessage("HTTPS is preferred, but HTTP remains available after a warning. HTTP is unencrypted. WebView blocks third-party cookies; GeckoView uses its own cookie controls. Camera, microphone and location choices apply to secure HTTPS sites in both engines and require Android system permissions. GeckoView notification requests are blocked in this test build. No app telemetry. Isolated private browsing is not implemented.").setNeutralButton("Site permissions",(d,i)->sitePermissions()).setPositiveButton("OK",null).show();}
  void clearBrowsingData(){new AlertDialog.Builder(this).setTitle("Clear browsing data?").setMessage("Remove cookies, website storage, cache and tab history. This may sign you out of websites. Bookmarks are retained.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,i)->{CookieManager.getInstance().removeAllCookies(v->CookieManager.getInstance().flush());WebStorage.getInstance().deleteAllData();for(WebView w:tabs){w.clearCache(true);w.clearHistory();w.clearFormData();}Toast.makeText(this,"Browsing data cleared",0).show();}).show();}
  @Override public void onBackPressed(){if(address.hasFocus()){address.clearFocus();return;}if(geckoActive){if(geckoCanGoBack)geckoGoBack();else closeGecko();return;}if(selected>=0&&current().canGoBack()){current().goBack();return;}super.onBackPressed();}
- @Override protected void onDestroy(){if(geckoActive)closeGecko();hideHome();content.removeAllViews();homeTabs.clear();for(WebView w:tabs)w.destroy();super.onDestroy();}
+ @Override protected void onDestroy(){homeHandler.removeCallbacks(openHomeAfterTap);if(geckoActive)closeGecko();hideHome();content.removeAllViews();homeTabs.clear();for(WebView w:tabs)w.destroy();super.onDestroy();}
 }
