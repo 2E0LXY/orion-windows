@@ -10,11 +10,24 @@ Experimental **native Java** Android browser combining **Android System WebView*
 
 **Default browser (development branch):** Settings → General → Default browser opens Android's system-managed browser-role prompt (Android 10+) or the default-apps settings screen on older devices. Orion advertises HTTP and HTTPS `VIEW` intents, accepts shared external website links on launch and while running, validates schemes, and closes an Incognito GeckoView session before opening a normal external link. Android retains the final choice. This has not yet been checked on a physical device.
 
-**Orion AI Connect (experimental local MCP):** Settings → AI Control → Orion AI Connect. Start sharing on the Android device, copy the temporary bearer token and pair a **trusted client running on that same device** with \`http://127.0.0.1:18796/mcp\`. It is disabled by default and accepts only local loopback connections. The token expires after 15 minutes; Stop and disconnect revokes it immediately. The app asks for user approval on each request. Entering Incognito disconnects AI sharing, and the browser refuses requests while it is private or not in the foreground.
+**Orion AI Connect (experimental local MCP):** Settings → AI Control → Orion AI Connect, or Orion security icon → AI Sharing. Start sharing on the Android device, then copy its temporary bearer token. The bridge listens at \`http://127.0.0.1:18796/mcp\` on this device **only**, never on the local network. The 256-bit token expires after 15 minutes; Stop and disconnect immediately revokes it. All tool calls require individual approval on the phone and are denied if Orion is not visible or Incognito is open. Entering Incognito stops the session. The bottom browser toolbar shows a persistent AI-sharing indicator while connected.
 
-Current MCP operations: \`initialize\`, \`ping\`, \`tools/list\`, \`tools/call\` with tools \`browser_info\` (title and URL) and \`navigate\` (HTTPS only). Page body reading, screenshots, clicking, typing, downloads and other actions remain disabled. **The browser does not connect to ChatGPT, Claude or Gemini automatically.** Each service needs a compatible trusted MCP client or an explicit secure bridge; the loopback address is not reachable directly from another computer or cloud service. The session-token clipboard is sensitive. No passwords, cookies or private pages are exposed.
+MCP methods include \`initialize\`, \`ping\`, \`notifications/initialized\`, \`tools/list\` and \`tools/call\`. Available user-approved tools are \`browser_info\`, \`tabs\`, \`navigate\` (HTTPS only), \`back\`, \`forward\`, \`reload\`, \`page_text\`, \`scroll\`, \`click\`, and \`type\`. Text reading and direct page interactions only work in **normal WebView**, not GeckoView. The click tool blocks form controls and form descendants; typing blocks password and other sensitive field types, and does not submit a form. All operations are experimental and require real-device validation. Screenshots, automated form submission, file downloads, cookies and password extraction are not supported.
 
-These controls are experimental and await real-device security/UX testing. Avoid treating a localhost MCP listener as authenticated remote access from the internet.
+**Sharing with installed ChatGPT, Claude, Gemini or other Android apps:** Orion security icon → AI Sharing → **Share current page with an AI app** opens Android's share chooser with only the normal tab's page title and URL. This is a one-way share action, not a remote-control connection; Incognito pages cannot be shared.
+
+**Connecting an AI controller:** A compatible MCP client on the Android device can POST JSON-RPC to the local address using \`Authorization: Bearer <temporary token>\`. For a developer-controlled desktop connection, Android Debug Bridge port forwarding can be configured on an explicitly authorised device (\`adb forward tcp:18796 tcp:18796\`); then the client's localhost requests reach the phone through USB. This does **not** make the service publicly reachable. Browser-based MCP clients are blocked by Origin checks. Direct cloud-hosted ChatGPT, Claude and Gemini connections are **not implemented**: each needs a compatible secured relay and provider-specific integration, with authentication, revocation and policy review. Do not paste the session token into an AI conversation or expose the loopback service through a public tunnel.
+
+To confirm the MCP schema from a trusted client on the same device, use a local terminal with a temporary token:
+
+\`\`\`sh
+curl -sS http://127.0.0.1:18796/mcp \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $ORION_SESSION_TOKEN" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+\`\`\`
+
+This local API and its foreground approval dialogs still require install, security and usability tests on a real Android device. The existing Android CI checks are not a substitute for those tests.
 
 ## Download and install
 
