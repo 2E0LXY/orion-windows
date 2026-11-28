@@ -834,6 +834,7 @@ public class MainActivity extends Activity {
   win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
   refreshHandler.post(refresh[0]);
  }
+ @androidx.annotation.OptIn(markerClass=org.mozilla.geckoview.ExperimentalGeckoViewApi.class)
  void geckoReaderMode(){
   if(geckoSession==null||!geckoActive||!allowed(geckoAddress))return;
   final org.mozilla.geckoview.GeckoSession session=geckoSession;
