@@ -26,10 +26,12 @@ class DefaultBrowserContracts(unittest.TestCase):
         self.assertIn('ACTION_MANAGE_DEFAULT_APPS_SETTINGS', SOURCE)
         self.assertIn('settingRow(panel,"Default browser"', SOURCE)
 
-    def test_ai_control_not_misrepresented_as_functional(self):
-        self.assertIn('disabledSettingRow(panel,"Orion AI Connect"', SOURCE)
-        self.assertIn('No AI can read or operate Orion', SOURCE)
-        self.assertNotIn('new java.net.ServerSocket(', SOURCE)
+    def test_ai_control_is_opt_in_with_explicit_capabilities(self):
+        self.assertIn('settingRow(panel,"Orion AI Connect"',SOURCE)
+        self.assertIn('void aiConnectSettings()',SOURCE)
+        self.assertIn('if(geckoIncognito){Toast.makeText(this,"Close Incognito before sharing"',SOURCE)
+        self.assertIn('disabledSettingRow(items,"Read webpage content"',SOURCE)
+        self.assertIn('disabledSettingRow(items,"Click, type, screenshots, downloads"',SOURCE)
 
 if __name__ == "__main__":
     unittest.main()
