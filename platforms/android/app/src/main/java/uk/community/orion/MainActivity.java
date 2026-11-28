@@ -190,7 +190,7 @@ public class MainActivity extends Activity {
      if(geckoActive&&geckoSession==sess){geckoAddress=url;progress.setProgress(0);progress.setVisibility(View.VISIBLE);if(!address.hasFocus())address.setText(url);}
     }
     @Override public void onPageStop(org.mozilla.geckoview.GeckoSession sess,boolean success){
-     if(geckoActive&&geckoSession==sess){progress.setProgress(100);progress.setVisibility(View.INVISIBLE);}
+     if(geckoActive&&geckoSession==sess){progress.setProgress(100);progress.setVisibility(View.INVISIBLE);if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);}
     }
    });
    geckoIncognito=incognito;
