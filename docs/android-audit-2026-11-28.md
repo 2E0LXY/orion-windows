@@ -30,6 +30,12 @@ Reviewed the current Android development branch `chatgpt/geckoview-home-splash`:
 
 Disabled does **not** mean broken: a feature can be on the roadmap but have no working implementation. Conversely, features implemented in source may still require a device acceptance test.
 
+## Subsequent cookie lifecycle corrections
+
+- **Clear browser data:** Android cookie deletion is asynchronous. Orion previously displayed “cleared” immediately after scheduling deletion. The completion message now waits for the cookie-removal callback and flushes the cookie manager.
+- **Import cookies:** WebView `setCookie` with callbacks is asynchronous. Orion previously flushed and displayed success immediately after scheduling writes. Import now tracks acknowledged set-cookie callbacks, flushes once all complete and reports `accepted / requested` rather than implying every cookie was stored.
+- Both changes have source regression coverage. **Real-device cookie persistence and process-restart behaviour remain UNVERIFIED.**
+
 ## Extended audit findings and build hardening
 
 - **Bookmark import bug (MEDIUM):** `BookmarkImporter` stripped the literal characters `\\uFEFF`, not the actual UTF-8 BOM character. UTF-8 BOM-prefixed HTML and JSON exports could be rejected. The BOM conversion was corrected and a source regression guard added.
