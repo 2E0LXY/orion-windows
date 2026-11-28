@@ -80,14 +80,16 @@ final class DnsSettings {
   String active=endpoint(prefs);
   boolean gecko=validDoh(active);
   a.settingRow(body,"Selected: "+NAMES[p],gecko?"GeckoView uses encrypted DNS-over-HTTPS":"GeckoView uses Android system DNS",()->{dialog.dismiss();chooseProvider(a);});
-  a.settingRow(body,"GeckoView DNS fallback",prefs.getBoolean(PREF_FALLBACK,false)?"System fallback on lookup failure":"Strict encrypted DNS (no system fallback)",()->{
+  if(!gecko)a.disabledSettingRow(body,"GeckoView DNS fallback","Available only when an encrypted DoH resolver is selected");
+   else a.settingRow(body,"GeckoView DNS fallback",prefs.getBoolean(PREF_FALLBACK,false)?"System fallback on lookup failure":"Strict encrypted DNS (no system fallback)",()->{
    boolean current=prefs.getBoolean(PREF_FALLBACK,false);
    new AlertDialog.Builder(a).setTitle("GeckoView fallback").setMessage("Strict: GeckoView name lookups fail if the selected DoH server is unavailable. Fallback: GeckoView may use Android system DNS if DoH cannot resolve a name. Local and managed networks may need system DNS.").setNegativeButton("Cancel",null).setNeutralButton("Strict",(d,i)->saveFallback(a,false)).setPositiveButton("Allow fallback",(d,i)->saveFallback(a,true)).show();
   });
   a.section(body,"WEBVIEW SECURE DNS — LOCAL VPN");
   boolean vpnActive=OrionDnsVpnService.active;
   String vpnStatus=vpnActive?OrionDnsVpnService.state:"Off · Android system DNS";
-  a.settingRow(body,"Local DNS VPN",vpnStatus,()->{dialog.dismiss();vpnSettings(a);});
+  if(!gecko&&!vpnActive)a.disabledSettingRow(body,"Local DNS VPN","Choose an encrypted DoH provider first");
+   else a.settingRow(body,"Local DNS VPN",vpnStatus,()->{dialog.dismiss();vpnSettings(a);});
   TextView vpnNote=new TextView(a);vpnNote.setText("Optional for WebView. Android will request VPN permission. Only Orion is included; normal web traffic is not routed through the VPN. It may replace your current VPN, and device Private DNS or WebView encrypted DNS can affect results. Requires real-device verification.");vpnNote.setTextSize(14);vpnNote.setTextColor(0xffb9c6da);vpnNote.setLineSpacing(a.dp(4),1f);vpnNote.setPadding(a.dp(16),a.dp(8),a.dp(16),a.dp(12));body.addView(vpnNote);
   a.section(body,"ANDROID WEBVIEW");
   a.settingRow(body,"System Private DNS","WebView follows Android settings. Orion cannot override WebView DNS.",()->openPrivateDns(a));
@@ -96,7 +98,8 @@ final class DnsSettings {
   a.settingRow(body,"Network IP support","View Android's actual IPv4/IPv6 addresses and DNS servers",()->{dialog.dismiss();networkDetails(a);});
   a.settingRow(body,"Test IPv4 and IPv6","Measure selected resolver DNS response on each IP family",()->{dialog.dismiss();testNetwork(a);});
   a.section(body,"DNS TEST");
-  a.settingRow(body,"Test selected DoH server",gecko?active:"Select a DoH provider first",()->{dialog.dismiss();testDns(a);});
+  if(!gecko)a.disabledSettingRow(body,"Test selected DoH server","Select a DoH provider to enable this test");
+   else a.settingRow(body,"Test selected DoH server",active,()->{dialog.dismiss();testDns(a);});
   a.settingRow(body,"Resolver details","View IPv4, IPv6, DoH and Android Private DNS hostname",()->{dialog.dismiss();providerDetails(a,provider(prefs));});
   TextView note=new TextView(a);note.setText("IPv4-only / IPv6-only forcing and per-WebView DNS are not available through the supported browser APIs. DNS tests check connectivity, not which resolver processed every website request.");note.setTextSize(13);note.setTextColor(0xffb9c6da);note.setPadding(a.dp(16),a.dp(24),a.dp(16),0);body.addView(note);
   dialog.setContentView(root);dialog.show();
