@@ -167,7 +167,9 @@ class OrionUiContract(unittest.TestCase):
 
     def test_orion_security_button_at_toolbar_right(self):
         oncreate = method("public void onCreate(Bundle b)", "String installedVersion()")
-        self.assertIn('button("menu","Browser menu",()->menu(),true);button("orion","Orion security and privacy",()->securityPrivacy(),true)', oncreate)
+        self.assertIn('Button orionSecurity=button("orion","Orion security and privacy",()->securityPrivacy(),true)', oncreate)
+        self.assertIn("getDrawable(R.drawable.orion_icon)", oncreate)
+        self.assertIn("orionSecurity.setCompoundDrawables(null,officialOrion,null,null)", oncreate)
         glyph = method("class Glyph extends Drawable", "void updateToolbar()")
         self.assertIn('case "orion":', glyph)
         panel = method("void securityPrivacy()", "void downloadPage(")
@@ -205,6 +207,11 @@ class OrionUiContract(unittest.TestCase):
         home = method("void showHome(boolean gecko)", "class GeckoMark")
         self.assertIn('if(!geckoIncognito)homeWeather=HomeWeather.attach(this,column)', home)
         self.assertIn('End Incognito session', home)
+        self.assertIn('if(geckoIncognito){originalHome();return;}', SOURCE)
+        self.assertIn('else homeTap();', SOURCE)
+        self.assertIn('shortcut.setOnLongClickListener(mode==0?', SOURCE)
+        self.assertIn('if(!geckoActive&&selected>=0&&v==current())', SOURCE)
+        self.assertIn('if(!geckoActive&&v==current())navigate(', SOURCE)
         info = method("void incognitoExplained()", "void securityPrivacy()")
         self.assertIn('internet provider', info)
         self.assertIn('fingerprinting', info)
