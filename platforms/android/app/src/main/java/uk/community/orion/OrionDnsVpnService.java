@@ -40,10 +40,10 @@ public final class OrionDnsVpnService extends VpnService {
   if(intent==null)return START_NOT_STICKY;
   if(ACTION_STOP.equals(intent.getAction())){shutdown();stopSelf();return START_NOT_STICKY;}
   if(!ACTION_START.equals(intent.getAction()))return START_NOT_STICKY;
+  createNotification();
   String uri=DnsSettings.endpoint(getSharedPreferences("MainActivity",MODE_PRIVATE));
   if(!DnsSettings.validDoh(uri)){state="Unavailable: select a supported DoH endpoint";shutdown();stopSelf();return START_NOT_STICKY;}
   shutdown();doh=uri;
-  createNotification();
   try{
    Builder builder=new Builder().setSession("Orion WebView Secure DNS").setMtu(1500)
     .addAddress("10.203.0.54",32).addDnsServer("10.203.0.53").addRoute("10.203.0.53",32)
@@ -95,7 +95,7 @@ public final class OrionDnsVpnService extends VpnService {
     if(reply!=null){synchronized(output){output.write(reply);}}
    }
   }catch(Exception e){if(running)state="DNS tunnel stopped: "+e.getClass().getSimpleName();}
-  finally{shutdown();stopSelf();}
+  finally{if(tunnel==fd){shutdown();stopSelf();}}
  }
  private byte[] resolve(byte[] query){
   if(query.length<12||query.length>4096||((query[2]&0x80)!=0))return null;
