@@ -84,6 +84,11 @@ final class DnsSettings {
    boolean current=prefs.getBoolean(PREF_FALLBACK,false);
    new AlertDialog.Builder(a).setTitle("GeckoView fallback").setMessage("Strict: GeckoView name lookups fail if the selected DoH server is unavailable. Fallback: GeckoView may use Android system DNS if DoH cannot resolve a name. Local and managed networks may need system DNS.").setNegativeButton("Cancel",null).setNeutralButton("Strict",(d,i)->saveFallback(a,false)).setPositiveButton("Allow fallback",(d,i)->saveFallback(a,true)).show();
   });
+  a.section(body,"WEBVIEW SECURE DNS — LOCAL VPN");
+  boolean vpnActive=OrionDnsVpnService.active;
+  String vpnStatus=vpnActive?OrionDnsVpnService.state:"Off · Android system DNS";
+  a.settingRow(body,"Local DNS VPN",vpnStatus,()->{dialog.dismiss();vpnSettings(a);});
+  TextView vpnNote=new TextView(a);vpnNote.setText("Optional for WebView. Android will request VPN permission. Only Orion is included; normal web traffic is not routed through the VPN. It may replace your current VPN, and device Private DNS or WebView encrypted DNS can affect results. Requires real-device verification.");vpnNote.setTextSize(14);vpnNote.setTextColor(0xffb9c6da);vpnNote.setLineSpacing(a.dp(4),1f);vpnNote.setPadding(a.dp(16),a.dp(8),a.dp(16),a.dp(12));body.addView(vpnNote);
   a.section(body,"ANDROID WEBVIEW");
   a.settingRow(body,"System Private DNS","WebView follows Android settings. Orion cannot override WebView DNS.",()->openPrivateDns(a));
   TextView expl=new TextView(a);expl.setText("Cloudflare is Orion's default GeckoView resolver. Android Private DNS is device-wide and must be configured in system settings. Network and device policies still apply.");expl.setTextSize(14);expl.setTextColor(0xffb9c6da);expl.setLineSpacing(a.dp(4),1f);expl.setPadding(a.dp(16),a.dp(8),a.dp(16),a.dp(8));body.addView(expl);
@@ -99,6 +104,26 @@ final class DnsSettings {
   root.setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());v.setPadding(b.left,b.top,b.right,b.bottom);}else v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
   root.requestApplyInsets();
  }
+ static void vpnSettings(MainActivity a){
+  boolean running=OrionDnsVpnService.active;
+  String endpoint=endpoint(a.getPreferences(0));
+  String selected=NAMES[provider(a.getPreferences(0))];
+  String message="Selected: "+selected+"\\n\\n"
+   +(running?"Current state: "+OrionDnsVpnService.state:"Current state: Off")+
+   "\\n\\nThis opt-in Android VPN captures DNS requests for Orion, forwards supported UDP DNS requests to the selected HTTPS resolver, and leaves normal internet traffic outside the VPN. The Android system shows a VPN icon. It can replace another VPN. It does not bypass device management or guarantee every WebView request uses this resolver. Unsupported DNS transports may not work.";
+  new AlertDialog.Builder(a).setTitle("WebView Secure DNS").setMessage(message)
+   .setNegativeButton("Back",(d,i)->show(a))
+   .setNeutralButton("Stop", (d,i)->{
+    Intent stop=new Intent(a,OrionDnsVpnService.class).setAction(OrionDnsVpnService.ACTION_STOP);
+    a.startService(stop);show(a);
+   })
+   .setPositiveButton(running?"Restart":"Enable",(d,i)->{
+    if(!validDoh(endpoint)){new AlertDialog.Builder(a).setTitle("Choose a compatible provider").setMessage("This DNS VPN requires a valid DNS-over-HTTPS endpoint. Select a supported preset or custom HTTPS endpoint first.").setPositiveButton("DNS settings",(x,y)->show(a)).show();return;}
+    Intent request=android.net.VpnService.prepare(a);
+    if(request!=null)a.startActivityForResult(request,MainActivity.DNS_VPN_REQUEST);
+    else a.startDnsVpn();
+   }).show();
+ }
  static void saveFallback(MainActivity a,boolean enabled){
   a.getPreferences(0).edit().putBoolean(PREF_FALLBACK,enabled).apply();
   applyToGecko(MainActivity.geckoRuntime,a.getPreferences(0));
@@ -112,6 +137,7 @@ final class DnsSettings {
    if(i==6||i==9){providerDetails(a,i);return;}
    a.getPreferences(0).edit().putInt(PREF_PROVIDER,i).apply();
    applyToGecko(MainActivity.geckoRuntime,a.getPreferences(0));
+   if(OrionDnsVpnService.active){a.stopService(new Intent(a,OrionDnsVpnService.class));OrionDnsVpnService.active=false;Toast.makeText(a,"DNS provider changed. Restart local DNS VPN to apply.",Toast.LENGTH_LONG).show();}
    Toast.makeText(a,"DNS applied to GeckoView. Reload open sites.",Toast.LENGTH_LONG).show();
    show(a);
   }).setNegativeButton("Cancel",(d,i)->show(a)).show();
@@ -125,7 +151,9 @@ final class DnsSettings {
    String url=edit.getText().toString().trim();
    if(!validDoh(url)){new AlertDialog.Builder(a).setTitle("Invalid DoH address").setMessage("Enter a valid HTTPS URL with a hostname and path.").setPositiveButton("Edit",(x,y)->customDoh(a)).show();return;}
    a.getPreferences(0).edit().putString(PREF_CUSTOM,url).putInt(PREF_PROVIDER,11).apply();
-   applyToGecko(MainActivity.geckoRuntime,a.getPreferences(0));show(a);
+   applyToGecko(MainActivity.geckoRuntime,a.getPreferences(0));
+   if(OrionDnsVpnService.active){a.stopService(new Intent(a,OrionDnsVpnService.class));OrionDnsVpnService.active=false;Toast.makeText(a,"Restart local DNS VPN to apply new provider",Toast.LENGTH_LONG).show();}
+   show(a);
   }).show();
  }
  static void providerDetails(MainActivity a,int p){
