@@ -179,8 +179,8 @@ class OrionUiContract(unittest.TestCase):
         for item in ['section(panel,"TRACKERS AND CONTENT")', 'section(panel,"WEBSITE SECURITY")',
                      'section(panel,"SITE PERMISSIONS")', 'section(panel,"ENCRYPTED DNS AND NETWORK")',
                      'section(panel,"BROWSING DATA")', 'toggle(panel,"Ad blocker (WebView)"',
-                     'toggle(panel,"EasyPrivacy domain rules"', 'toggle(panel,"JavaScript"',
-                     'toggle(panel,"Load images"', 'settingRow(panel,"DNS and Secure DNS"',
+                     'toggle(panel,"EasyPrivacy domain rules"', 'toggle(panel,"JavaScript (WebView)"',
+                     'toggle(panel,"Load images (WebView)"', 'settingRow(panel,"DNS and Secure DNS"',
                      'settingRow(panel,"Camera, microphone and location"',
                      'settingRow(panel,"Clear normal browsing data"']:
             self.assertIn(item, panel)
@@ -188,6 +188,38 @@ class OrionUiContract(unittest.TestCase):
         self.assertNotIn('section(panel,"CONTENT BLOCKING")', settings)
         self.assertNotIn('section(panel,"PRIVACY AND SECURITY")', settings)
         self.assertIn('securityPrivacy()', settings)
+
+    def test_unavailable_controls_are_disabled_and_visibly_grey(self):
+        menu = method("void menu()", "void incognitoExplained()")
+        self.assertIn("boolean canUsePage=", menu)
+        self.assertIn("boolean requiresPage=", menu)
+        self.assertIn("button.setEnabled(!unavailable)", menu)
+        self.assertIn("button.setTextColor(unavailable?0xff919bab", menu)
+        self.assertIn('button.setContentDescription(labels[i]+(unavailable?", unavailable":""))', menu)
+        settings = method("void settings()", "void startDnsVpn()")
+        self.assertIn('disabledSettingRow(panel,"Sync"', settings)
+        self.assertIn('disabledSettingRow(panel,"Password autofill"', settings)
+        self.assertIn('disabledSettingRow(panel,"Extensions"', settings)
+        self.assertIn('disabledSettingRow(panel,"Orion Connect"', settings)
+        self.assertIn('if(geckoIncognito)disabledSettingRow(panel,"Import browser data"', settings)
+        self.assertNotIn('settingRow(panel,"Sync"', settings)
+        disabled = method("void disabledSettingRow(", "void settingRow(")
+        self.assertIn("row.setEnabled(false)", disabled)
+        self.assertIn("row.setClickable(false)", disabled)
+        self.assertIn("0xff919bab", disabled)
+        imports = method("void importBrowserData()", "void pickImport(")
+        self.assertIn("position!=5", imports)
+        self.assertIn("setAdapter(options,", imports)
+        self.assertIn('"Android Autofill · Unavailable"', imports)
+        self.assertNotIn('ACTION_SETTINGS', imports)
+
+    def test_clear_browsing_data_clears_orion_recent_history_too(self):
+        clear = method("void clearBrowsingData()", "void onBackPressed()")
+        self.assertIn('getPreferences(0).edit().remove("recent_history").apply()', clear)
+        self.assertIn('for(WebView w:tabs){w.clearCache(true);w.clearHistory();w.clearFormData();}', clear)
+        history = method("void historyLibrary()", "void readingList()")
+        self.assertIn('getPreferences(0).edit().remove("recent_history").apply()', history)
+        self.assertIn("for(WebView w:tabs)w.clearHistory()", history)
 
     def test_canonical_orion_branding_and_direct_apk_release(self):
         from pathlib import Path
