@@ -335,7 +335,7 @@ final class HomeWeather {
    }catch(Exception e){showError(token,"Town search: "+e.getMessage());}
   },"orion-weather-town").start();
  }
- private void refreshSaved(){
+ void refreshSaved(){
   String mode=prefs().getString(PREFIX+"mode","");
   if("gps".equals(mode)){useLocation();return;}
   if(!"town".equals(mode))return;
