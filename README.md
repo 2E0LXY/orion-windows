@@ -10,17 +10,17 @@ Open-source **Orion** work covering **Windows, Linux, and Android**. This reposi
 | --- | --- | --- |
 | **Android** | **[Download latest Orion Android test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** | Automatically replaced when a new Android CI build succeeds. **The stable link becomes available after its first successful publication.** |
 | Android — versioned | [All Orion releases](https://github.com/2E0LXY/orion-windows/releases) · [Android build runs](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) | Earlier working APKs remain available for comparison and rollback |
-| Android — previous verified | [Download verified test APK (build 46091753772)](https://github.com/2E0LXY/orion-windows/releases/download/android-dev-46091753772/app-debug.apk) | Versioned debug build; **does not contain every subsequent import change** |
+| Android — previous verified | [Download verified test APK (build 46091875384)](https://github.com/2E0LXY/orion-windows/releases/download/android-dev-46091875384/app-debug.apk) | Versioned debug build; **does not contain every subsequent import change** |
 | **Windows** | [Windows branch and source](https://github.com/2E0LXY/orion-windows) · [Public WebKit build PR](https://github.com/2E0LXY/orion-windows/pull/2) | No verified community Windows installer available yet |
 | **Linux** | [Linux snapshot branch](https://github.com/2E0LXY/orion-windows/tree/archive/orion-linux) · [Cross-platform branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/cross-platform) | Source snapshot only; no verified Linux package available |
 
 **Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; debug package currently includes both WebView and Mozilla GeckoView and is large (about **528 MB** for recent test builds). Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
 
-**Latest development branch:** [\`chatgpt/drive-sync\`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
+**Latest development branch:** [`chatgpt/drive-sync`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
 
 ## Android — feature and implementation status
 
-Android is implemented in **native Java** in [\`platforms/android/\`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync/platforms/android). The application label is **Orion Browser**. A passing CI build confirms compilation, **not** behaviour on a physical device.
+Android is implemented in **native Java** in [`platforms/android/`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync/platforms/android). The application label is **Orion Browser**. A passing CI build confirms compilation, **not** behaviour on a physical device.
 
 | Area | Present in development source | Limitations / verification needed |
 | --- | --- | --- |
@@ -35,7 +35,7 @@ Android is implemented in **native Java** in [\`platforms/android/\`](https://gi
 | Bookmark import | HTML Netscape-style export and JSON URL-tree import; bounds, URL checks, confirmation and duplicate handling | Importer is experimental; exported file formats differ between browsers |
 | Password migration | Import browser/password-manager CSV, merge by URL and username, **Android Keystore AES-GCM encrypted local storage**, delete local vault | **Imported passwords do not yet autofill** and are not connected to GeckoView or Orion Connect; security audit pending |
 | Password export | User-confirmed export of imported credentials as standard **plaintext CSV** | CSV reveals passwords; store and transfer securely, then delete when no longer needed; no encrypted cross-device backup yet |
-| Cookie import | Opt-in Netscape \`cookies.txt\` or browser JSON export, domain preview, size/entry limits, WebView cookie import | Cookies may contain active sessions; GeckoView has a separate cookie store; **cookie export is not yet provided** |
+| Cookie import | Opt-in Netscape `cookies.txt` or browser JSON export, domain preview, size/entry limits, WebView cookie import | Cookies may contain active sessions; GeckoView has a separate cookie store; **cookie export is not yet provided** |
 | Website permissions | WebView camera, microphone and approximate location: Ask every time, Block, or Allow on request; Android runtime permission remains required | GeckoView permissions not yet integrated with the same options; no site-by-site remembered allowlist |
 | Privacy | Third-party cookie blocking in WebView; basic request-domain ad/tracker filtering; no-cache loading option; clearing WebView cookies/storage/cache/history | Not complete ad blocking, anti-fingerprinting or anonymity; zero-cache mode is not guaranteed disk-free browsing |
 | Filter lists | Optional EasyList/EasyPrivacy **domain-rule subset** updates; selected YouTube ad-request endpoints | No complete rules engine, cosmetic filtering, or guarantee of removing video ads |
@@ -63,15 +63,15 @@ Open **Orion menu → Import browser data** or **Settings → Browser data → I
 
 Prerequisites: **JDK 17**, Android SDK with **API 36**, Android Gradle Plugin **8.9.2**, Gradle **8.11.1**, and access to Mozilla's Maven repository.
 
-\`\`\`bash
+```bash
 git clone https://github.com/2E0LXY/orion-windows.git
 cd orion-windows
 git checkout chatgpt/drive-sync
 cd platforms/android
 gradle --no-daemon assembleDebug
-\`\`\`
+```
 
-Output: \`platforms/android/app/build/outputs/apk/debug/app-debug.apk\`. This is an experimental debug APK, not a signed distribution release. CI also publishes versioned GitHub releases and updates the stable Android test-APK shortcut when successful.
+Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`. This is an experimental debug APK, not a signed distribution release. CI also publishes versioned GitHub releases and updates the stable Android test-APK shortcut when successful.
 
 See the [Android roadmap](platforms/android/ROADMAP.md), [Android APK workflow](.github/workflows/android-prototype.yml), and [Android source tree](platforms/android/app/src/main/java/uk/community/orion/).
 
@@ -81,7 +81,7 @@ The original Windows code is **C# / WinUI 3** plus C++ backend and pluggable **W
 
 Community work is being tracked separately:
 
-- [Public WebKit port and build work](https://github.com/2E0LXY/orion-windows/pull/2) · [\`chatgpt/upstream-webkit\` source](https://github.com/2E0LXY/orion-windows/tree/chatgpt/upstream-webkit).
+- [Public WebKit port and build work](https://github.com/2E0LXY/orion-windows/pull/2) · [`chatgpt/upstream-webkit` source](https://github.com/2E0LXY/orion-windows/tree/chatgpt/upstream-webkit).
 - Original Kagi-hosted WebKit archives and binary caches are not generally available to community builders; the public-source replacement still needs validation and may require build-system fixes.
 - **No Windows executable should be presented as downloadable or production-ready until CI and a Windows machine verify it.** Features listed in the archived Windows README describe the **upstream code**, not a verified community binary.
 
@@ -173,7 +173,7 @@ The app is composed of three primary layers:
   `orion-linux` core module statically and loads exactly one engine plugin at
   runtime. The engine plugins (`OrionEngineWK.dll`, `OrionEngineB.dll`)
   implement a common `BrowserEngine` interface and are loaded from
-  `engines\webkit\` or `engines\blink\`.
+  `engines\webkit` or `engines\blink`.
 - **`external/orion-gtk` — cross-platform core module.** Shared with Orion for
   Linux. It owns the database, settings, profiles, history, bookmarks,
   passwords, reading list, sync, and the WebExtensions runtime. It is built
