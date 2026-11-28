@@ -1,9 +1,7 @@
 package uk.community.orion;
 import android.content.Context;
 import android.net.Uri;
-import android.util.Xml;
 import org.json.*;
-import org.xmlpull.v1.XmlPullParser;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -20,17 +18,17 @@ final class BookmarkImporter {
   try(InputStream in=context.getContentResolver().openInputStream(file);ByteArrayOutputStream out=new ByteArrayOutputStream()){
    if(in==null)throw new IOException("Cannot open selected file");byte[] block=new byte[8192];int n;
    while((n=in.read(block))>=0){if(out.size()+n>MAX_BYTES)throw new IOException("File is too large (8 MB limit)");out.write(block,0,n);}
-   text=out.toString(StandardCharsets.UTF_8.name());
+   text=out.toString(StandardCharsets.UTF_8.name()).replace("\\uFEFF","");
   }
   LinkedHashSet<String> result=new LinkedHashSet<>();String first=text.trim();
   if(first.startsWith("{")||first.startsWith("["))parseJson(first,result);
-  else if(first.startsWith("<")&&(first.contains("NETSCAPE-Bookmark-file-1")||first.matches("(?s).*<(?i:A)\\s+HREF.*")))parseHtml(text,result);
+  else if(first.startsWith("<")&&Pattern.compile("(?i)<a\\b[^>]*\\bhref\\s*=",Pattern.DOTALL).matcher(first).find())parseHtml(text,result);
   else throw new IOException("Choose an exported bookmarks HTML or JSON file");
   if(result.isEmpty())throw new IOException("No HTTP or HTTPS bookmarks found");
   return result;
  }
  static void add(Set<String> output,String u)throws IOException{
-  if(valid(u)){if(output.size()>=MAX_BOOKMARKS)throw new IOException("Bookmark import exceeds 30,000 entries");output.add(u);}
+  if(valid(u)&&!output.contains(u)){if(output.size()>=MAX_BOOKMARKS)throw new IOException("Bookmark import exceeds 30,000 entries");output.add(u);}
  }
  static void parseHtml(String content,Set<String> output)throws IOException{
   Matcher m=Pattern.compile("(?i)<a\\b[^>]*\\bhref\\s*=\\s*([\"'])(.*?)\\1",Pattern.DOTALL).matcher(content);
