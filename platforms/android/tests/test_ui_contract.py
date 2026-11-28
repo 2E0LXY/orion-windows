@@ -213,6 +213,17 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('gh release upload "$latest_tag" Orion-Browser-Android-test.apk Orion-Browser-Android-test.apk.sha256 --clobber', workflow)
         self.assertNotIn('actions/upload-artifact@', workflow)
 
+    def test_no_cache_mode_clears_engine_http_resources(self):
+        self.assertIn('s.setCacheMode(getPreferences(0).getBoolean("zero_cache",false)?WebSettings.LOAD_NO_CACHE:WebSettings.LOAD_DEFAULT)', SOURCE)
+        self.assertIn('toggle(panel,"No HTTP cache (WebView)","zero_cache",false)', SOURCE)
+        self.assertIn('if(key.equals("zero_cache"))applyNoCachePreference(on)', SOURCE)
+        self.assertIn('if(enabled)clearResourceCaches(false)', SOURCE)
+        self.assertIn('for(WebView w:tabs)w.clearCache(true)', SOURCE)
+        self.assertIn('StorageController.ClearFlags.ALL_CACHES', SOURCE)
+        self.assertIn('if(getPreferences(0).getBoolean("zero_cache",false))v.clearCache(true)', SOURCE)
+        self.assertIn('settingRow(panel,"Clear cached resources now"', SOURCE)
+        self.assertIn('if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false)', SOURCE)
+
     def test_native_swipe_gestures_and_download_tracking(self):
         parallel = (APP / "app/src/main/java/uk/community/orion/ParallelDownload.java").read_text(encoding="utf-8")
         gestures = method("boolean touchWithin(View view", "void submit()")
