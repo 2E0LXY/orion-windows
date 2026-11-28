@@ -1,4 +1,119 @@
-# Orion for Windows
+# Orion Browser — community development
+
+Open-source **Orion** work covering **Windows, Linux, and Android**. This repository originated from Kagi's Orion for Windows release and now contains community experiments, including a native Android browser. **This is not an official Kagi-maintained release.**
+
+> **Release status:** Android is an **experimental debug APK**, Windows is a public-source build/recovery effort, and Linux is a preserved source snapshot. Features, build success, and security reviews are **different** things. Please see the platform-specific status below.
+
+## Downloads — start here
+
+| Platform | Latest accessible download / source | Status |
+| --- | --- | --- |
+| **Android** | **[Download latest Orion Android test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** | Automatically replaced when a new Android CI build succeeds. **The stable link becomes available after its first successful publication.** |
+| Android — versioned | [All Orion releases](https://github.com/2E0LXY/orion-windows/releases) · [Android build runs](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) | Earlier working APKs remain available for comparison and rollback |
+| Android — previous verified | [Download verified test APK (build 46091753772)](https://github.com/2E0LXY/orion-windows/releases/download/android-dev-46091753772/app-debug.apk) | Versioned debug build; **does not contain every subsequent import change** |
+| **Windows** | [Windows branch and source](https://github.com/2E0LXY/orion-windows) · [Public WebKit build PR](https://github.com/2E0LXY/orion-windows/pull/2) | No verified community Windows installer available yet |
+| **Linux** | [Linux snapshot branch](https://github.com/2E0LXY/orion-windows/tree/archive/orion-linux) · [Cross-platform branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/cross-platform) | Source snapshot only; no verified Linux package available |
+
+**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; debug package currently includes both WebView and Mozilla GeckoView and is large (about **528 MB** for recent test builds). Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
+
+**Latest development branch:** [\`chatgpt/drive-sync\`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
+
+## Android — feature and implementation status
+
+Android is implemented in **native Java** in [\`platforms/android/\`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync/platforms/android). The application label is **Orion Browser**. A passing CI build confirms compilation, **not** behaviour on a physical device.
+
+| Area | Present in development source | Limitations / verification needed |
+| --- | --- | --- |
+| Branding and launch | Orion launcher icon, animated orbit-and-star startup screen, visible version; reduced-motion static state | Verify startup logo and animation on multiple Android devices, including cold starts |
+| Browser engines | Android System **WebView** (main browser) and optional **GeckoView** session via **Open in GeckoView** | GeckoView opens in a separate experimental screen, not a seamless per-tab engine swap; cookies and sessions are separate |
+| GeckoView UI | Orion-styled top bar, address field, back/forward/reload/home controls, menu and return to WebView | Extension manager, native tab integration and all site-permission bridging are outstanding |
+| Tabs | Multi-tab WebView, tab counter, 20-tab limit, tab picker, tablet strip, manual URL archiving/restoration | No full crash-safe session restore, tab groups or intelligent tab suspension |
+| Navigation | HTTP/HTTPS, address/search field, site navigation, back/forward/home/reload, configurable search | HTTP is unencrypted; user warning on explicit HTTP navigation; no universal HTTPS-only guarantee |
+| Search | Google, DuckDuckGo, Bing, Yahoo, Kagi, Brave Search, Startpage, Ecosia, Qwant, Mojeek, Swisscows, Wikipedia | Search integrations have not all been device-verified |
+| Appearance | Dark navy UI, bottom toolbar, configurable shortcut, tab-swipe option, text zoom, experimental webpage darkening, desktop-site UA | Inset/rotation, accessibility, larger fonts and GeckoView parity need testing |
+| Bookmarks | Add/edit/delete, search and persistent local URL list | No folders, bookmark title management or cross-device synchronisation |
+| Bookmark import | HTML Netscape-style export and JSON URL-tree import; bounds, URL checks, confirmation and duplicate handling | Importer is experimental; exported file formats differ between browsers |
+| Password migration | Import browser/password-manager CSV, merge by URL and username, **Android Keystore AES-GCM encrypted local storage**, delete local vault | **Imported passwords do not yet autofill** and are not connected to GeckoView or Orion Connect; security audit pending |
+| Password export | User-confirmed export of imported credentials as standard **plaintext CSV** | CSV reveals passwords; store and transfer securely, then delete when no longer needed; no encrypted cross-device backup yet |
+| Cookie import | Opt-in Netscape \`cookies.txt\` or browser JSON export, domain preview, size/entry limits, WebView cookie import | Cookies may contain active sessions; GeckoView has a separate cookie store; **cookie export is not yet provided** |
+| Website permissions | WebView camera, microphone and approximate location: Ask every time, Block, or Allow on request; Android runtime permission remains required | GeckoView permissions not yet integrated with the same options; no site-by-site remembered allowlist |
+| Privacy | Third-party cookie blocking in WebView; basic request-domain ad/tracker filtering; no-cache loading option; clearing WebView cookies/storage/cache/history | Not complete ad blocking, anti-fingerprinting or anonymity; zero-cache mode is not guaranteed disk-free browsing |
+| Filter lists | Optional EasyList/EasyPrivacy **domain-rule subset** updates; selected YouTube ad-request endpoints | No complete rules engine, cosmetic filtering, or guarantee of removing video ads |
+| Downloads | Native Android DownloadManager integration; experimental four-connection HTTPS range downloader with progress and cancellation | Range eligibility and validators required; single standard download fallback; no pause/resume/background foreground service |
+| Reader and page export | Experimental article-text reader; Android printing/**Save as PDF** | Reader extracts text, not full article formatting; full-page screenshot/translation remain outstanding |
+| Find and share | Find text on current WebView page; Android share sheet | GeckoView find-in-page not yet exposed |
+| Data controls | Clear browsing data; bookmarks and imported passwords stored locally | Some GeckoView data is not cleared by WebView actions; no guaranteed isolated private session |
+| Account and sync | Orion Connect prototype documents and development relay | **Google OAuth sign-in, encryption, cross-device sync and push are not connected in the Android app** |
+| Extensions | GeckoView engine dependency included | WebExtensions/uBlock management **not yet implemented** |
+| Other outstanding | Background media controls, password autofill, passkeys, full-page translation, robust tab restore, production signing, comprehensive testing | Do not treat roadmap items as shipped features |
+
+### Import browser data — Android
+
+Open **Orion menu → Import browser data** or **Settings → Browser data → Import browser data**.
+
+1. **Bookmarks:** Choose a bookmark-export file (HTML or JSON). Orion previews the number of new entries and preserves existing bookmarks.
+2. **Passwords:** Choose a CSV exported from your *own* browser or password manager. Common fields are website URL, username and password (column names vary). Orion stores imported data in its Android Keystore-encrypted vault. **This is a migration store, not yet a password autofill manager.**
+3. **Export passwords:** Use the password export action to choose a destination for a **plaintext CSV**. Anyone with that file can read the credentials; move it only to trusted storage and remove unneeded copies.
+4. **Cookies:** Select an export in Netscape cookies.txt or supported JSON cookie-array format. Review the domains and explicitly confirm import. Cookies are applied **only to WebView**, not GeckoView; imported login sessions might not work or might be rejected by sites.
+5. **Android password manager:** Android Autofill settings are a separate workflow; Orion cannot silently access another app's saved passwords, cookies or encrypted profile database.
+
+**Supported export sources vary by browser:** Chrome, Edge, Firefox, Brave, Vivaldi, Opera, and others can supply compatible formats where their export tooling permits. **This does not imply direct profile access or support for every proprietary export.** Files are opened with Android's system file picker, not by requesting access to another browser's private app storage.
+
+### Local development — Android
+
+Prerequisites: **JDK 17**, Android SDK with **API 36**, Android Gradle Plugin **8.9.2**, Gradle **8.11.1**, and access to Mozilla's Maven repository.
+
+\`\`\`bash
+git clone https://github.com/2E0LXY/orion-windows.git
+cd orion-windows
+git checkout chatgpt/drive-sync
+cd platforms/android
+gradle --no-daemon assembleDebug
+\`\`\`
+
+Output: \`platforms/android/app/build/outputs/apk/debug/app-debug.apk\`. This is an experimental debug APK, not a signed distribution release. CI also publishes versioned GitHub releases and updates the stable Android test-APK shortcut when successful.
+
+See the [Android roadmap](platforms/android/ROADMAP.md), [Android APK workflow](.github/workflows/android-prototype.yml), and [Android source tree](platforms/android/app/src/main/java/uk/community/orion/).
+
+## Windows — community development
+
+The original Windows code is **C# / WinUI 3** plus C++ backend and pluggable **WebKit** and **CEF/Blink** engines. The source archive's comprehensive intended/implemented feature list and known gaps appear in the preserved Windows documentation below.
+
+Community work is being tracked separately:
+
+- [Public WebKit port and build work](https://github.com/2E0LXY/orion-windows/pull/2) · [\`chatgpt/upstream-webkit\` source](https://github.com/2E0LXY/orion-windows/tree/chatgpt/upstream-webkit).
+- Original Kagi-hosted WebKit archives and binary caches are not generally available to community builders; the public-source replacement still needs validation and may require build-system fixes.
+- **No Windows executable should be presented as downloadable or production-ready until CI and a Windows machine verify it.** Features listed in the archived Windows README describe the **upstream code**, not a verified community binary.
+
+## Linux — community source snapshot
+
+- [Preserved Linux upstream snapshot](https://github.com/2E0LXY/orion-windows/tree/archive/orion-linux) and [cross-platform integration branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/cross-platform).
+- The source snapshot is preserved for continued development; external dependencies and full build reproducibility have not been validated.
+- **No verified Linux installer/package** is published here yet.
+
+## Orion Connect — shared-device plans and prototype
+
+[Orion Connect architecture](shared/orion-connect/ARCHITECTURE.md) · [Development relay](shared/orion-connect/relay/) · [Connect CI](.github/workflows/orion-connect.yml).
+
+Design goals: user-authorised sharing of links, bookmarks and settings between Android, Windows and Linux; explicit device pairing; end-to-end encrypted data; user revocation; no server-side access to decrypted content. **These are goals, not deployed app functionality.** The Go relay currently provides development-only notification tests, not a production authenticated public sync service. No passwords or cookies are synchronised.
+
+## Releases, testing and support
+
+- **[Latest Android APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — stable shortcut, activated by first successful publication of the new workflow.
+- **[All downloadable releases](https://github.com/2E0LXY/orion-windows/releases)** — versioned Android builds and any future installers.
+- **[Android Actions](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml)** — status, compile errors and build artefacts.
+- **[Connect tests](https://github.com/2E0LXY/orion-windows/actions/workflows/orion-connect.yml)**.
+- **[Report an issue](https://github.com/2E0LXY/orion-windows/issues/new)**. Include Android version, device model, engine (WebView/GeckoView), build number, steps and screenshots. **Never attach passwords, cookies, session tokens or unredacted personal browsing data.**
+
+The community source is derived from Kagi's [public Orion Windows archive](https://github.com/kagisearch/orion-windows) and [Linux archive](https://github.com/kagisearch/orion-linux), licensed under **Apache 2.0** where applicable; bundled third-party components retain their own licences. Check the repository's licensing files before redistribution.
+
+---
+
+## Windows upstream reference documentation
+
+**Note:** Everything below this heading is retained from the original Windows README as a source/architecture reference. It is **not** a promise that a new community Windows installer exists or that all original features work in current Android builds.
+
+## Windows upstream archive: architecture and feature reference
 
 Orion is a web browser for Windows built on two interchangeable browser
 engines: **WebKit** and **CEF (Chromium/Blink)**. The engine is chosen at
@@ -8,7 +123,7 @@ cross-platform core shared with Orion for Linux (the `orion-linux` module).
 This repository is the public archive of the Windows browser. See the
 [Public archive](#public-archive) section below.
 
-## Public archive
+### Public archive
 
 Kagi ended development of Orion for Linux and Windows in October 2026 and
 open-sourced both so the community can carry them forward. This repository is
@@ -24,7 +139,7 @@ Many core browsing features work, and several features expected of a
 production browser are still missing or partial. See
 [Browser features](#browser-features) for the current status.
 
-## Architecture
+### Architecture
 
 ```
 ┌─────────────────────────────────────────┐
@@ -64,7 +179,7 @@ The app is composed of three primary layers:
   passwords, reading list, sync, and the WebExtensions runtime. It is built
   with CMake and linked into the facade.
 
-### Key design points
+#### Key design points
 
 - **Dual engine, runtime selection.** Every build produces one `Orion.exe`, the
   engine-free facade, and both engine plugins. The engine is picked at startup
@@ -88,12 +203,12 @@ The app is composed of three primary layers:
   `OrionCodeGen` from the core module's DTO definitions. `native_types.h` and
   `NativeTypes.cs` are generated, not hand-written.
 
-## Browser features
+### Browser features
 
 The browser runs on either engine unless noted. "WebKit only" features do not
 work under the Blink/CEF engine.
 
-### Implemented
+#### Implemented
 
 **Tabs and windows**
 - Multiple windows, each with its own tab group
@@ -176,7 +291,7 @@ work under the Blink/CEF engine.
 - Per-site permission controls
 - Profile data export and import (folder-based)
 
-### Not yet implemented
+#### Not yet implemented
 
 These are features a user would expect from a production browser that are
 missing or only stubbed today. Many appear in the menu bar as disabled items.
@@ -241,7 +356,7 @@ missing or only stubbed today. Many appear in the menu bar as disabled items.
 - Profile create/delete from the menu (use Settings instead)
 - Notes, dictation, and macOS-style Edit-menu text services
 
-### Web extension limitations
+#### Web extension limitations
 
 Extensions run only on the WebKit engine. Under Blink/CEF, the extension
 exports exist but there is no scheme handler or script bridge, so extensions do
@@ -257,9 +372,9 @@ not function. Even on WebKit, the support is partial:
 - A WebKit engine gap currently blocks loading custom-scheme URLs on Windows;
   until it is fixed in the pinned WebKit, extension pages may not load.
 
-## Development setup
+### Development setup
 
-### Install development tools
+#### Install development tools
 
 Run `install_dev_tools.bat`. This installs Visual Studio 2026 Community with the
 correct workloads (from `.vsconfig`) and other native requirements (for
@@ -274,7 +389,7 @@ gcloud auth login
 ./scripts/gsutil.cmd ls gs://kagi-orion-windows-artifacts/
 ```
 
-### Initialize submodules
+#### Initialize submodules
 
 Run `setup_orion_gtk_submodule.bat`. This fetches `orion-linux` and its
 submodules (except WebKit) and generates the `orion-linux` projects for the Orion
@@ -293,7 +408,7 @@ ci\build_debug.cmd      # or build_release.cmd
 ci\unittest.cmd         # dotnet test UnitTest (Release, x64)
 ```
 
-### WebKit
+#### WebKit
 
 WebKit is built via vcpkg. Source is fetched automatically during the build
 from a tarball that the `kagisearch/webkit` CI publishes to GCS for every
@@ -311,12 +426,12 @@ in Visual Studio, or run:
 Both approaches set `VCPKG_BINARY_SOURCES` to read and write the GCS bucket
 automatically.
 
-### CEF
+#### CEF
 
 CEF is provisioned automatically by the `OrionCefSetup` project, which runs
 `cef.py.cmd setup`. The version and source are pinned in `vendor/CEF_VERSION`.
 
-## Documentation
+### Documentation
 
 - `CLAUDE.md` — build system, architecture, and code-style guide for the repo.
 - `docs/` — manually edited documentation.
