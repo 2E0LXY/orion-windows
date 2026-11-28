@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
  void aiConnectSettings(){
   // No network listener, token, accessibility service or model access is installed.
   new AlertDialog.Builder(this).setTitle("Orion AI Connect")
-   .setMessage("Remote control is not connected. No AI can read or operate Orion through this setting yet.\\n\\nPlanned: explicit pairing, a visible connected indicator, separate read and navigation permissions, one-action confirmation for input and downloads, session expiry and a disconnect control. Private tabs, passwords and cookies will never be exposed.")
+   .setMessage("Remote control is not connected. No AI can read or operate Orion through this setting yet.\n\nPlanned: explicit pairing, a visible connected indicator, separate read and navigation permissions, one-action confirmation for input and downloads, session expiry and a disconnect control. Private tabs, passwords and cookies will never be exposed.")
    .setPositiveButton("OK",null).show();
  }
  String installedVersion(){try{android.content.pm.PackageInfo p=getPackageManager().getPackageInfo(getPackageName(),0);return "Version "+p.versionName+" · Build "+(Build.VERSION.SDK_INT>=28?p.getLongVersionCode():p.versionCode);}catch(Exception e){return "Version unavailable";}}
