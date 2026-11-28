@@ -1,7 +1,7 @@
 name: Orion Connect tests
 on:
   push:
-    branches: [chatgpt/drive-sync]
+    branches: [chatgpt/drive-sync, claude/orion-connect-server]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,3 +20,17 @@ jobs:
           cache: false
       - run: go vet ./...
       - run: go test -race ./...
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: shared/orion-connect/server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: false
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
