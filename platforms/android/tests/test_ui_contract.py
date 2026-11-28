@@ -221,6 +221,20 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('getPreferences(0).edit().remove("recent_history").apply()', history)
         self.assertIn("for(WebView w:tabs)w.clearHistory()", history)
 
+    def test_dns_controls_disabled_without_valid_provider(self):
+        self.assertIn('if(!gecko)a.disabledSettingRow(body,"GeckoView DNS fallback"', DNS)
+        self.assertIn('if(!gecko&&!vpnActive)a.disabledSettingRow(body,"Local DNS VPN"', DNS)
+        self.assertIn('if(!gecko)a.disabledSettingRow(body,"Test selected DoH server"', DNS)
+
+    def test_missing_filter_lists_do_not_enable_dead_switches(self):
+        panel = method("void securityPrivacy()", "void downloadPage(")
+        self.assertIn('new java.io.File(getFilesDir(),"easylist.domains").length()>0', panel)
+        self.assertIn('new java.io.File(getFilesDir(),"easyprivacy.domains").length()>0', panel)
+        self.assertIn('disabledSettingRow(panel,"EasyList domain rules"', panel)
+        self.assertIn('disabledSettingRow(panel,"EasyPrivacy domain rules"', panel)
+        self.assertIn('getPreferences(0).getBoolean("youtube_ads",true)&&youtubeAd', SOURCE)
+        self.assertIn('getPreferences(0).getBoolean("adblock",true)&&AdBlocker.blocks', SOURCE)
+
     def test_canonical_orion_branding_and_direct_apk_release(self):
         from pathlib import Path
         icon=(APP/"app/src/main/res/drawable/orion_icon.xml").read_text(encoding="utf-8")
