@@ -15,7 +15,7 @@ import java.util.*;
 public class MainActivity extends Activity {
  final ArrayList<WebView> tabs=new ArrayList<>();
  static final int BOOKMARK_IMPORT_REQUEST=807, PASSWORD_IMPORT_REQUEST=808, PASSWORD_EXPORT_REQUEST=809, COOKIE_IMPORT_REQUEST=810, DNS_VPN_REQUEST=811;
- LinearLayout root, bar, navigation, tabletTabs; FrameLayout content, homeOverlay; EditText address; Button count; ProgressBar progress; Button back,forward; int selected=-1;
+ LinearLayout root, bar, navigation, tabletTabs; FrameLayout content, homeOverlay; HomeWeather homeWeather; EditText address; Button count; ProgressBar progress; Button back,forward; int selected=-1;
  final Set<WebView> homeTabs=Collections.newSetFromMap(new IdentityHashMap<WebView,Boolean>());
  @Override public void onCreate(Bundle b){super.onCreate(b);AdBlocker.load(this,getPreferences(0));
  getWindow().setStatusBarColor(0xff171d28);getWindow().setNavigationBarColor(0xff171d28);
@@ -33,75 +33,9 @@ public class MainActivity extends Activity {
  back=button("back","Back",()->{if(geckoActive)geckoGoBack();else if(current().canGoBack())current().goBack();},true);
  forward=button("forward","Forward",()->{if(geckoActive)geckoGoForward();else if(current().canGoForward())current().goForward();},true);
  Button homeButton=button("home","Home. Hold to save current page; triple tap to reset",()->homeTap(),true);homeButton.setOnLongClickListener(v->{saveCurrentHomepage();return true;});count=button("tabs","Switch tabs",()->chooseTab(),true);button("menu","Browser menu",()->menu(),true);updateToolbar();tabletTabs=new LinearLayout(this);root.addView(tabletTabs,0,new LinearLayout.LayoutParams(-1,dp(48)));tabletTabs.setVisibility(View.GONE);
- address.setOnTouchListener(new View.OnTouchListener(){float x,y;public boolean onTouch(View v,android.view.MotionEvent e){if(!getPreferences(0).getBoolean("tab_swipe",true))return false;if(e.getActionMasked()==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();}if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(e.getX()-x)>dp(80)&&Math.abs(e.getY()-y)<dp(40)&&tabs.size()>1){show((selected+(e.getX()>x?-1:1)+tabs.size())%tabs.size());return true;}return false;}});setContentView(root);root.requestApplyInsets();newTab();showStartup();
+ address.setOnTouchListener(new View.OnTouchListener(){float x,y;public boolean onTouch(View v,android.view.MotionEvent e){if(!getPreferences(0).getBoolean("tab_swipe",true))return false;if(e.getActionMasked()==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();}if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(e.getX()-x)>dp(80)&&Math.abs(e.getY()-y)<dp(40)&&tabs.size()>1){show((selected+(e.getX()>x?-1:1)+tabs.size())%tabs.size());return true;}return false;}});setContentView(root);root.requestApplyInsets();newTab();
  }
  String installedVersion(){try{android.content.pm.PackageInfo p=getPackageManager().getPackageInfo(getPackageName(),0);return "Version "+p.versionName+" · Build "+(Build.VERSION.SDK_INT>=28?p.getLongVersionCode():p.versionCode);}catch(Exception e){return "Version unavailable";}}
- void showStartup(){
-  if(root==null||isFinishing()||isDestroyed())return;
-  if(root.getParent() instanceof ViewGroup)((ViewGroup)root.getParent()).removeView(root);
-  FrameLayout host=new FrameLayout(this);
-  host.addView(root,new FrameLayout.LayoutParams(-1,-1));
-  StartupView splash=new StartupView();
-  host.addView(splash,new FrameLayout.LayoutParams(-1,-1));
-  setContentView(host);
-  splash.setClickable(true);
-  splash.setContentDescription("Orion Community Browser, "+installedVersion());
-  Runnable finish=()->{
-   if(!isFinishing()&&!isDestroyed()&&splash.getParent()==host){
-    host.removeView(splash);
-    root.requestApplyInsets();
-   }
-  };
-  final boolean motion=android.animation.ValueAnimator.areAnimatorsEnabled();
-  // Start the clock only after the splash has actually drawn its first frame.
-  splash.firstFrame=()->{
-   final long started=android.os.SystemClock.uptimeMillis();
-   final long duration=motion?5000L:1800L;
-   Runnable frame=new Runnable(){
-    @Override public void run(){
-     if(isFinishing()||isDestroyed()||!splash.isAttachedToWindow()||splash.getParent()!=host)return;
-     long elapsed=android.os.SystemClock.uptimeMillis()-started;
-     splash.phase=motion?Math.min(1f,elapsed/4500f):1f;
-     if(motion)splash.setAlpha(elapsed>4500L?Math.max(0f,(5000L-elapsed)/500f):1f);
-     splash.invalidate();
-     if(elapsed>=duration)finish.run();else splash.postOnAnimation(this);
-    }
-   };
-   splash.postOnAnimation(frame);
-  };
-
- }
- class StartupView extends View {
-  float phase=0f;
-  Runnable firstFrame;
-  final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-  final String version=installedVersion();
-  StartupView(){super(MainActivity.this);}
-  @Override protected void onDraw(Canvas c){
-   super.onDraw(c);
-   if(firstFrame!=null){Runnable start=firstFrame;firstFrame=null;post(start);}
-   c.drawColor(0xff171d28);
-   float x=getWidth()/2f,y=getHeight()*.41f,r=dp(43),angle=(float)(-Math.PI/2+phase*Math.PI*6);
-   p.setShader(null);p.setAlpha(255);p.setStyle(Paint.Style.FILL);
-   p.setColor(0xff26354e);c.drawCircle(x,y,r,p);
-   p.setColor(0xff8ab4ff);c.drawCircle(x,y,r*.75f,p);
-   p.setColor(0xffe4efff);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));p.setTextSize(dp(35));c.drawText("O",x,y-(p.ascent()+p.descent())/2f,p);
-   p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);
-   p.setStrokeWidth(dp(4));p.setColor(0xffdcebff);
-   c.drawArc(x-r,y-r,x+r,y+r,(float)Math.toDegrees(angle),74,false,p);
-   float sx=x+(float)Math.cos(angle)*r,sy=y+(float)Math.sin(angle)*r;
-   p.setStyle(Paint.Style.FILL);p.setColor(0xfff5faff);c.drawCircle(sx,sy,dp(4),p);
-   float fade=Math.min(1f,Math.max(0f,phase*4f));
-   p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
-   p.setTextSize(dp(32));p.setColor(0xfff1f5f9);p.setAlpha((int)(255*fade));
-   c.drawText("Orion",x,y+dp(109),p);
-   p.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));p.setTextSize(dp(12));
-   p.setColor(0xffb9c6da);p.setAlpha((int)(255*fade));
-   c.drawText("COMMUNITY BROWSER",x,y+dp(140),p);
-   p.setTextSize(dp(12));c.drawText(version,x,getHeight()-dp(76),p);
-   p.setAlpha(255);
-  }
- }
  int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
  GradientDrawable round(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
  void submit(){navigate(address.getText().toString());address.clearFocus();((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(address.getWindowToken(),0);}
@@ -251,6 +185,7 @@ public class MainActivity extends Activity {
  void homeActive(){String url=getPreferences(0).getString(PREF_HOMEPAGE,"");if(allowed(url))navigate(url);else originalHome();}
  void originalHome(){if(geckoActive&&geckoSession!=null){geckoAddress="";showHome(true);}else home(current());}
  void hideHome(){
+  if(homeWeather!=null){homeWeather.dispose();homeWeather=null;}
   if(homeOverlay!=null){
    if(homeOverlay.getParent() instanceof ViewGroup)((ViewGroup)homeOverlay.getParent()).removeView(homeOverlay);
    homeOverlay=null;
@@ -262,7 +197,7 @@ public class MainActivity extends Activity {
   page.setContentDescription(gecko?"Orion Community Browser. Powered by GeckoView. Search or enter an address below.":"Orion Community Browser. Search or enter an address below.");
   ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
   LinearLayout column=new LinearLayout(this);column.setOrientation(LinearLayout.VERTICAL);column.setGravity(Gravity.CENTER_HORIZONTAL);
-  int top=getResources().getConfiguration().orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE?dp(24):dp(88);
+  int top=getResources().getConfiguration().orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE?dp(16):dp(30);
   column.setPadding(dp(16),top,dp(16),dp(24));
   FrameLayout emblem=new FrameLayout(this);emblem.setBackground(round(0xff26354e,50));
   LinearLayout.LayoutParams emblemParams=new LinearLayout.LayoutParams(dp(88),dp(88));column.addView(emblem,emblemParams);
@@ -276,7 +211,8 @@ public class MainActivity extends Activity {
   LinearLayout.LayoutParams subParams=new LinearLayout.LayoutParams(-1,-2);subParams.topMargin=dp(8);column.addView(subtitle,subParams);
   TextView instruction=new TextView(this);instruction.setText("Search or enter an address below.");
   instruction.setTextSize(16);instruction.setTextColor(0xffb9c6da);instruction.setGravity(Gravity.CENTER);
-  LinearLayout.LayoutParams instructionParams=new LinearLayout.LayoutParams(-1,-2);instructionParams.topMargin=dp(56);column.addView(instruction,instructionParams);
+  LinearLayout.LayoutParams instructionParams=new LinearLayout.LayoutParams(-1,-2);instructionParams.topMargin=dp(22);column.addView(instruction,instructionParams);
+  homeWeather=HomeWeather.attach(this,column);
   if(gecko){
    LinearLayout attribution=new LinearLayout(this);attribution.setGravity(Gravity.CENTER);attribution.setOrientation(LinearLayout.HORIZONTAL);
    GeckoMark mark=new GeckoMark();attribution.addView(mark,new LinearLayout.LayoutParams(dp(32),dp(32)));
@@ -317,8 +253,8 @@ public class MainActivity extends Activity {
  Dialog dialog=new Dialog(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(1);panel.setPadding(dp(16),dp(12),dp(16),dp(16));panel.setBackground(round(0xff293344,20));
  TextView title=new TextView(this);title.setText(geckoActive?"Orion · GeckoView":"Orion · WebView");title.setTextSize(22);title.setTextColor(0xfff1f5f9);title.setPadding(dp(8),dp(8),0,dp(12));panel.addView(title);
  ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(1);scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
- String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Privacy and permissions","DNS and network","Settings","Replay boot animation"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Privacy and permissions","DNS and network","Settings","Replay boot animation"};
- Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->reloadActive(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->sharePage(),()->startActivity(new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)),()->importBrowserData(),()->sitePermissions(),()->dnsSettings(),()->settings(),()->showStartup()}:new Runnable[]{()->newTab(),()->openGecko(),()->reloadActive(),()->findPage(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->sharePage(),()->readerMode(),()->printPage(),()->startActivity(new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)),()->sitePermissions(),()->dnsSettings(),()->settings(),()->showStartup()};
+ String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Privacy and permissions","DNS and network","Settings"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Privacy and permissions","DNS and network","Settings"};
+ Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->reloadActive(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->sharePage(),()->startActivity(new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)),()->importBrowserData(),()->sitePermissions(),()->dnsSettings(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->reloadActive(),()->findPage(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->sharePage(),()->readerMode(),()->printPage(),()->startActivity(new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)),()->sitePermissions(),()->dnsSettings(),()->settings()};
  for(int i=0;i<labels.length;i++){final Runnable task=tasks[i];Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);button.setTextColor(0xfff1f5f9);button.setTextSize(16);button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);button.setPadding(dp(16),0,dp(16),0);button.setBackground(new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,12)));actions.addView(button,new LinearLayout.LayoutParams(-1,dp(48)));button.setOnClickListener(v->{dialog.dismiss();task.run();});}
  dialog.setContentView(panel);dialog.show();Window win=dialog.getWindow();win.setBackgroundDrawableResource(android.R.color.transparent);win.setGravity(Gravity.BOTTOM);win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
  }
@@ -354,7 +290,7 @@ public class MainActivity extends Activity {
  void finishMedia(boolean allow){PermissionRequest r=pendingMedia;pendingMedia=null;if(r==null)return;if(allow&&secureOrigin(permissionTab,r.getOrigin().toString()))r.grant(mediaResources);else r.deny();}
  void locationPermission(WebView w,String origin,GeolocationPermissions.Callback cb){if(pendingMedia!=null||pendingLocation!=null||!secureOrigin(w,origin)||getPreferences(0).getInt("site_location",0)==1){cb.invoke(origin,false,false);return;}pendingLocation=cb;locationOrigin=origin;permissionTab=w;Runnable grantLocation=()->{if(checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)==android.content.pm.PackageManager.PERMISSION_GRANTED)finishLocation(true);else requestPermissions(new String[]{android.Manifest.permission.ACCESS_COARSE_LOCATION},42);};if(getPreferences(0).getInt("site_location",0)==2){grantLocation.run();return;}new AlertDialog.Builder(this).setTitle("Location permission").setMessage(Uri.parse(origin).getHost()+" requests approximate location. Allow for this request?").setNegativeButton("Deny",(d,i)->finishLocation(false)).setOnCancelListener(d->finishLocation(false)).setPositiveButton("Allow",(d,i)->grantLocation.run()).show();}
  void finishLocation(boolean allow){GeolocationPermissions.Callback cb=pendingLocation;pendingLocation=null;if(cb!=null)cb.invoke(locationOrigin,allow&&secureOrigin(permissionTab,locationOrigin),false);}
- @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){super.onRequestPermissionsResult(code,permissions,results);boolean ok=results.length>0;for(int result:results)ok&=result==android.content.pm.PackageManager.PERMISSION_GRANTED;if(code==41)finishMedia(ok);if(code==42)finishLocation(ok);if(code==43){org.mozilla.geckoview.GeckoSession.PermissionDelegate.Callback cb=geckoAndroidCallback;geckoAndroidCallback=null;if(cb!=null){if(ok&&geckoActive)cb.grant();else cb.reject();}}}
+ @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){super.onRequestPermissionsResult(code,permissions,results);boolean ok=results.length>0;for(int result:results)ok&=result==android.content.pm.PackageManager.PERMISSION_GRANTED;if(code==HomeWeather.LOCATION_REQUEST){if(homeWeather!=null)homeWeather.onPermissionResult(ok);return;}if(code==41)finishMedia(ok);if(code==42)finishLocation(ok);if(code==43){org.mozilla.geckoview.GeckoSession.PermissionDelegate.Callback cb=geckoAndroidCallback;geckoAndroidCallback=null;if(cb!=null){if(ok&&geckoActive)cb.grant();else cb.reject();}}}
  void show(int i){if(geckoActive)closeGecko();if(selected>=0&&selected<tabs.size())tabs.get(selected).onPause();hideHome();content.removeAllViews();selected=i;current().onResume();content.addView(current(),new FrameLayout.LayoutParams(-1,-1));address.setText(allowed(current().getUrl())?current().getUrl():"");count.setContentDescription("Switch tabs, "+tabs.size()+" open");count.invalidate();back.setEnabled(current().canGoBack());forward.setEnabled(current().canGoForward());refreshTabletTabs();if(homeTabs.contains(current()))showHome(false);}
  void chooseTab(){String[] names=new String[tabs.size()];for(int i=0;i<names.length;i++)names[i]=tabs.get(i).getTitle()==null?"New tab":tabs.get(i).getTitle();new AlertDialog.Builder(this).setTitle("Tabs").setItems(names,(d,i)->show(i)).setPositiveButton("Archived tabs",(d,i)->archivedTabs()).setNeutralButton("Close current",(d,i)->{WebView w=current();content.removeAllViews();tabs.remove(selected);w.destroy();if(tabs.isEmpty())newTab();else show(Math.min(selected,tabs.size()-1));}).show();}
  void archivedTabs(){String[] urls=new TreeSet<>(getPreferences(0).getStringSet("archived_tabs",Collections.emptySet())).toArray(new String[0]);new AlertDialog.Builder(this).setTitle("Archived tabs").setItems(urls,(d,i)->{if(tabs.size()>=20){Toast.makeText(this,"Close a tab before restoring",0).show();return;}newTab();navigate(urls[i]);Set<String> set=new HashSet<>(Arrays.asList(urls));set.remove(urls[i]);getPreferences(0).edit().putStringSet("archived_tabs",set).apply();}).setPositiveButton("Archive current",(d,i)->{String url=current().getUrl();if(!allowed(url))return;Set<String> set=new HashSet<>(getPreferences(0).getStringSet("archived_tabs",Collections.emptySet()));set.add(url);getPreferences(0).edit().putStringSet("archived_tabs",set).apply();WebView w=current();content.removeAllViews();int index=selected;tabs.remove(index);selected=-1;w.destroy();if(tabs.isEmpty())newTab();else show(Math.min(index,tabs.size()-1));}).setNegativeButton("Close",null).show();}
@@ -461,12 +397,12 @@ public class MainActivity extends Activity {
  void settings(){Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);LinearLayout page=new LinearLayout(this);page.setOrientation(1);page.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("‹  Settings");close.setAllCaps(false);close.setTextColor(0xfff1f5f9);close.setBackgroundColor(0xff293344);close.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);close.setPadding(dp(16),0,0,0);close.setMinHeight(dp(56));close.setOnClickListener(v->dialog.dismiss());page.addView(close);ScrollView scroll=new ScrollView(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(1);panel.setPadding(0,0,0,dp(24));scroll.addView(panel);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));String[] engines={"Google","DuckDuckGo","Bing","Yahoo","Kagi","Brave Search","Startpage","Ecosia","Qwant","Mojeek","Swisscows","Wikipedia"};
  section(panel,"ACCOUNT");settingRow(panel,"Sync","Google account · Not connected",()->syncSettings());
  section(panel,"GENERAL");settingRow(panel,"Search engine",engines[Math.max(0,Math.min(engines.length-1,getPreferences(0).getInt("engine",0)))],()->new AlertDialog.Builder(this).setTitle("Search engine").setSingleChoiceItems(engines,getPreferences(0).getInt("engine",0),(d,i)->{getPreferences(0).edit().putInt("engine",i).apply();d.dismiss();dialog.dismiss();settings();}).setNegativeButton("Cancel",null).show());
- section(panel,"DISPLAY");settingRow(panel,"Toolbar shortcut","Choose Home, Bookmark or Reload",()->new AlertDialog.Builder(this).setTitle("Toolbar shortcut").setSingleChoiceItems(new String[]{"Home","Bookmark","Reload"},getPreferences(0).getInt("shortcut",0),(d,i)->{getPreferences(0).edit().putInt("shortcut",i).apply();updateToolbar();d.dismiss();}).setNegativeButton("Cancel",null).show());toggle(panel,"Swipe across address bar to switch tabs","tab_swipe",true);toggle(panel,"Dark web pages (experimental)","darkpages",false);settingRow(panel,"Text size",getPreferences(0).getInt("zoom",100)+"%",()->{String[] labels={"75%","100%","125%","150%","200%"};int[] sizes={75,100,125,150,200};new AlertDialog.Builder(this).setTitle("Text size").setItems(labels,(d,i)->{getPreferences(0).edit().putInt("zoom",sizes[i]).apply();applyAll();dialog.dismiss();settings();}).show();});toggle(panel,"Desktop websites","desktop",false);
+ section(panel,"DISPLAY");settingRow(panel,"Homepage weather","ECMWF IFS forecast · location, visibility and saved area",()->HomeWeather.settings(this));settingRow(panel,"Toolbar shortcut","Choose Home, Bookmark or Reload",()->new AlertDialog.Builder(this).setTitle("Toolbar shortcut").setSingleChoiceItems(new String[]{"Home","Bookmark","Reload"},getPreferences(0).getInt("shortcut",0),(d,i)->{getPreferences(0).edit().putInt("shortcut",i).apply();updateToolbar();d.dismiss();}).setNegativeButton("Cancel",null).show());toggle(panel,"Swipe across address bar to switch tabs","tab_swipe",true);toggle(panel,"Dark web pages (experimental)","darkpages",false);settingRow(panel,"Text size",getPreferences(0).getInt("zoom",100)+"%",()->{String[] labels={"75%","100%","125%","150%","200%"};int[] sizes={75,100,125,150,200};new AlertDialog.Builder(this).setTitle("Text size").setItems(labels,(d,i)->{getPreferences(0).edit().putInt("zoom",sizes[i]).apply();applyAll();dialog.dismiss();settings();}).show();});toggle(panel,"Desktop websites","desktop",false);
  section(panel,"CONTENT BLOCKING");toggle(panel,"Ad blocker","adblock",true);toggle(panel,"EasyList (domain rules)","easylist",false);toggle(panel,"EasyPrivacy (domain rules)","easyprivacy",false);settingRow(panel,"Update filter lists","Download latest domain rules",()->updateFilters());toggle(panel,"YouTube ad request filtering","youtube_ads",true);settingRow(panel,"About ad blocking","Blocks requests to known advertising domains",()->new AlertDialog.Builder(this).setTitle("Ad blocker").setMessage("Basic domain-based blocking. Some adverts will remain, and some sites may need blocking disabled. Reload the page after changing this setting.").setPositiveButton("OK",null).show());
  section(panel,"SITE SETTINGS");settingRow(panel,"Camera, microphone and location","Choose Ask every time, Block or Allow on request",()->sitePermissions());toggle(panel,"JavaScript","javascript",true);toggle(panel,"Load images","images",true);
  section(panel,"PRIVACY AND SECURITY");settingRow(panel,"DNS and Secure DNS","Cloudflare and other providers · IPv4 / IPv6 diagnostics",()->dnsSettings());settingRow(panel,"Privacy protections","HTTPS preferred · WebView cookies blocked · camera/mic/location controls",()->privacy());settingRow(panel,"Clear browsing data","Cookies, site storage, cache and tab history",()->clearBrowsingData());toggle(panel,"Zero cache (reload resources from network)","zero_cache",false);
  section(panel,"BROWSER DATA");settingRow(panel,"Bookmarks","Saved websites",()->bookmarks());settingRow(panel,"Reading list","Saved pages and read status",()->readingList());settingRow(panel,"Browsing history","Recent visited pages",()->historyLibrary());settingRow(panel,"Import browser data","Bookmarks, password options and cookie limitations",()->importBrowserData());
- section(panel,"ABOUT");settingRow(panel,"Replay launch animation","Inspect the orbit-and-star animation",()->{dialog.dismiss();showStartup();});settingRow(panel,"Orion Browser",installedVersion(),()->new AlertDialog.Builder(this).setTitle("About Orion").setMessage("Experimental community browser. Orion Connect, isolated private browsing, extensions and password sync are not implemented.").setPositiveButton("OK",null).show());
+ section(panel,"ABOUT");settingRow(panel,"Orion Browser",installedVersion(),()->new AlertDialog.Builder(this).setTitle("About Orion").setMessage("Experimental community browser. Orion Connect, isolated private browsing, extensions and password sync are not implemented.").setPositiveButton("OK",null).show());
  dialog.setContentView(page);dialog.show();dialog.getWindow().setLayout(-1,-1);dialog.getWindow().getDecorView().setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets i=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());page.setPadding(i.left,i.top,i.right,i.bottom);}return insets;});dialog.getWindow().getDecorView().requestApplyInsets();}
  void startDnsVpn(){
   if(android.net.VpnService.prepare(this)!=null){Toast.makeText(this,"VPN permission required",Toast.LENGTH_LONG).show();return;}
