@@ -87,16 +87,27 @@ Open **Orion icon → Security and privacy → DNS and Secure DNS**.
 
 **Default WebView behaviour remains Android-managed DNS** unless the optional local VPN is explicitly activated. Android routing and device policies remain authoritative. Do not enable experimental VPN functionality on a device where losing another active VPN would be problematic.
 
+## Touch gestures (experimental)
+
+- **Swipe left across a webpage:** Back, if history is available.
+- **Swipe right across a webpage:** Forward, if history is available.
+- **Pull down at the top of the page:** Refresh. This is disabled while the page is scrolled down.
+- **Swipe up from the bottom navigation toolbar:** Open the Downloads status panel.
+- **Normal scrolls and multi-touch:** Pass through to the webpage. Gestures require deliberate movement and are best tested on-device, especially on horizontal carousels and Android system-gesture navigation.
+- **Alternative controls:** Existing Back, Forward, Reload and Menu → Downloads controls remain available.
+
+The downloads panel is **not** the Android notification shade. It can be closed while downloads continue. System-managed transfers do not expose a live transfer speed through Android DownloadManager; parallel transfers display an approximate average speed.
+
 ## Other implemented Android features
 
 | Area | Functions and limitations |
 | --- | --- |
-| **Tabs and navigation** | Multi-tab WebView, tab picker, tablet strip, 20-tab limit, back/forward/reload, search engines and manually archived tabs. GeckoView is an experimental separate session. |
+| **Tabs and navigation** | Multi-tab WebView, tab picker, tablet strip, 20-tab limit, back/forward/reload, search engines and manually archived tabs. Native gestures in both engines: swipe left for Back, swipe right for Forward, pull down from the top of a page to refresh. GeckoView is an experimental separate session. |
 | **Search** | Google, DuckDuckGo, Bing, Yahoo, Kagi, Brave Search, Startpage, Ecosia, Qwant, Mojeek, Swisscows and Wikipedia; per-provider behaviour not all tested on device. |
 | **Bookmarks / reading list / history** | Locally stored bookmarks with editing/search, reading list, URL history and HTML/JSON bookmark imports. Cloud synchronisation is not available. |
 | **Password migration** | Import supported CSV into an Android Keystore AES-GCM-encrypted local migration vault; export imported records as **plaintext CSV** after confirmation. **No browser autofill or password sync.** |
 | **Cookie migration** | User-confirmed WebView import of compatible Netscape cookies.txt or browser JSON. GeckoView cookie import is not implemented; cookie exports can contain live sessions. |
-| **Downloads** | Android DownloadManager, plus an experimental four-connection HTTPS range downloader with single-request fallback. Downloaded files persist outside Incognito. |
+| **Downloads** | Swipe up from the **bottom toolbar** to open the downloads panel, or use Menu → Downloads. The panel shows live progress and cancellation for Android DownloadManager transfers and experimental four-connection HTTPS range downloads (speed and per-connection progress on parallel transfers). It can be dismissed without interrupting the transfer. DownloadManager IDs are retained locally for status after restarting; direct parallel transfers only retain the latest in-process state. Downloaded files persist outside Incognito. |
 | **Page tools** | Share sheet, WebView find-in-page, basic reader mode and Android Print / Save as PDF. GeckoView feature coverage differs. |
 | **Appearance** | Dark native interface, adjustable text zoom, desktop-site option, optional webpage darkening and swiping on the address bar to switch tabs. |
 | **Website permissions** | Site-level camera/microphone/location choices integrated with Android permission requests and GeckoView delegates; GeckoView notification requests are blocked in this build. |
