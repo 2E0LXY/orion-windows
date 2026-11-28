@@ -114,7 +114,7 @@ class OrionUiContract(unittest.TestCase):
     def test_start_page_shared_between_webview_and_geckoview(self):
         layout = method("void showHome(boolean gecko)", "class GeckoMark")
         self.assertIn('title.setText("Orion")', layout)
-        self.assertIn('subtitle.setText("COMMUNITY BROWSER")', layout)
+        self.assertIn('subtitle.setText("PRIVATE BROWSER")', layout)
         self.assertIn('instruction.setText("Search or enter an address below.")', layout)
         self.assertIn('powered.setText("Powered by GeckoView")', layout)
         self.assertIn("if(gecko)", layout)
