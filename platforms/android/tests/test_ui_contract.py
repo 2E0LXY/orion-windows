@@ -268,9 +268,8 @@ class OrionUiContract(unittest.TestCase):
     def test_first_five_grey_actions_have_real_implementations(self):
         menu = method("void menu()", "void incognitoExplained()")
         self.assertIn('labels[2]="Refresh start page"',menu)
-        self.assertIn('labels[4]="Add bookmark"',menu)
-        self.assertIn('labels[9]="Share Orion website"',menu)
         self.assertIn('labels[4]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark"',menu)
+        self.assertIn('labels[9]="Share Orion website"',menu)
         self.assertIn('()->refreshOrReload()',menu)
         self.assertIn('()->saveOrAddBookmark()',menu)
         self.assertIn('()->shareOrionIfHome()',menu)
