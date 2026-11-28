@@ -32,8 +32,10 @@ class OrionUiContract(unittest.TestCase):
     def test_ipv4_and_ipv6_are_actually_probed(self):
         self.assertIn('LinkProperties', DNS)
         self.assertIn('Inet6Address', DNS)
-        self.assertIn('probe("1.1.1.1")', DNS)
-        self.assertIn('probe("2606:4700:4700::1111")', DNS)
+        self.assertIn('new String[]{IPV4[p],IPV6[p]}', DNS)
+        self.assertIn('socket.connect(InetAddress.getByName(ip),53)', DNS)
+        self.assertIn('append(probe(ip))', DNS)
+        self.assertNotIn('probe("1.1.1.1")', DNS)
         self.assertIn('queryDns(endpoint,1)', DNS)
         self.assertIn('queryDns(endpoint,28)', DNS)
         self.assertIn('application/dns-message', DNS)
