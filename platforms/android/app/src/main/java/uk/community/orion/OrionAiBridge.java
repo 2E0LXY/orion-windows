@@ -94,16 +94,16 @@ final class OrionAiBridge {
   return MessageDigest.isEqual(a,b);
  }
  private void handle(Socket socket) throws Exception{
-  BufferedReader in=new BufferedReader(new InputStreamReader(socket.getInputStream(),StandardCharsets.UTF_8));
+  java.io.InputStream input=socket.getInputStream();
   BufferedWriter out=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),StandardCharsets.UTF_8));
-  String request=in.readLine();
+  String request=readHeaderLine(input);
   if(request==null)return;
   String[] parts=request.split(" ");
   if(parts.length!=3||!"HTTP/1.1".equals(parts[2])){respond(out,400,"Bad Request","{}");return;}
   String path=parts[1],verb=parts[0];
   int length=-1;
   String authorisation=null,origin=null,hostHeader=null,encoding=null,line;
-  while((line=in.readLine())!=null&&!line.isEmpty()){
+  while((line=readHeaderLine(input))!=null&&!line.isEmpty()){
    int sep=line.indexOf(':');if(sep<=0)continue;
    String key=line.substring(0,sep).trim().toLowerCase(java.util.Locale.ROOT),value=line.substring(sep+1).trim();
    if(key.equals("authorization"))authorisation=value;
@@ -118,13 +118,24 @@ final class OrionAiBridge {
   if(!authorise(authorisation)){respond(out,401,"Unauthorized","{}");return;}
   if(!"POST".equals(verb)||!"/mcp".equals(path)||length<0||length>MAX_BODY){respond(out,400,"Bad Request","{}");return;}
   byte[] payload=new byte[length];int read=0;
-  java.io.InputStream input=socket.getInputStream();
   while(read<length){int n=input.read(payload,read,length-read);if(n<0)throw new java.io.EOFException();read+=n;}
   JSONObject requestJson;
   try{requestJson=new JSONObject(new String(payload,StandardCharsets.UTF_8));}
   catch(Exception e){respond(out,400,"Bad Request","{}");return;}
   JSONObject reply=dispatch(requestJson);
   respond(out,200,"OK",reply.toString());
+ }
+ // Read header lines without buffering beyond CRLF: a BufferedReader may consume body bytes.
+ private String readHeaderLine(java.io.InputStream in)throws Exception{
+  java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();
+  int c;
+  while((c=in.read())!=-1){
+   if(c==10)break;
+   if(c!=13)bytes.write(c);
+   if(bytes.size()>8192)throw new java.io.IOException("HTTP header too large");
+  }
+  if(c<0&&bytes.size()==0)return null;
+  return bytes.toString("UTF-8");
  }
  private void respond(BufferedWriter out,int status,String label,String body)throws Exception{
   byte[] bytes=body.getBytes(StandardCharsets.UTF_8);
