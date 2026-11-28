@@ -38,6 +38,60 @@ public class MainActivity extends Activity {
  String installedVersion(){try{android.content.pm.PackageInfo p=getPackageManager().getPackageInfo(getPackageName(),0);return "Version "+p.versionName+" · Build "+(Build.VERSION.SDK_INT>=28?p.getLongVersionCode():p.versionCode);}catch(Exception e){return "Version unavailable";}}
  int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
  GradientDrawable round(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
+
+ // Dispatch deliberate gestures at the native browser shell, across both engines.
+ float touchStartX,touchStartY;
+ int gestureZone=0,gestureAction=0,geckoScrollY=0;
+ boolean gestureCaptured=false;
+ boolean touchWithin(View view,float x,float y){
+  if(view==null||view.getVisibility()!=View.VISIBLE)return false;
+  Rect bounds=new Rect();return view.getGlobalVisibleRect(bounds)&&bounds.contains((int)x,(int)y);
+ }
+ boolean pageAtTop(){
+  if(homeOverlay!=null){View child=homeOverlay.getChildAt(0);return child==null||!child.canScrollVertically(-1);}
+  if(geckoActive)return geckoScrollY<=0;
+  return selected>=0&&!current().canScrollVertically(-1);
+ }
+ void finishGesture(int action){
+  if(action==1){if(geckoActive)geckoGoBack();else if(selected>=0&&current().canGoBack())current().goBack();}
+  else if(action==2){if(geckoActive)geckoGoForward();else if(selected>=0&&current().canGoForward())current().goForward();}
+  else if(action==3){if(homeOverlay!=null)originalHome();else reloadActive();}
+  else if(action==4)showDownloadPanel();
+ }
+ @Override public boolean dispatchTouchEvent(MotionEvent event){
+  int phase=event.getActionMasked();
+  if(phase==MotionEvent.ACTION_DOWN){
+   gestureCaptured=false;gestureAction=0;
+   touchStartX=event.getRawX();touchStartY=event.getRawY();
+   gestureZone=touchWithin(navigation,touchStartX,touchStartY)?1:touchWithin(content,touchStartX,touchStartY)?2:0;
+   return super.dispatchTouchEvent(event);
+  }
+  if(event.getPointerCount()>1){
+   if(gestureCaptured){gestureCaptured=false;gestureZone=0;return true;}
+   gestureZone=0;return super.dispatchTouchEvent(event);
+  }
+  if(phase==MotionEvent.ACTION_MOVE&&gestureZone!=0){
+   if(gestureCaptured)return true;
+   float dx=event.getRawX()-touchStartX,dy=event.getRawY()-touchStartY;
+   if(gestureZone==1){
+    if(dy< -dp(76)&&-dy>Math.abs(dx)*1.5f)gestureAction=4;
+   }else if(gestureZone==2){
+    if(dy>dp(100)&&dy>Math.abs(dx)*1.6f&&pageAtTop())gestureAction=3;
+    else if(dx< -dp(110)&&-dx>Math.abs(dy)*1.8f)gestureAction=1;
+    else if(dx>dp(110)&&dx>Math.abs(dy)*1.8f)gestureAction=2;
+   }
+   if(gestureAction!=0){
+    MotionEvent cancel=MotionEvent.obtain(event);cancel.setAction(MotionEvent.ACTION_CANCEL);
+    super.dispatchTouchEvent(cancel);cancel.recycle();gestureCaptured=true;return true;
+   }
+  }
+  if(phase==MotionEvent.ACTION_UP||phase==MotionEvent.ACTION_CANCEL){
+   boolean captured=gestureCaptured;int action=gestureAction;
+   gestureCaptured=false;gestureZone=0;gestureAction=0;
+   if(captured){if(phase==MotionEvent.ACTION_UP)finishGesture(action);return true;}
+  }
+  return super.dispatchTouchEvent(event);
+ }
  void submit(){navigate(address.getText().toString());address.clearFocus();((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(address.getWindowToken(),0);}
  Button button(String glyph,String label,Runnable r,boolean weight){Button b=new Button(this);b.setText("");b.setContentDescription(label);b.setTooltipText(label);b.setMinWidth(0);b.setMinimumWidth(0);b.setPadding(0,0,0,0);b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,24)));b.setCompoundDrawables(null,new Glyph(glyph),null,null);b.setGravity(Gravity.CENTER);b.setPadding(0,dp(12),0,0);bar.addView(b,new LinearLayout.LayoutParams(weight?0:dp(48),dp(48),weight?1:0));b.setOnClickListener(v->r.run());return b;}
  class Glyph extends Drawable {final String kind;final Paint p=new Paint(3);Glyph(String k){kind=k;setBounds(0,0,dp(24),dp(24));}public void draw(Canvas c){c.save();c.translate(getBounds().left,getBounds().top);c.scale(getBounds().width()/24f,getBounds().height()/24f);p.setColor(0xffdce5f4);p.setStrokeWidth(1.8f);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);p.setStyle(Paint.Style.STROKE);Path a=new Path();switch(kind){case "back":a.moveTo(14,5);a.lineTo(7,12);a.lineTo(14,19);a.moveTo(7,12);a.lineTo(21,12);break;case "forward":case "go":a.moveTo(10,5);a.lineTo(17,12);a.lineTo(10,19);a.moveTo(3,12);a.lineTo(17,12);break;case "bookmark":a.moveTo(6,3);a.lineTo(18,3);a.lineTo(18,21);a.lineTo(12,16);a.lineTo(6,21);a.close();break;case "reload":c.drawArc(4,4,20,20,-45,300,false,p);a.moveTo(20,4);a.lineTo(20,10);a.lineTo(14,10);break;case "home":a.moveTo(3,11);a.lineTo(12,3);a.lineTo(21,11);a.lineTo(21,21);a.lineTo(3,21);a.close();break;case "orion":p.setColor(0xff8ab4ff);p.setStyle(Paint.Style.FILL);c.drawCircle(12,12,11,p);p.setColor(0xff26354e);c.drawCircle(12,12,8,p);p.setColor(0xfff5faff);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.5f);c.drawCircle(12,12,5,p);break;case "tabs":c.drawRoundRect(3,3,21,21,4,4,p);p.setStyle(Paint.Style.FILL);p.setTextSize(11);p.setTextAlign(Paint.Align.CENTER);c.drawText(""+tabs.size(),12,16,p);break;default:p.setStyle(Paint.Style.FILL);for(int i=5;i<=19;i+=7)c.drawCircle(12,i,1.6f,p);}c.drawPath(a,p);c.restore();}public void setAlpha(int a){p.setAlpha(a);}public void setColorFilter(ColorFilter f){p.setColorFilter(f);}public int getOpacity(){return PixelFormat.TRANSLUCENT;}}
@@ -125,7 +179,13 @@ public class MainActivity extends Activity {
      if(geckoActive&&geckoSession==sess){geckoCanGoForward=canGoForward;forward.setEnabled(canGoForward);}
     }
    });
-   session.setProgressDelegate(new org.mozilla.geckoview.GeckoSession.ProgressDelegate(){
+   geckoScrollY=0;
+    session.setScrollDelegate(new org.mozilla.geckoview.GeckoSession.ScrollDelegate(){
+     @Override public void onScrollChanged(org.mozilla.geckoview.GeckoSession sess,int scrollX,int scrollY){
+      if(geckoSession==sess)geckoScrollY=scrollY;
+     }
+    });
+    session.setProgressDelegate(new org.mozilla.geckoview.GeckoSession.ProgressDelegate(){
     @Override public void onPageStart(org.mozilla.geckoview.GeckoSession sess,String url){
      if(geckoActive&&geckoSession==sess){geckoAddress=url;progress.setProgress(0);progress.setVisibility(View.VISIBLE);if(!address.hasFocus())address.setText(url);}
     }
@@ -165,7 +225,7 @@ public class MainActivity extends Activity {
   if(geckoIncognito)getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
   geckoIncognito=false;
   address.setHint("Search or enter address");
-  geckoView=null;geckoSession=null;geckoAddress="";geckoCanGoBack=false;geckoCanGoForward=false;
+  geckoView=null;geckoSession=null;geckoAddress="";geckoScrollY=0;geckoCanGoBack=false;geckoCanGoForward=false;
   current().onResume();content.addView(current(),new FrameLayout.LayoutParams(-1,-1));
   address.setText(allowed(current().getUrl())?current().getUrl():"");
   back.setEnabled(current().canGoBack());forward.setEnabled(current().canGoForward());
