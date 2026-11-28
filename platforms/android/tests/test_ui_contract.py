@@ -159,11 +159,56 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn("loadWebUrl(current(),url)", navigate)
 
     def test_shared_menu_without_replay(self):
-        menu = method("void menu()", "void downloadPage(")
+        menu = method("void menu()", "void incognitoExplained()")
         self.assertIn('geckoActive?new String[]{', menu)
         self.assertNotIn("Replay boot animation", menu)
-        self.assertIn("sitePermissions()", menu)
+        self.assertNotIn('"Privacy and permissions","DNS and network"', menu)
         self.assertIn("readingList()", menu)
+
+    def test_orion_security_button_at_toolbar_right(self):
+        oncreate = method("public void onCreate(Bundle b)", "String installedVersion()")
+        self.assertIn('button("menu","Browser menu",()->menu(),true);button("orion","Orion security and privacy",()->securityPrivacy(),true)', oncreate)
+        glyph = method("class Glyph extends Drawable", "void updateToolbar()")
+        self.assertIn('case "orion":', glyph)
+        panel = method("void securityPrivacy()", "void downloadPage(")
+        self.assertIn('section(panel,"PRIVATE BROWSING")', panel)
+        self.assertIn('settingRow(panel,geckoIncognito?"End Incognito session":"Start Incognito mode"', panel)
+        for item in ['section(panel,"TRACKERS AND CONTENT")', 'section(panel,"WEBSITE SECURITY")',
+                     'section(panel,"SITE PERMISSIONS")', 'section(panel,"ENCRYPTED DNS AND NETWORK")',
+                     'section(panel,"BROWSING DATA")', 'toggle(panel,"Ad blocker (WebView)"',
+                     'toggle(panel,"EasyPrivacy domain rules"', 'toggle(panel,"JavaScript"',
+                     'toggle(panel,"Load images"', 'settingRow(panel,"DNS and Secure DNS"',
+                     'settingRow(panel,"Camera, microphone and location"',
+                     'settingRow(panel,"Clear normal browsing data"']:
+            self.assertIn(item, panel)
+        settings = method("void settings()", "void startDnsVpn()")
+        self.assertNotIn('section(panel,"CONTENT BLOCKING")', settings)
+        self.assertNotIn('section(panel,"PRIVACY AND SECURITY")', settings)
+        self.assertIn('securityPrivacy()', settings)
+
+    def test_incognito_is_a_real_gecko_private_session_and_not_recorded(self):
+        gecko = method("void openGecko()", "void closeGecko()")
+        self.assertIn('new org.mozilla.geckoview.GeckoSessionSettings.Builder().usePrivateMode(incognito).build()', gecko)
+        self.assertIn('void openIncognito()', gecko)
+        self.assertIn('if(geckoActive){closeGecko();}', gecko)
+        self.assertIn('boolean openAtHome=incognito||', gecko)
+        self.assertIn('if(!geckoIncognito)recordVisit(url);', gecko)
+        self.assertIn('FLAG_SECURE', gecko)
+        close = method("void closeGecko()", "void geckoGoBack()")
+        self.assertIn('getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE)', close)
+        self.assertIn('geckoIncognito=false;', close)
+        self.assertIn('geckoSession.close()', close)
+        history = method("void recordVisit(String uri)", "void historyLibrary()")
+        self.assertIn('if(geckoIncognito||!allowed(uri))return;', history)
+        bookmark = method("void save()", "void bookmarks()")
+        self.assertIn('if(geckoIncognito)', bookmark)
+        home = method("void showHome(boolean gecko)", "class GeckoMark")
+        self.assertIn('if(!geckoIncognito)homeWeather=HomeWeather.attach(this,column)', home)
+        self.assertIn('End Incognito session', home)
+        info = method("void incognitoExplained()", "void securityPrivacy()")
+        self.assertIn('internet provider', info)
+        self.assertIn('fingerprinting', info)
+        self.assertIn('normal browser tabs, cookies or history', info)
 
 
 if __name__ == "__main__":
