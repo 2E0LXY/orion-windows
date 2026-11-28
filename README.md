@@ -6,7 +6,7 @@ Open-source **Orion** work covering **Windows, Linux, and Android**. This reposi
 
 ## Downloads — start here
 
-**[Latest verified ARM64 development build (28 November 2026)](https://github.com/2E0LXY/orion-windows/actions/runs/46121304241/artifacts/15253277892)** — 98.4 MB ZIP; extract `app-debug.apk`. Includes the direct DNS and network menu in both engines. [CI run](https://github.com/2E0LXY/orion-windows/actions/runs/46121304241) · [Draft PR #3](https://github.com/2E0LXY/orion-windows/pull/3). The stable release shortcut below may contain older code until the PR is merged and published.
+**[Latest Android ARM64 build runs](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml)** — open a successful Android prototype APK run, download its ARM64 artefact and extract the APK. [CI history](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) · [Draft PR #3](https://github.com/2E0LXY/orion-windows/pull/3). The stable release shortcut below may contain older code until the PR is merged and published.
 
 | Platform | Latest accessible download / source | Status |
 | --- | --- | --- |
@@ -40,15 +40,23 @@ Android is implemented in **native Java** in [`platforms/android/`](https://gith
 | Password export | User-confirmed export of imported credentials as standard **plaintext CSV** | CSV reveals passwords; store and transfer securely, then delete when no longer needed; no encrypted cross-device backup yet |
 | Cookie import | Opt-in Netscape `cookies.txt` or browser JSON export, domain preview, size/entry limits, WebView cookie import | Cookies may contain active sessions; GeckoView has a separate cookie store; **cookie export is not yet provided** |
 | Website permissions | WebView camera, microphone and approximate location: Ask every time, Block, or Allow on request; Android runtime permission remains required | GeckoView camera, microphone and location handlers added; notification requests blocked; device verification pending; no remembered per-site allowlist |
-| Privacy | Third-party cookie blocking in WebView; basic request-domain ad/tracker filtering; no-cache loading option; clearing WebView cookies/storage/cache/history | Not complete ad blocking, anti-fingerprinting or anonymity; zero-cache mode is not guaranteed disk-free browsing |
+| Privacy | Orion logo on far right opens Security and privacy: Incognito first, ad/tracker controls, HTTPS warnings, site permissions, DNS/local VPN and normal data clearing | Incognito uses a separate GeckoView private session, keeps its navigation out of Orion history and prevents normal bookmarking. One private tab only; real-device isolation tests and robust teardown are pending. Network/website logs, fingerprints and external downloads persist |
 | Filter lists | Optional EasyList/EasyPrivacy **domain-rule subset** updates; selected YouTube ad-request endpoints | No complete rules engine, cosmetic filtering, or guarantee of removing video ads |
 | Downloads | Native Android DownloadManager integration; experimental four-connection HTTPS range downloader with progress and cancellation | Range eligibility and validators required; single standard download fallback; no pause/resume/background foreground service |
 | Reader and page export | Experimental article-text reader; Android printing/**Save as PDF** | Reader extracts text, not full article formatting; full-page screenshot/translation remain outstanding |
 | Find and share | Find text on current WebView page; Android share sheet | GeckoView find-in-page not yet exposed |
-| Data controls | Clear browsing data; bookmarks and imported passwords stored locally | Some GeckoView data is not cleared by WebView actions; no guaranteed isolated private session |
+| Data controls | Clear normal WebView data from the Orion security panel; bookmarks and imported passwords stored locally | Private GeckoView mode is separate from normal browsing, but device verification is pending. Clearing WebView data does not erase all GeckoView data |
 | Account and sync | Orion Connect prototype documents and development relay | **Google OAuth sign-in, encryption, cross-device sync and push are not connected in the Android app** |
 | Extensions | GeckoView engine dependency included | WebExtensions/uBlock management **not yet implemented** |
 | Other outstanding | Background media controls, password autofill, passkeys, full-page translation, robust tab restore, production signing, comprehensive testing | Do not treat roadmap items as shipped features |
+
+### Orion security and Incognito — Android
+
+The **Orion icon on the far right of the bottom toolbar** opens a native privacy and security panel. Incognito is the first action. Ad-block and filter rules, HTTPS warnings, JavaScript/image controls, camera/microphone/location permissions, DNS and the experimental local VPN, and normal browsing-data management now live in this menu.
+
+Incognito starts a **GeckoView private-mode session**, even when the ordinary engine is Android WebView. Cookies and temporary site data are isolated from ordinary tabs by GeckoView; Orion skips private navigations in its saved history and disallows private bookmarks and saving a normal homepage. Homepage weather is hidden; Android blocks screenshots via FLAG_SECURE. Closing Incognito returns to normal tabs. This version supports **one private tab** only, and the actual data teardown and crash/relaunch behaviour still need real-device testing.
+
+Incognito **does not provide network anonymity**: network operators and websites still observe connections; websites can fingerprint browser characteristics; downloads, shares, external accounts and logs can persist. VPN and device management policies are unaffected. Private extensions and multi-tab Incognito are not implemented.
 
 ### Homepage weather — Android
 
@@ -56,7 +64,7 @@ The built-in Orion homepage displays a native weather card for both WebView and 
 
 ### DNS and network — Android
 
-Open **Orion menu → DNS and network** in either engine, or **Settings → Privacy and Security → DNS and Secure DNS**.
+Open **Orion logo (right of bottom toolbar) → Security and privacy → DNS and Secure DNS**.
 
 - Cloudflare is the default GeckoView DNS-over-HTTPS (DoH) provider; strict mode is the default, with optional system DNS fallback.
 - Presets: Cloudflare, Control D, Quad9, Google, OpenDNS, NextDNS, AdGuard, CleanBrowsing, DNS.Watch and Mullvad, plus Android system DNS and custom HTTPS DoH URL. NextDNS requires account configuration; DNS.Watch is reference-only.
