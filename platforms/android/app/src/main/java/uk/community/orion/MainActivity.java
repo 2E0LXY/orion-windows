@@ -610,6 +610,9 @@ public class MainActivity extends Activity {
   settingRow(panel,"Camera, microphone and location","Ask each time, Block or Allow on request",()->{dialog.dismiss();sitePermissions();});
   section(panel,"ENCRYPTED DNS AND NETWORK");
   settingRow(panel,"DNS and Secure DNS","Provider, IPv4/IPv6 diagnostics and local VPN",()->{dialog.dismiss();dnsSettings();});
+  section(panel,"AI SHARING");
+  settingRow(panel,"Orion AI Connect",aiBridge!=null&&aiBridge.running()?"Active · tap to disconnect":"Off · local MCP with per-request approval",()->{dialog.dismiss();aiConnectSettings();});
+  settingRow(panel,"Share current page with an AI app","Android share sheet · title and URL only · never Incognito",()->{dialog.dismiss();shareCurrentPageToAi();});
   section(panel,"BROWSING DATA");
   settingRow(panel,"Clear normal browsing data","WebView cookies, site data and history; Orion recent URL history",()->{dialog.dismiss();clearBrowsingData();});
   dialog.setContentView(page);dialog.show();
@@ -745,6 +748,18 @@ public class MainActivity extends Activity {
  void readerMode(){WebView target=current();if(!allowed(target.getUrl()))return;target.evaluateJavascript("(function(){var e=document.querySelector('article,main,[role=main]')||document.body;return e?e.innerText.slice(0,150000):'';})()",value->{if(isDestroyed()||target!=current())return;String body;try{Object parsed=new org.json.JSONTokener(value).nextValue();body=parsed instanceof String?(String)parsed:"";}catch(Exception e){body="";}if(body.trim().isEmpty()){Toast.makeText(this,"No readable text found",Toast.LENGTH_SHORT).show();return;}Dialog dialog=new Dialog(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("Close reader");close.setOnClickListener(v->dialog.dismiss());panel.addView(close);ScrollView scroll=new ScrollView(this);TextView article=new TextView(this);article.setText(body);article.setTextColor(0xfff1f5f9);article.setTextSize(18);article.setLineSpacing(dp(5),1.2f);article.setPadding(dp(24),dp(16),dp(24),dp(24));article.setTextIsSelectable(true);scroll.addView(article);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));dialog.setContentView(panel);dialog.show();dialog.getWindow().setLayout(-1,-1);});}
  void printPage(){if(!allowed(current().getUrl()))return;android.print.PrintManager manager=(android.print.PrintManager)getSystemService(PRINT_SERVICE);if(manager!=null)manager.print("Orion webpage",current().createPrintDocumentAdapter("Orion webpage"),new android.print.PrintAttributes.Builder().build());}
  void sharePage(){String u=geckoActive?geckoAddress:current().getUrl();if(allowed(u)){Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("text/plain");intent.putExtra(Intent.EXTRA_TEXT,u);startActivity(Intent.createChooser(intent,"Share link"));}}
+ void shareCurrentPageToAi(){
+  if(geckoIncognito){Toast.makeText(this,"Private pages cannot be shared with AI apps",Toast.LENGTH_LONG).show();return;}
+  String url=geckoActive?geckoAddress:selected>=0?current().getUrl():null;
+  if(!allowed(url)){Toast.makeText(this,"Open a normal webpage before sharing",Toast.LENGTH_SHORT).show();return;}
+  String title=geckoActive?"Webpage":current().getTitle();
+  Intent send=new Intent(Intent.ACTION_SEND);
+  send.setType("text/plain");
+  send.putExtra(Intent.EXTRA_SUBJECT,"Page shared from Orion");
+  send.putExtra(Intent.EXTRA_TEXT,(title==null?"":title.substring(0,Math.min(title.length(),120))+"\n")+url);
+  startActivity(Intent.createChooser(send,"Share page with an AI app"));
+ }
+
  void findPage(){WebView target=current();EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Find text");field.setContentDescription("Find text on page");AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find in page").setView(field).setPositiveButton("Next",null).setNeutralButton("Previous",null).setNegativeButton("Done",null).create();field.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){if(s.length()==0)target.clearMatches();else target.findAllAsync(s.toString());}public void afterTextChanged(android.text.Editable e){}});dialog.setOnDismissListener(d->target.clearMatches());dialog.show();dialog.getButton(-1).setOnClickListener(v->target.findNext(true));dialog.getButton(-3).setOnClickListener(v->target.findNext(false));}
  void home(WebView w){homeTabs.add(w);if(w==current()&&!geckoActive)showHome(false);address.setText("");}
  WebView current(){return tabs.get(selected);}
