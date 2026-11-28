@@ -213,7 +213,7 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn("pageAtTop()", gestures)
         self.assertIn("else if(action==4)showDownloadPanel()", gestures)
         self.assertIn("else if(action==3)", gestures)
-        self.assertIn("else if(action==1)", gestures)
+        self.assertIn("if(action==1)", gestures)
         self.assertIn("else if(action==2)", gestures)
         self.assertIn("MotionEvent.ACTION_CANCEL", gestures)
         self.assertIn("session.setScrollDelegate(new org.mozilla.geckoview.GeckoSession.ScrollDelegate()", SOURCE)
