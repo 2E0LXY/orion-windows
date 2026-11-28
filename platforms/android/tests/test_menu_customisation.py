@@ -17,6 +17,13 @@ class MenuCustomisationTests(unittest.TestCase):
         self.assertIn('edits.putBoolean("menu_item_"+MENU_IDS[i],enabled[i]);',SRC)
         self.assertIn('for(String id:MENU_IDS)edits.remove("menu_item_"+id)',SRC)
         self.assertIn('ids[i].equals("install")',SRC)
+    def test_engine_parity_exposes_same_menu_actions(self):
+        self.assertIn('String[] labels=MENU_TITLES.clone();',SRC)
+        self.assertIn('String[] ids=MENU_IDS;',SRC)
+        self.assertIn('labels[1]=geckoActive?"Return to WebView":"Open in GeckoView";',SRC)
+        self.assertIn('boolean engineUnsupported=geckoActive&&',SRC)
+        self.assertIn('labels[i]+=" · WebView only"',SRC)
+        self.assertIn('()->installOrShortcut()',SRC)
     def test_shortcut_requires_webpage_and_launcher_consent(self):
         self.assertIn('if(geckoIncognito){Toast.makeText(this,"Shortcuts are unavailable in Incognito"',SRC)
         self.assertIn('if(!allowed(url))',SRC)
