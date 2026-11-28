@@ -16,6 +16,12 @@ The Orion WebView and GeckoView menus now include **Install and create shortcut*
 - **Customise menu** opens native checkboxes to show/hide individual menu entries. Choices are stored locally and shared across WebView and GeckoView by stable action identifier. Save applies changes; Reset restores all defaults. The Customise menu action remains visible so it cannot be hidden accidentally.
 - Both functions are included on development branch `chatgpt/default-browser-ai-connect`. Installation and launcher-specific behavior require real-device testing before release approval.
 
+## WebView and GeckoView menu parity
+
+Both engines now use the same menu ordering, labels and saved visibility preferences. **Customise menu**, **Add website to Home screen**, bookmarks, reading list, history, imports, share link, downloads, Settings, reload and engine switching appear consistently. The shortcut action works from a normal loaded webpage in either engine; Android's launcher must approve creation.
+
+**Important engine limitations:** Find in page, Reader mode and Print / Save PDF currently use Android WebView APIs. In GeckoView they remain visible but greyed out and marked **WebView only**, rather than silently operating on a different, hidden WebView tab. Normal GeckoView is still a single separate session; full GeckoView multi-tab parity, downloads initiated by GeckoView pages, extension management and Gecko-specific find/print integrations require further implementation and device testing. A shared menu alone does not establish feature parity.
+
 ## Android default browser and AI control
 
 **Default browser (development branch):** Settings → General → Default browser opens Android's system-managed browser-role prompt (Android 10+) or the default-apps settings screen on older devices. Orion advertises HTTP and HTTPS `VIEW` intents, accepts shared external website links on launch and while running, validates schemes, and closes an Incognito GeckoView session before opening a normal external link. Android retains the final choice. This has not yet been checked on a physical device.
