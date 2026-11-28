@@ -341,11 +341,15 @@ public class MainActivity extends Activity {
  TextView title=new TextView(this);title.setText(geckoIncognito?"Orion · Incognito":geckoActive?"Orion · GeckoView":"Orion · WebView");title.setTextSize(22);title.setTextColor(0xfff1f5f9);title.setPadding(dp(8),dp(8),0,dp(12));panel.addView(title);
  ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
  String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Settings"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Settings"};
- Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->reloadActive(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->sharePage(),()->showDownloadPanel(),()->importBrowserData(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->reloadActive(),()->findPage(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->sharePage(),()->readerMode(),()->printPage(),()->showDownloadPanel(),()->settings()};
- boolean canUsePage=homeOverlay==null&&allowed(geckoActive?geckoAddress:current().getUrl());
+ Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->refreshOrReload(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->shareOrionIfHome(),()->showDownloadPanel(),()->importBrowserData(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->refreshOrReload(),()->findPage(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->shareOrionIfHome(),()->readerMode(),()->printPage(),()->showDownloadPanel(),()->settings()};
+ if(homeOverlay!=null){
+   if(geckoActive){labels[2]="Refresh start page";labels[3]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark";labels[7]="Share Orion website";}
+   else{labels[2]="Refresh start page";labels[4]="Add bookmark";labels[9]="Share Orion website";}
+  }
+  boolean canUsePage=homeOverlay==null&&allowed(geckoActive?geckoAddress:current().getUrl());
   for(int i=0;i<labels.length;i++){
    final Runnable task=tasks[i];
-   boolean requiresPage=geckoActive?(i==2||i==3||i==7):(i==2||i==3||i==4||i==9||i==10||i==11);
+   boolean requiresPage=!geckoActive&&(i==3||i==10||i==11);
    boolean unavailable=(requiresPage&&!canUsePage)||(geckoIncognito&&geckoActive&&(i==3||i==9));
    Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
    button.setTextColor(unavailable?0xff919bab:0xfff1f5f9);
@@ -358,6 +362,22 @@ public class MainActivity extends Activity {
    if(!unavailable)button.setOnClickListener(v->{dialog.dismiss();task.run();});
   }
  dialog.setContentView(panel);dialog.show();Window win=dialog.getWindow();win.setBackgroundDrawableResource(android.R.color.transparent);win.setGravity(Gravity.BOTTOM);win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
+ }
+ // Give page-independent menu actions explicit, useful home-screen behaviour.
+ void refreshOrReload(){
+  if(homeOverlay!=null){showHome(geckoActive);return;}
+  reloadActive();
+ }
+ void saveOrAddBookmark(){
+  if(geckoIncognito)return;
+  if(homeOverlay!=null){editBookmark(null,()->Toast.makeText(this,"Bookmark saved",Toast.LENGTH_SHORT).show());return;}
+  save();
+ }
+ void shareOrionIfHome(){
+  if(homeOverlay==null){sharePage();return;}
+  Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");
+  send.putExtra(Intent.EXTRA_TEXT,"https://2e0lxy.uk/orion.html");
+  startActivity(Intent.createChooser(send,"Share Orion Browser"));
  }
  void incognitoExplained(){
   new AlertDialog.Builder(this).setTitle("How Incognito works")
@@ -392,9 +412,9 @@ public class MainActivity extends Activity {
   section(panel,"TRACKERS AND CONTENT");
   toggle(panel,"Ad blocker (WebView)","adblock",true);
   if(new java.io.File(getFilesDir(),"easylist.domains").length()>0)toggle(panel,"EasyList domain rules","easylist",false);
-  else disabledSettingRow(panel,"EasyList domain rules","Download the EasyList domain list first");
+  else settingRow(panel,"Install and enable EasyList domain rules","Download supported domain rules for WebView",()->{dialog.dismiss();installFilterList("easylist");});
   if(new java.io.File(getFilesDir(),"easyprivacy.domains").length()>0)toggle(panel,"EasyPrivacy domain rules","easyprivacy",false);
-  else disabledSettingRow(panel,"EasyPrivacy domain rules","Download the EasyPrivacy domain list first");
+  else settingRow(panel,"Install and enable EasyPrivacy domain rules","Download supported tracking-domain rules for WebView",()->{dialog.dismiss();installFilterList("easyprivacy");});
   toggle(panel,"YouTube ad request filtering","youtube_ads",true);
   settingRow(panel,"Update filter lists","Download refreshed EasyList and EasyPrivacy rules",()->updateFilters());
   settingRow(panel,"About ad blocking","Basic domain filtering; GeckoView parity is incomplete",()->new AlertDialog.Builder(this)
@@ -732,6 +752,25 @@ public class MainActivity extends Activity {
  void openDnsSettings(){DnsSettings.openPrivateDns(this);}
  void syncSettings(){new AlertDialog.Builder(this).setTitle("Sync").setMessage("Use your Google account to synchronise bookmarks, settings and shared links across devices.\n\nGoogle Sign-In is not configured in this test build. No account data is collected or uploaded.").setPositiveButton("Sign in with Google",(d,i)->new AlertDialog.Builder(this).setTitle("Google Sign-In unavailable").setMessage("The Orion OAuth client must be registered before sign-in can be enabled.").setPositiveButton("OK",null).show()).setNegativeButton("Close",null).show();}
  boolean youtubeAd(Uri u){String h=u.getHost(),p=u.getPath();return h!=null&&p!=null&&(h.equalsIgnoreCase("www.youtube.com")||h.equalsIgnoreCase("m.youtube.com")||h.equalsIgnoreCase("youtube.com"))&&(p.equals("/pagead/adview")||p.equals("/pagead/interaction")||p.equals("/api/stats/ads"));}
+ void installFilterList(String key){
+  if(!"easylist".equals(key)&&!"easyprivacy".equals(key))return;
+  final String title="easylist".equals(key)?"EasyList":"EasyPrivacy";
+  Toast.makeText(this,"Installing "+title+" domain rules…",Toast.LENGTH_SHORT).show();
+  new Thread(()->{
+   boolean installed=false;
+   try{
+    AdBlocker.update(this,key);
+    getPreferences(0).edit().putBoolean(key,true).apply();
+    AdBlocker.load(this,getPreferences(0));
+    installed=true;
+   }catch(Exception ignored){}
+   final boolean ok=installed;
+   runOnUiThread(()->{
+    if(isFinishing()||isDestroyed())return;
+    Toast.makeText(this,ok?title+" enabled. Reload open webpages to apply.":title+" download failed; filtering unchanged.",Toast.LENGTH_LONG).show();
+   });
+  },"orion-install-"+key).start();
+ }
  void updateFilters(){Toast.makeText(this,"Updating filter lists…",Toast.LENGTH_SHORT).show();new Thread(()->{String result;try{AdBlocker.update(this,"easylist");AdBlocker.update(this,"easyprivacy");AdBlocker.load(this,getPreferences(0));result="Filter lists updated. Reopen privacy settings to enable them; reload pages to apply.";}catch(Exception e){result="Filter update incomplete. Previous lists retained where possible.";}final String msg=result;runOnUiThread(()->{if(!isDestroyed())Toast.makeText(this,msg,Toast.LENGTH_LONG).show();});}).start();}
  void sitePermissions(){Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setBackgroundColor(0xff171d28);Button close=geckoButton("‹","Back to browser",()->dialog.dismiss());LinearLayout heading=new LinearLayout(this);heading.setGravity(Gravity.CENTER_VERTICAL);heading.setBackgroundColor(0xff293344);heading.addView(close,new LinearLayout.LayoutParams(dp(56),dp(56)));TextView name=new TextView(this);name.setText("Site permissions");name.setTextSize(20);name.setTextColor(0xfff1f5f9);heading.addView(name);page.addView(heading);ScrollView scroll=new ScrollView(this);LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.VERTICAL);options.setPadding(dp(8),dp(16),dp(8),dp(24));scroll.addView(options);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));TextView explain=new TextView(this);explain.setText("Camera, microphone and location settings apply to both engines on secure HTTPS sites. Android system permission is also required. GeckoView notification requests are blocked in this test build.");explain.setTextSize(14);explain.setTextColor(0xffb9c6da);explain.setPadding(dp(12),0,dp(12),dp(16));options.addView(explain);permissionChoice(options,"Camera","site_camera");permissionChoice(options,"Microphone","site_microphone");permissionChoice(options,"Approximate location","site_location");settingRow(options,"Android app permissions","Manage camera, microphone and location access in Android settings",()->startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))));dialog.setContentView(page);dialog.show();Window win=dialog.getWindow();win.setLayout(-1,-1);win.setStatusBarColor(0xff171d28);win.setNavigationBarColor(0xff171d28);win.getDecorView().setSystemUiVisibility(0);page.setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());page.setPadding(b.left,b.top,b.right,b.bottom);}else page.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});page.requestApplyInsets();}
  void permissionChoice(LinearLayout parent,String title,String key){String[] values={"Ask every time","Block","Allow on request"};int choice=Math.max(0,Math.min(2,getPreferences(0).getInt(key,0)));settingRow(parent,title,values[choice],()->new AlertDialog.Builder(this).setTitle(title).setSingleChoiceItems(values,getPreferences(0).getInt(key,0),(d,i)->{getPreferences(0).edit().putInt(key,i).apply();d.dismiss();Toast.makeText(this,title+": "+values[i],Toast.LENGTH_SHORT).show();}).setNegativeButton("Cancel",null).show());}
