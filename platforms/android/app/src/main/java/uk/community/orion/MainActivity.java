@@ -365,7 +365,7 @@ public class MainActivity extends Activity {
  }
  // Give page-independent menu actions explicit, useful home-screen behaviour.
  void refreshOrReload(){
-  if(homeOverlay!=null){showHome(geckoActive);return;}
+  if(homeOverlay!=null){showHome(geckoActive);if(homeWeather!=null&&HomeWeather.enabled(this))homeWeather.refreshSaved();return;}
   reloadActive();
  }
  void saveOrAddBookmark(){
