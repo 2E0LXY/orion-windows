@@ -221,6 +221,13 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('getPreferences(0).edit().remove("recent_history").apply()', history)
         self.assertIn("for(WebView w:tabs)w.clearHistory()", history)
 
+    def test_lint_named_android_constants(self):
+        self.assertNotIn(".setOrientation(1)", SOURCE)
+        self.assertNotIn(".setOrientation(1)", DNS)
+        self.assertNotIn(",0).show()", SOURCE)
+        self.assertIn("Toast.LENGTH_SHORT", SOURCE)
+        self.assertIn("LinearLayout.VERTICAL", SOURCE)
+
     def test_bookmark_import_strips_a_real_utf8_bom(self):
         importer = (APP / "app/src/main/java/uk/community/orion/BookmarkImporter.java").read_text(encoding="utf-8")
         self.assertIn(r'replace("\uFEFF","")', importer)
