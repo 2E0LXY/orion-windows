@@ -171,7 +171,7 @@ final class HomeWeather {
   int count=0;
   for(long d=startDay;d<startDay+5&&count<5;d++){
    double low=Double.POSITIVE_INFINITY,high=Double.NEGATIVE_INFINITY;
-   int sampleCode=3;boolean sampleDay=true,priority=-1;
+   int sampleCode=3,priority=-1;boolean sampleDay=true;
    int at=-1;
    for(int i=0;i<n;i++){
     long day=Math.floorDiv(times.getLong(i)+offset,86400L);
