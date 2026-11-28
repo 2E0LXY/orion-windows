@@ -196,6 +196,12 @@ public class MainActivity extends Activity {
     @Override public void onPageStart(org.mozilla.geckoview.GeckoSession sess,String url){
      if(geckoActive&&geckoSession==sess){geckoAddress=url;progress.setProgress(0);progress.setVisibility(View.VISIBLE);if(!address.hasFocus())address.setText(url);}
     }
+    @Override public void onSessionStateChange(org.mozilla.geckoview.GeckoSession sess,org.mozilla.geckoview.GeckoSession.SessionState sessionState){
+     if(!geckoActive||geckoSession!=sess||geckoIncognito||incognito||sessionState==null)return;
+     String serialised=sessionState.toString();
+     geckoStateJson=serialised!=null&&serialised.length()<=400000?serialised:null;
+     saveSession();
+    }
     @Override public void onPageStop(org.mozilla.geckoview.GeckoSession sess,boolean success){
      if(geckoActive&&geckoSession==sess){progress.setProgress(100);progress.setVisibility(View.INVISIBLE);if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);}
     }
@@ -213,7 +219,7 @@ public class MainActivity extends Activity {
    back.setEnabled(false);forward.setEnabled(false);
    count.setContentDescription(incognito?"Switch normal WebView tabs; closes private session":"Switch WebView tabs; GeckoView active");
    updateToolbar();
-   if(initial==null)showHome(true);else session.loadUri(initial);
+   if(initial==null)showHome(true);else if(incognito||!restoreGeckoState(session))session.loadUri(initial);
   }catch(Exception e){
    if(geckoSession!=null){try{geckoSession.close();}catch(Exception ignored){}}
    geckoSession=null;geckoView=null;geckoActive=false;geckoIncognito=false;getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
@@ -221,9 +227,18 @@ public class MainActivity extends Activity {
    Toast.makeText(this,"Unable to initialise GeckoView",Toast.LENGTH_LONG).show();
   }
  }
+ boolean restoreGeckoState(org.mozilla.geckoview.GeckoSession session){
+  String saved=restoringGeckoState;restoringGeckoState=null;
+  if(saved==null||saved.isEmpty())return false;
+  try{
+   org.mozilla.geckoview.GeckoSession.SessionState state=org.mozilla.geckoview.GeckoSession.SessionState.fromString(saved);
+   if(state==null)return false;
+   session.restoreState(state);return true;
+  }catch(Exception e){return false;}
+ }
  void closeGecko(){
   if(!geckoActive)return;
-  geckoActive=false;
+  geckoActive=false;geckoStateJson=null;
   hideHome();content.removeAllViews();
   if(geckoView!=null){try{geckoView.releaseSession();}catch(Exception ignored){}}
   if(geckoSession!=null){try{geckoSession.close();}catch(Exception ignored){}}
@@ -293,12 +308,13 @@ public class MainActivity extends Activity {
   }
   new AlertDialog.Builder(this).setTitle("Install update?").setMessage("Download build "+info.versionCode+" from the Orion GitHub releases (github.com/2E0LXY/orion-windows), check its SHA-256 checksum, then ask Android to install it. Orion restarts after the install.").setNegativeButton("Later",null).setPositiveButton("Download and install",(d,i)->{UpdateChecker.statusText=null;UpdateChecker.install(getApplicationContext(),info);}).show();
  }
+ String geckoStateJson=null,restoringGeckoState=null;
  final Map<WebView,org.json.JSONObject> lazyTabs=new IdentityHashMap<>();
  // Coalesce bursts (page loads, tab switches, Gecko location changes) into one write; lifecycle callbacks flush immediately.
  void saveSession(){if(sessionClosed)return;sessionHandler.removeCallbacks(sessionWriter);sessionHandler.postDelayed(sessionWriter,1000);}
  void flushSession(){sessionHandler.removeCallbacks(sessionWriter);writeSession();}
  void clearSavedSession(){
-  sessionHandler.removeCallbacks(sessionWriter);
+  sessionHandler.removeCallbacks(sessionWriter);geckoStateJson=null;
   new java.io.File(getFilesDir(),"orion-session.json").delete();new java.io.File(getFilesDir(),"orion-session.tmp").delete();
   SharedPreferences.Editor editor=getPreferences(0).edit();
   for(String key:new ArrayList<>(getPreferences(0).getAll().keySet()))if(key.startsWith("download_url_")||key.startsWith("download_name_"))editor.remove(key);
@@ -331,7 +347,7 @@ public class MainActivity extends Activity {
    org.json.JSONObject state=new org.json.JSONObject();org.json.JSONArray items=new org.json.JSONArray();
    state.put("version",1);state.put("selected",selected);
    state.put("engine",geckoActive&&!geckoIncognito?"gecko":"webview");
-   if(geckoActive&&!geckoIncognito&&allowed(geckoAddress))state.put("geckoUrl",geckoAddress);
+   if(geckoActive&&!geckoIncognito&&allowed(geckoAddress)){state.put("geckoUrl",geckoAddress);if(geckoStateJson!=null)state.put("geckoState",geckoStateJson);}
    lazyTabs.keySet().retainAll(tabs);
    for(WebView w:tabs){
     org.json.JSONObject saved=lazyTabs.get(w);if(saved!=null){items.put(saved);continue;}
@@ -384,7 +400,7 @@ public class MainActivity extends Activity {
    show(active);
    if("gecko".equals(saved.optString("engine"))){
     String url=saved.optString("geckoUrl","");
-    if(allowed(url)){restoringGeckoUrl=url;openGecko(false);restoringGeckoUrl=null;}
+    if(allowed(url)){restoringGeckoUrl=url;restoringGeckoState=saved.optString("geckoState","");openGecko(false);restoringGeckoUrl=null;restoringGeckoState=null;}
    }
    return true;
   }catch(Exception ignored){
