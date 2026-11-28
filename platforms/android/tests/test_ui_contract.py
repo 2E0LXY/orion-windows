@@ -23,12 +23,25 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn("ValueAnimator.areAnimatorsEnabled()", start)
         self.assertIn("ValueAnimator.ofFloat(0f,1f)", start)
         self.assertIn("animator.addUpdateListener", start)
-        self.assertIn("splash.postOnAnimation", start)
+        self.assertIn("splash.post(", start)
         self.assertIn("splash.invalidate()", start)
         splash = method("class StartupView extends View", "int dp(float n)")
         self.assertIn('c.drawText("Orion"', splash)
         self.assertIn('c.drawText("COMMUNITY BROWSER"', splash)
         self.assertIn("Math.cos(angle)", splash)
+
+    def test_gecko_permissions_are_connected_and_described(self):
+        gecko = method("void openGecko()", "void closeGecko()")
+        self.assertIn("session.setPermissionDelegate(", gecko)
+        self.assertIn("onAndroidPermissionsRequest(", gecko)
+        self.assertIn("onContentPermissionRequest(", gecko)
+        self.assertIn("onMediaPermissionRequest(", gecko)
+        self.assertIn("geckoSecureOrigin(uri)", gecko)
+        self.assertIn("cb.reject()", gecko)
+        permissions = method("void sitePermissions()", "void clearBrowsingData()")
+        self.assertIn("apply to both engines", permissions)
+        self.assertNotIn("permission management is not yet integrated", permissions)
+        self.assertIn("GeckoView uses its own cookie controls", permissions)
 
     def test_start_page_shared_between_webview_and_geckoview(self):
         layout = method("void showHome(boolean gecko)", "class GeckoMark")
