@@ -221,6 +221,15 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('getPreferences(0).edit().remove("recent_history").apply()', history)
         self.assertIn("for(WebView w:tabs)w.clearHistory()", history)
 
+    def test_private_browser_data_is_excluded_from_backup_and_transfer(self):
+        self.assertIn('android:allowBackup="false"', MANIFEST)
+        self.assertIn('android:dataExtractionRules="@xml/data_extraction_rules"', MANIFEST)
+        rules = (APP / "app/src/main/res/xml/data_extraction_rules.xml").read_text(encoding="utf-8")
+        self.assertIn("<cloud-backup>", rules)
+        self.assertIn("<device-transfer>", rules)
+        for domain in ("root", "file", "database", "sharedpref"):
+            self.assertEqual(rules.count(f'<exclude domain="{domain}" path="."/>'), 2)
+
     def test_lint_named_android_constants(self):
         self.assertNotIn(".setOrientation(1)", SOURCE)
         self.assertNotIn(".setOrientation(1)", DNS)
