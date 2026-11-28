@@ -577,19 +577,33 @@ public class MainActivity extends Activity {
   title.setTextSize(22);title.setTextColor(0xfff1f5f9);title.setPadding(dp(8),dp(8),0,dp(12));panel.addView(title);
   ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);
   scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-  String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Install and create shortcut","Settings"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Install and create shortcut","Settings"};
-  String[] ids=geckoActive?new String[]{"new_tab","engine","reload","bookmark","bookmarks","reading","history","share","downloads","import","install","settings"}:MENU_IDS;
-  Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->refreshOrReload(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->shareOrionIfHome(),()->showDownloadPanel(),()->importBrowserData(),()->installOrShortcut(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->refreshOrReload(),()->findPage(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->shareOrionIfHome(),()->readerMode(),()->printPage(),()->showDownloadPanel(),()->installOrShortcut(),()->settings()};
+  // Both engines expose one stable set of actions. Unsupported GeckoView-only
+  // operations stay visible but disabled; never operate a hidden WebView instead.
+  String[] labels=MENU_TITLES.clone();
+  labels[1]=geckoActive?"Return to WebView":"Open in GeckoView";
+  String[] ids=MENU_IDS;
+  Runnable[] tasks=new Runnable[]{
+   ()->{if(geckoActive){closeGecko();}newTab();},
+   ()->{if(geckoActive)closeGecko();else openGecko();},
+   ()->refreshOrReload(),
+   ()->findPage(),
+   ()->saveOrAddBookmark(),
+   ()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),
+   ()->shareOrionIfHome(),()->readerMode(),()->printPage(),()->showDownloadPanel(),
+   ()->installOrShortcut(),()->settings()
+  };
   if(homeOverlay!=null){
-    if(geckoActive){labels[2]="Refresh start page";labels[3]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark";labels[7]="Share Orion website";}
-    else{labels[2]="Refresh start page";labels[4]="Add bookmark";labels[9]="Share Orion website";}
+   labels[2]="Refresh start page";labels[4]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark";
+   labels[9]="Share Orion website";
   }
   boolean canUsePage=homeOverlay==null&&allowed(geckoActive?geckoAddress:current().getUrl());
   for(int i=0;i<labels.length;i++){
     if(!menuShown(ids[i]))continue;
     final Runnable task=tasks[i];
     boolean requiresPage=ids[i].equals("find")||ids[i].equals("reader")||ids[i].equals("print")||ids[i].equals("install");
-    boolean unavailable=(requiresPage&&!canUsePage)||(geckoIncognito&&(ids[i].equals("bookmark")||ids[i].equals("import")||ids[i].equals("install")));
+    boolean engineUnsupported=geckoActive&&(ids[i].equals("find")||ids[i].equals("reader")||ids[i].equals("print"));
+    boolean unavailable=(requiresPage&&!canUsePage)||engineUnsupported||(geckoIncognito&&(ids[i].equals("bookmark")||ids[i].equals("import")||ids[i].equals("install")));
+    if(engineUnsupported)labels[i]+=" · WebView only";
     Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
     button.setTextColor(unavailable?0xff919bab:0xfff1f5f9);button.setTextSize(16);
     button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);button.setPadding(dp(16),0,dp(16),0);
