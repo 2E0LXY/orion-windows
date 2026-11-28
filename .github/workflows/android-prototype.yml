@@ -39,6 +39,12 @@ jobs:
       - name: Android lint static analysis
         working-directory: platforms/android
         run: gradle --no-daemon -PorionArm64=true lintDebug
+      - name: Print full Android lint findings
+        if: always()
+        working-directory: platforms/android
+        run: |
+          report=$(find app/build -type f -name lint-results-debug.txt -print -quit 2>/dev/null || true)
+          if [ -n "$report" ]; then cat "$report"; else echo "No Android lint text report generated"; fi
       - name: Verify output, ABI and stage direct APK
         run: |
           set -euo pipefail
