@@ -55,14 +55,19 @@ class OrionUiContract(unittest.TestCase):
     def test_boot_logo_has_real_animation_and_reduced_motion(self):
         start = method("void showStartup()", "class StartupView")
         self.assertIn("ValueAnimator.areAnimatorsEnabled()", start)
-        self.assertIn("ValueAnimator.ofFloat(0f,1f)", start)
-        self.assertIn("animator.addUpdateListener", start)
-        self.assertIn("splash.post(", start)
+        self.assertIn("splash.firstFrame=", start)
+        self.assertIn("SystemClock.uptimeMillis()", start)
+        self.assertIn("motion?5000L:1800L", start)
+        self.assertIn("splash.postOnAnimation(this)", start)
+        self.assertIn("elapsed>=duration", start)
+        self.assertIn("splash.isAttachedToWindow()", start)
         self.assertIn("splash.invalidate()", start)
         splash = method("class StartupView extends View", "int dp(float n)")
         self.assertIn('c.drawText("Orion"', splash)
         self.assertIn('c.drawText("COMMUNITY BROWSER"', splash)
         self.assertIn("Math.cos(angle)", splash)
+        self.assertIn("if(firstFrame!=null)", splash)
+        self.assertIn("phase*Math.PI*6", splash)
 
     def test_gecko_permissions_are_connected_and_described(self):
         gecko = method("void openGecko()", "void closeGecko()")
