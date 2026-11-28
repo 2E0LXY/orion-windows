@@ -601,7 +601,7 @@ public class MainActivity extends Activity {
     if(!menuShown(ids[i]))continue;
     final Runnable task=tasks[i];
     boolean requiresPage=ids[i].equals("find")||ids[i].equals("reader")||ids[i].equals("print")||ids[i].equals("install");
-    boolean engineUnsupported=geckoActive&&(ids[i].equals("find")||ids[i].equals("reader")||ids[i].equals("print"));
+    boolean engineUnsupported=geckoActive&&(ids[i].equals("reader")||ids[i].equals("print"));
     boolean unavailable=(requiresPage&&!canUsePage)||engineUnsupported||(geckoIncognito&&(ids[i].equals("bookmark")||ids[i].equals("import")||ids[i].equals("install")));
     if(engineUnsupported)labels[i]+=" · WebView only";
     Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
@@ -836,7 +836,29 @@ public class MainActivity extends Activity {
   startActivity(Intent.createChooser(send,"Share page with an AI app"));
  }
 
- void findPage(){WebView target=current();EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Find text");field.setContentDescription("Find text on page");AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find in page").setView(field).setPositiveButton("Next",null).setNeutralButton("Previous",null).setNegativeButton("Done",null).create();field.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){if(s.length()==0)target.clearMatches();else target.findAllAsync(s.toString());}public void afterTextChanged(android.text.Editable e){}});dialog.setOnDismissListener(d->target.clearMatches());dialog.show();dialog.getButton(-1).setOnClickListener(v->target.findNext(true));dialog.getButton(-3).setOnClickListener(v->target.findNext(false));}
+ void findGeckoPage(){
+  if(!geckoActive||geckoSession==null||homeOverlay!=null)return;
+  final org.mozilla.geckoview.GeckoSession session=geckoSession;
+  EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Find text");
+  field.setContentDescription("Find text on GeckoView webpage");
+  AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find in page").setView(field)
+   .setPositiveButton("Next",null).setNeutralButton("Previous",null)
+   .setNegativeButton("Done",null).create();
+  field.addTextChangedListener(new android.text.TextWatcher(){
+   public void beforeTextChanged(CharSequence text,int start,int count,int after){}
+   public void onTextChanged(CharSequence text,int start,int before,int count){
+    if(geckoSession!=session)return;
+    if(text.length()==0)session.getFinder().clear();
+    else session.getFinder().find(text.toString(),org.mozilla.geckoview.GeckoSession.FINDER_FIND_FORWARD);
+   }
+   public void afterTextChanged(android.text.Editable value){}
+  });
+  dialog.setOnDismissListener(d->{if(geckoSession==session)session.getFinder().clear();});
+  dialog.show();
+  dialog.getButton(-1).setOnClickListener(v->{if(geckoSession==session&&field.length()>0)session.getFinder().find(null,org.mozilla.geckoview.GeckoSession.FINDER_FIND_FORWARD);});
+  dialog.getButton(-3).setOnClickListener(v->{if(geckoSession==session&&field.length()>0)session.getFinder().find(null,org.mozilla.geckoview.GeckoSession.FINDER_FIND_BACKWARDS);});
+ }
+ void findPage(){if(geckoActive){findGeckoPage();return;}WebView target=current();EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Find text");field.setContentDescription("Find text on page");AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find in page").setView(field).setPositiveButton("Next",null).setNeutralButton("Previous",null).setNegativeButton("Done",null).create();field.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){if(s.length()==0)target.clearMatches();else target.findAllAsync(s.toString());}public void afterTextChanged(android.text.Editable e){}});dialog.setOnDismissListener(d->target.clearMatches());dialog.show();dialog.getButton(-1).setOnClickListener(v->target.findNext(true));dialog.getButton(-3).setOnClickListener(v->target.findNext(false));}
  void home(WebView w){homeTabs.add(w);if(w==current()&&!geckoActive)showHome(false);address.setText("");}
  WebView current(){return tabs.get(selected);}
  boolean allowed(String s){try{Uri u=Uri.parse(s);return ("https".equalsIgnoreCase(u.getScheme())||"http".equalsIgnoreCase(u.getScheme()))&&u.getHost()!=null&&u.getUserInfo()==null;}catch(Exception e){return false;}}
