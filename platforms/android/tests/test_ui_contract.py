@@ -265,14 +265,38 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('if(!gecko&&!vpnActive)a.disabledSettingRow(body,"Local DNS VPN"', DNS)
         self.assertIn('if(!gecko)a.disabledSettingRow(body,"Test selected DoH server"', DNS)
 
-    def test_missing_filter_lists_do_not_enable_dead_switches(self):
+    def test_first_five_grey_actions_have_real_implementations(self):
+        menu = method("void menu()", "void incognitoExplained()")
+        self.assertIn('labels[2]="Refresh start page"',menu)
+        self.assertIn('labels[4]="Add bookmark"',menu)
+        self.assertIn('labels[9]="Share Orion website"',menu)
+        self.assertIn('labels[3]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark"',menu)
+        self.assertIn('()->refreshOrReload()',menu)
+        self.assertIn('()->saveOrAddBookmark()',menu)
+        self.assertIn('()->shareOrionIfHome()',menu)
+        self.assertIn('boolean requiresPage=!geckoActive&&(i==3||i==10||i==11)',menu)
+        actions = method("void refreshOrReload()", "void incognitoExplained()")
+        self.assertIn('if(homeOverlay!=null){showHome(geckoActive);return;}',actions)
+        self.assertIn('editBookmark(null,()->Toast.makeText',actions)
+        self.assertIn('if(geckoIncognito)return;',actions)
+        self.assertIn('send.putExtra(Intent.EXTRA_TEXT,"https://2e0lxy.uk/orion.html")',actions)
+
+    def test_filter_lists_install_on_demand_and_enable_after_success(self):
         panel = method("void securityPrivacy()", "void downloadPage(")
         self.assertIn('new java.io.File(getFilesDir(),"easylist.domains").length()>0', panel)
         self.assertIn('new java.io.File(getFilesDir(),"easyprivacy.domains").length()>0', panel)
-        self.assertIn('disabledSettingRow(panel,"EasyList domain rules"', panel)
-        self.assertIn('disabledSettingRow(panel,"EasyPrivacy domain rules"', panel)
+        self.assertIn('"Install and enable EasyList domain rules"', panel)
+        self.assertIn('"Install and enable EasyPrivacy domain rules"', panel)
+        self.assertIn('installFilterList("easylist")', panel)
+        self.assertIn('installFilterList("easyprivacy")', panel)
         self.assertIn('getPreferences(0).getBoolean("youtube_ads",true)&&youtubeAd', SOURCE)
         self.assertIn('getPreferences(0).getBoolean("adblock",true)&&AdBlocker.blocks', SOURCE)
+        install = method("void installFilterList(String key)", "void updateFilters()")
+        self.assertIn('AdBlocker.update(this,key)',install)
+        self.assertIn('getPreferences(0).edit().putBoolean(key,true).apply()',install)
+        self.assertIn('AdBlocker.load(this,getPreferences(0))',install)
+        self.assertIn('if(isFinishing()||isDestroyed())return',install)
+        self.assertNotIn('putBoolean(key,true).apply();\n  new Thread',install)
 
     def test_canonical_orion_branding_and_direct_apk_release(self):
         from pathlib import Path
