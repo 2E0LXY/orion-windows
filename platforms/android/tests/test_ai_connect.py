@@ -32,6 +32,12 @@ class AiConnectContracts(unittest.TestCase):
         self.assertIn('"navigate"',BRIDGE)
         self.assertIn('if(!"https".equalsIgnoreCase(parsed.getScheme())',BRIDGE)
         self.assertNotIn('evaluateJavascript(',BRIDGE)
-        self.assertNotIn('"click"',BRIDGE)
+        self.assertIn('"click"',BRIDGE)
+        self.assertIn('"page_text"',BRIDGE)
+        self.assertIn('"type"',BRIDGE)
+        self.assertIn('"scroll"',BRIDGE)
+        self.assertIn("MessageDigest.isEqual(a,b)",BRIDGE)
+        self.assertIn('aiBanner.setContentDescription(',MAIN)
+        self.assertIn('if(e.closest(\'form\')',MAIN)
 
 if __name__=="__main__": unittest.main()
