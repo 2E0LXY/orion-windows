@@ -305,7 +305,9 @@ public class MainActivity extends Activity {
    if(geckoRuntime==null)geckoRuntime=org.mozilla.geckoview.GeckoRuntime.create(getApplicationContext());
    DnsSettings.applyToGecko(geckoRuntime,getPreferences(0));
    geckoView=new org.mozilla.geckoview.GeckoView(this);
+   geckoView.setActivityContextDelegate(()->MainActivity.this);
    geckoSession=new org.mozilla.geckoview.GeckoSession(new org.mozilla.geckoview.GeckoSessionSettings.Builder().usePrivateMode(incognito).build());
+   geckoSession.setPrintDelegate(geckoView.getPrintDelegate());
    final org.mozilla.geckoview.GeckoSession session=geckoSession;
    geckoAddress=initial==null?"":initial;
    session.setContentDelegate(new org.mozilla.geckoview.GeckoSession.ContentDelegate(){
@@ -612,7 +614,7 @@ public class MainActivity extends Activity {
     if(!menuShown(ids[i]))continue;
     final Runnable task=tasks[i];
     boolean requiresPage=ids[i].equals("find")||ids[i].equals("reader")||ids[i].equals("print")||ids[i].equals("install");
-    boolean engineUnsupported=geckoActive&&(ids[i].equals("reader")||ids[i].equals("print"));
+    boolean engineUnsupported=geckoActive&&ids[i].equals("reader");
     boolean unavailable=(requiresPage&&!canUsePage)||engineUnsupported||(geckoIncognito&&(ids[i].equals("bookmark")||ids[i].equals("import")||ids[i].equals("install")));
     if(engineUnsupported)labels[i]+=" · WebView only";
     Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
@@ -833,7 +835,7 @@ public class MainActivity extends Activity {
   refreshHandler.post(refresh[0]);
  }
  void readerMode(){WebView target=current();if(!allowed(target.getUrl()))return;target.evaluateJavascript("(function(){var e=document.querySelector('article,main,[role=main]')||document.body;return e?e.innerText.slice(0,150000):'';})()",value->{if(isDestroyed()||target!=current())return;String body;try{Object parsed=new org.json.JSONTokener(value).nextValue();body=parsed instanceof String?(String)parsed:"";}catch(Exception e){body="";}if(body.trim().isEmpty()){Toast.makeText(this,"No readable text found",Toast.LENGTH_SHORT).show();return;}Dialog dialog=new Dialog(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("Close reader");close.setOnClickListener(v->dialog.dismiss());panel.addView(close);ScrollView scroll=new ScrollView(this);TextView article=new TextView(this);article.setText(body);article.setTextColor(0xfff1f5f9);article.setTextSize(18);article.setLineSpacing(dp(5),1.2f);article.setPadding(dp(24),dp(16),dp(24),dp(24));article.setTextIsSelectable(true);scroll.addView(article);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));dialog.setContentView(panel);dialog.show();dialog.getWindow().setLayout(-1,-1);});}
- void printPage(){if(!allowed(current().getUrl()))return;android.print.PrintManager manager=(android.print.PrintManager)getSystemService(PRINT_SERVICE);if(manager!=null)manager.print("Orion webpage",current().createPrintDocumentAdapter("Orion webpage"),new android.print.PrintAttributes.Builder().build());}
+ void printPage(){if(geckoActive){if(geckoSession!=null&&allowed(geckoAddress))geckoSession.printPageContent();return;}if(!allowed(current().getUrl()))return;android.print.PrintManager manager=(android.print.PrintManager)getSystemService(PRINT_SERVICE);if(manager!=null)manager.print("Orion webpage",current().createPrintDocumentAdapter("Orion webpage"),new android.print.PrintAttributes.Builder().build());}
  void sharePage(){String u=geckoActive?geckoAddress:current().getUrl();if(allowed(u)){Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("text/plain");intent.putExtra(Intent.EXTRA_TEXT,u);startActivity(Intent.createChooser(intent,"Share link"));}}
  void shareCurrentPageToAi(){
   if(geckoIncognito){Toast.makeText(this,"Private pages cannot be shared with AI apps",Toast.LENGTH_LONG).show();return;}
