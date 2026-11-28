@@ -36,6 +36,9 @@ jobs:
       - name: Build ARM64 debug APK
         working-directory: platforms/android
         run: gradle --no-daemon -PorionArm64=true assembleDebug
+      - name: Android lint static analysis
+        working-directory: platforms/android
+        run: gradle --no-daemon -PorionArm64=true lintDebug
       - name: Verify output, ABI and stage direct APK
         run: |
           set -euo pipefail
