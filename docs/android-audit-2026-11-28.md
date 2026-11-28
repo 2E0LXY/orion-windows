@@ -30,6 +30,16 @@ Reviewed the current Android development branch `chatgpt/geckoview-home-splash`:
 
 Disabled does **not** mean broken: a feature can be on the roadmap but have no working implementation. Conversely, features implemented in source may still require a device acceptance test.
 
+## Five small controls enabled in next test build
+
+1. **Refresh start page:** When the native start screen is shown, the former disabled Reload option becomes “Refresh start page” and rebuilds the weather/start content in either rendering engine.
+2. **Add bookmark:** From the start screen, the former disabled Save option offers a manual URL-entry dialog with normal URL validation; still disabled in Incognito.
+3. **Share Orion website:** From the start screen, the former disabled Share link becomes an explicitly labelled project-page share action. On an actual webpage, Share continues sharing the current URL.
+4. **EasyList install:** When a local rule file is absent, show an actionable “Install and enable EasyList” row; download over HTTPS on a background thread, validate nonempty parsed rules, enable the preference after success, and then expose the switch on reopening privacy settings.
+5. **EasyPrivacy install:** Equivalent explicit installation flow for tracking-domain rules. Existing installed lists still use their switches.
+
+The installed rule lists provide **only supported domain-blocking rules in WebView**, not full ABP filter syntax, cosmetic rules or GeckoView parity. Remote download success and device-side behavioural testing remain UNVERIFIED until tested.
+
 ## Subsequent cookie lifecycle corrections
 
 - **Clear browser data:** Android cookie deletion is asynchronous. Orion previously displayed “cleared” immediately after scheduling deletion. The completion message now waits for the cookie-removal callback and flushes the cookie manager.
