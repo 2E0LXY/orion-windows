@@ -342,7 +342,21 @@ public class MainActivity extends Activity {
  ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(1);scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
  String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Settings"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Settings"};
  Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->reloadActive(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->sharePage(),()->showDownloadPanel(),()->importBrowserData(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->reloadActive(),()->findPage(),()->save(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->sharePage(),()->readerMode(),()->printPage(),()->showDownloadPanel(),()->settings()};
- for(int i=0;i<labels.length;i++){final Runnable task=tasks[i];Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);button.setTextColor(0xfff1f5f9);button.setTextSize(16);button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);button.setPadding(dp(16),0,dp(16),0);button.setBackground(new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,12)));actions.addView(button,new LinearLayout.LayoutParams(-1,dp(48)));button.setOnClickListener(v->{dialog.dismiss();task.run();});}
+ boolean canUsePage=homeOverlay==null&&allowed(geckoActive?geckoAddress:current().getUrl());
+  for(int i=0;i<labels.length;i++){
+   final Runnable task=tasks[i];
+   boolean requiresPage=geckoActive?(i==2||i==3||i==7):(i==2||i==3||i==4||i==9||i==10||i==11);
+   boolean unavailable=(requiresPage&&!canUsePage)||(geckoIncognito&&geckoActive&&(i==3||i==9));
+   Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
+   button.setTextColor(unavailable?0xff919bab:0xfff1f5f9);
+   button.setTextSize(16);button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
+   button.setPadding(dp(16),0,dp(16),0);
+   button.setEnabled(!unavailable);
+   button.setContentDescription(labels[i]+(unavailable?", unavailable":""));
+   button.setBackground(unavailable?round(0xff293344,12):new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,12)));
+   actions.addView(button,new LinearLayout.LayoutParams(-1,dp(48)));
+   if(!unavailable)button.setOnClickListener(v->{dialog.dismiss();task.run();});
+  }
  dialog.setContentView(panel);dialog.show();Window win=dialog.getWindow();win.setBackgroundDrawableResource(android.R.color.transparent);win.setGravity(Gravity.BOTTOM);win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
  }
  void incognitoExplained(){
@@ -564,8 +578,17 @@ public class MainActivity extends Activity {
  Runnable refresh=()->{list.removeAllViews();String q=search.getText().toString().toLowerCase(Locale.ROOT);TreeSet<String> urls=new TreeSet<>(getPreferences(0).getStringSet("bookmarks",Collections.emptySet()));for(String u:urls){if(!u.toLowerCase(Locale.ROOT).contains(q))continue;LinearLayout row=new LinearLayout(this);Button open=new Button(this);open.setAllCaps(false);open.setText(u);open.setOnClickListener(v->{dialog.dismiss();navigate(u);});row.addView(open,new LinearLayout.LayoutParams(0,-2,1));Button edit=new Button(this);edit.setText("Edit");edit.setOnClickListener(v->editBookmark(u,()->{dialog.dismiss();bookmarks();}));row.addView(edit);list.addView(row);}if(list.getChildCount()==0){TextView empty=new TextView(this);empty.setText("No matching bookmarks");empty.setTextColor(0xffb9c6da);empty.setPadding(dp(16),dp(16),dp(16),dp(16));list.addView(empty);}};
  search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){refresh.run();}public void afterTextChanged(android.text.Editable e){}});add.setOnClickListener(v->editBookmark(null,refresh));refresh.run();dialog.setContentView(page);dialog.show();dialog.getWindow().setLayout(-1,-1);page.setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets i=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());v.setPadding(i.left,i.top,i.right,i.bottom);}else{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());}return insets;});page.requestApplyInsets();}
  void importBrowserData(){
- String[] choices={"Import bookmarks · HTML / JSON","Import passwords · CSV","Export passwords · CSV","Delete stored passwords","Import cookies · txt / JSON","Android Autofill settings"};
- new AlertDialog.Builder(this).setTitle("Import and export").setItems(choices,(d,i)->{
+ String[] choices={"Import bookmarks · HTML / JSON","Import passwords · CSV","Export passwords · CSV","Delete stored passwords","Import cookies · txt / JSON","Android Autofill · Unavailable"};
+  android.widget.ArrayAdapter<String> options=new android.widget.ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,choices){
+   @Override public boolean isEnabled(int position){return position!=5;}
+   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){
+    View view=super.getView(position,convertView,parent);
+    if(view instanceof TextView)((TextView)view).setTextColor(position==5?0xff919bab:0xfff1f5f9);
+    view.setEnabled(position!=5);
+    return view;
+   }
+  };
+ new AlertDialog.Builder(this).setTitle("Import and export").setAdapter(options,(d,i)->{
   switch(i){
    case 0:pickImport(BOOKMARK_IMPORT_REQUEST);break;
    case 1:new AlertDialog.Builder(this).setTitle("Import passwords").setMessage("Select a CSV exported by your own browser or password manager. Orion will encrypt imported credentials using Android Keystore. The original CSV remains wherever you saved it and should be deleted securely after migration. Imported passwords are not yet used for automatic form filling.")
@@ -575,7 +598,7 @@ public class MainActivity extends Activity {
     .setNegativeButton("Cancel",null).setPositiveButton("Delete",(x,y)->{PasswordVault.clear(getApplicationContext());Toast.makeText(this,"Orion password vault deleted",Toast.LENGTH_LONG).show();}).show();break;
    case 4:new AlertDialog.Builder(this).setTitle("Import cookies").setMessage("Choose an export file containing cookies from a browser you own. Cookies can represent active login sessions. Orion will show the included website domains for confirmation before importing into WebView. GeckoView has a separate cookie store. Only import files you trust.")
     .setNegativeButton("Cancel",null).setPositiveButton("Choose export",(x,y)->pickImport(COOKIE_IMPORT_REQUEST)).show();break;
-   case 5:try{startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));}catch(Exception e){Toast.makeText(this,"Android settings unavailable",Toast.LENGTH_SHORT).show();}break;
+   case 5:break; // Disabled until a supported autofill integration exists.
   }
  }).setNegativeButton("Close",null).show();
 }
@@ -670,15 +693,26 @@ public class MainActivity extends Activity {
    if(enabled)clearResourceCaches(false);
   }
  void section(LinearLayout panel,String name){TextView t=new TextView(this);t.setText(name);t.setTextColor(0xff8ab4ff);t.setTextSize(13);t.setPadding(dp(16),dp(24),dp(16),dp(8));panel.addView(t);}
+ void disabledSettingRow(LinearLayout panel,String title,String detail){
+  LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);
+  row.setPadding(dp(16),dp(12),dp(16),dp(12));row.setMinimumHeight(dp(56));
+  TextView heading=new TextView(this);heading.setText(title+" · Unavailable");heading.setTextSize(16);
+  heading.setTextColor(0xff919bab);row.addView(heading);
+  TextView message=new TextView(this);message.setText(detail);message.setTextSize(13);
+  message.setTextColor(0xff919bab);row.addView(message);
+  row.setContentDescription(title+", unavailable. "+detail);
+  row.setEnabled(false);row.setClickable(false);row.setFocusable(false);
+  panel.addView(row);
+ }
  void settingRow(LinearLayout panel,String title,String detail,Runnable action){LinearLayout row=new LinearLayout(this);row.setOrientation(1);row.setPadding(dp(16),dp(12),dp(16),dp(12));row.setMinimumHeight(dp(56));row.setBackground(new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,8)));TextView a=new TextView(this);a.setText(title);a.setTextSize(16);a.setTextColor(0xfff1f5f9);row.addView(a);TextView b=new TextView(this);b.setText(detail);b.setTextSize(13);b.setTextColor(0xffb9c6da);row.addView(b);row.setFocusable(true);row.setOnClickListener(v->action.run());panel.addView(row);}
  void toggle(LinearLayout panel,String title,String key,boolean def){Switch sw=new Switch(this);sw.setText(title);sw.setTextColor(0xfff1f5f9);sw.setTextSize(16);sw.setPadding(dp(16),dp(8),dp(16),dp(8));sw.setMinHeight(dp(56));sw.setChecked(getPreferences(0).getBoolean(key,def));sw.setOnCheckedChangeListener((v,on)->{getPreferences(0).edit().putBoolean(key,on).apply();if(key.equals("zero_cache"))applyNoCachePreference(on);else applyAll();if(key.equals("easylist")||key.equals("easyprivacy"))AdBlocker.load(this,getPreferences(0));});panel.addView(sw);}
  void settings(){Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);LinearLayout page=new LinearLayout(this);page.setOrientation(1);page.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("‹  Settings");close.setAllCaps(false);close.setTextColor(0xfff1f5f9);close.setBackgroundColor(0xff293344);close.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);close.setPadding(dp(16),0,0,0);close.setMinHeight(dp(56));close.setOnClickListener(v->dialog.dismiss());page.addView(close);ScrollView scroll=new ScrollView(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(1);panel.setPadding(0,0,0,dp(24));scroll.addView(panel);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));String[] engines={"Google","DuckDuckGo","Bing","Yahoo","Kagi","Brave Search","Startpage","Ecosia","Qwant","Mojeek","Swisscows","Wikipedia"};
- section(panel,"ACCOUNT");settingRow(panel,"Sync","Google account · Not connected",()->syncSettings());
+ section(panel,"ACCOUNT");disabledSettingRow(panel,"Sync","Google sign-in and cross-device syncing are not connected");
  section(panel,"GENERAL");settingRow(panel,"Search engine",engines[Math.max(0,Math.min(engines.length-1,getPreferences(0).getInt("engine",0)))],()->new AlertDialog.Builder(this).setTitle("Search engine").setSingleChoiceItems(engines,getPreferences(0).getInt("engine",0),(d,i)->{getPreferences(0).edit().putInt("engine",i).apply();d.dismiss();dialog.dismiss();settings();}).setNegativeButton("Cancel",null).show());
  section(panel,"DISPLAY");settingRow(panel,"Homepage weather","ECMWF IFS forecast · location, visibility and saved area",()->HomeWeather.settings(this));settingRow(panel,"Toolbar shortcut","Choose Home, Bookmark or Reload",()->new AlertDialog.Builder(this).setTitle("Toolbar shortcut").setSingleChoiceItems(new String[]{"Home","Bookmark","Reload"},getPreferences(0).getInt("shortcut",0),(d,i)->{getPreferences(0).edit().putInt("shortcut",i).apply();updateToolbar();d.dismiss();}).setNegativeButton("Cancel",null).show());toggle(panel,"Swipe across address bar to switch tabs","tab_swipe",true);toggle(panel,"Dark web pages (experimental)","darkpages",false);settingRow(panel,"Text size",getPreferences(0).getInt("zoom",100)+"%",()->{String[] labels={"75%","100%","125%","150%","200%"};int[] sizes={75,100,125,150,200};new AlertDialog.Builder(this).setTitle("Text size").setItems(labels,(d,i)->{getPreferences(0).edit().putInt("zoom",sizes[i]).apply();applyAll();dialog.dismiss();settings();}).show();});toggle(panel,"Desktop websites","desktop",false);
  settingRow(panel,"Security and privacy","Use the Orion icon at the right of the bottom toolbar",()->{dialog.dismiss();securityPrivacy();});
  section(panel,"BROWSER DATA");settingRow(panel,"Bookmarks","Saved websites",()->bookmarks());settingRow(panel,"Reading list","Saved pages and read status",()->readingList());settingRow(panel,"Browsing history","Recent visited pages",()->historyLibrary());settingRow(panel,"Import browser data","Bookmarks, password options and cookie limitations",()->importBrowserData());
- section(panel,"ABOUT");settingRow(panel,"Orion Browser",installedVersion(),()->new AlertDialog.Builder(this).setTitle("About Orion").setMessage("Experimental community browser. Orion Connect, isolated private browsing, extensions and password sync are not implemented.").setPositiveButton("OK",null).show());
+ section(panel,"PLANNED FEATURES");disabledSettingRow(panel,"Password autofill","Imported passwords are stored, but are not used to fill websites");disabledSettingRow(panel,"Extensions","Installing and managing GeckoView extensions is not implemented");disabledSettingRow(panel,"Orion Connect","Cross-device push links and encrypted sync are not connected");section(panel,"ABOUT");settingRow(panel,"Orion Private Browser",installedVersion(),()->new AlertDialog.Builder(this).setTitle("About Orion").setMessage("Experimental private browser. Google sign-in, Orion Connect, extensions and password autofill are not implemented. Incognito uses a separate GeckoView private session, but device verification remains outstanding.").setPositiveButton("OK",null).show());
  dialog.setContentView(page);dialog.show();dialog.getWindow().setLayout(-1,-1);dialog.getWindow().getDecorView().setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets i=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());page.setPadding(i.left,i.top,i.right,i.bottom);}return insets;});dialog.getWindow().getDecorView().requestApplyInsets();}
  void startDnsVpn(){
   if(android.net.VpnService.prepare(this)!=null){Toast.makeText(this,"VPN permission required",Toast.LENGTH_LONG).show();return;}
