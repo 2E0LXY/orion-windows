@@ -26,8 +26,9 @@ Android is implemented in **native Java** in [`platforms/android/`](https://gith
 
 | Area | Present in development source | Limitations / verification needed |
 | --- | --- | --- |
-| Branding and launch | Orion launcher icon, animated orbit-and-star startup screen, visible version; reduced-motion static state | Replay boot animation available in both menus; prior device test failed, revised scheduling requires retest |
+| Branding and launch | Orion launcher icon and shared native Orion start page | **Custom boot animation and replay controls removed** following device feedback; Android provides its standard operating-system launch screen |
 | Browser engines | Android System **WebView** (main browser) and optional **GeckoView** session via **Open in GeckoView** | Shared Orion home screen with GeckoView attribution and common menu; separate experimental session, not seamless per-tab switching; cookies remain separate |
+| Homepage and weather | Press-and-hold Home saves the current website, triple-tap resets to the built-in Orion homepage. Optional native **ECMWF IFS five-day forecast** with colourful drawn weather icons | Approximate GPS-area location only after Android permission consent, or user-chosen town without location permission. Forecast comes through the Open-Meteo ECMWF API, cached for offline use and refreshed after 90 minutes; Settings can hide weather or erase saved location. Current device testing pending |
 | GeckoView UI | Orion-styled top bar, address field, back/forward/reload/home controls, menu and return to WebView | Extension manager and native tab integration remain outstanding; camera, microphone and location delegates added, device testing pending |
 | Tabs | Multi-tab WebView, tab counter, 20-tab limit, tab picker, tablet strip, manual URL archiving/restoration | No full crash-safe session restore, tab groups or intelligent tab suspension |
 | Navigation | HTTP/HTTPS, address/search field, site navigation, back/forward/home/reload, configurable search | HTTP is unencrypted; user warning on explicit HTTP navigation; no universal HTTPS-only guarantee |
@@ -49,17 +50,21 @@ Android is implemented in **native Java** in [`platforms/android/`](https://gith
 | Extensions | GeckoView engine dependency included | WebExtensions/uBlock management **not yet implemented** |
 | Other outstanding | Background media controls, password autofill, passkeys, full-page translation, robust tab restore, production signing, comprehensive testing | Do not treat roadmap items as shipped features |
 
+### Homepage weather — Android
+
+The built-in Orion homepage displays a native weather card for both WebView and GeckoView. Colour weather icons indicate sun, clouds, rain, snow and thunderstorms, with Celsius temperatures, humidity, wind, precipitation and five local forecast days. The card requests **ECMWF IFS data via Open-Meteo's ECMWF forecast endpoint** and shows visible attribution; it does not use an ECMWF private API key. A user can explicitly choose approximate location or search for a town. Coordinates from Android location are rounded to two decimals before storage or transmission. Saved forecast data are cached for offline display, with refreshes after approximately 90 minutes. Clear the stored location or hide the card from Settings → Homepage weather. No automatic GPS permission prompt is made on launch, and custom external homepages do not display the card. Hosted API licensing must be checked before commercial distribution. [Data source](https://open-meteo.com/en/docs/ecmwf-api).
+
 ### DNS and network — Android
 
 Open **Orion menu → DNS and network** in either engine, or **Settings → Privacy and Security → DNS and Secure DNS**.
 
 - Cloudflare is the default GeckoView DNS-over-HTTPS (DoH) provider; strict mode is the default, with optional system DNS fallback.
 - Presets: Cloudflare, Control D, Quad9, Google, OpenDNS, NextDNS, AdGuard, CleanBrowsing, DNS.Watch and Mullvad, plus Android system DNS and custom HTTPS DoH URL. NextDNS requires account configuration; DNS.Watch is reference-only.
-- WebView uses Android-managed DNS; the app links to Android Private DNS settings and shows provider DoT hostnames where available.
+- WebView uses Android-managed DNS by default; Android Private DNS settings and DoT hostnames are linked. **An experimental, user-consented local DNS VPN** is also included for selected DoH providers. It scopes its virtual DNS routes to Orion, but does not yet guarantee all WebView DNS queries are captured. Physical-device testing and DNS-leak verification are required.
 - Live network details show assigned IPv4/IPv6 addresses and Android DNS servers. Selected-provider diagnostics query each listed primary/secondary IPv4/IPv6 address independently over UDP port 53, reporting response time or error. These diagnostic queries are unencrypted.
 - Separate encrypted DoH A/AAAA query tests measure endpoint response times. AAAA resolution is not proof of IPv6 transport availability.
 - Android manages dual-stack routing. Forced IP-family selection, independent WebView DNS, automatic provider benchmarking and verification of the resolver used by every browser request are not implemented.
-- Physical-device testing of DNS enforcement, permission prompts, startup animation and UI remains outstanding.
+- Physical-device testing of DNS enforcement, weather location permissions, forecast cards and UI remains outstanding. The custom boot animation has been removed.
 
 ### Import browser data — Android
 
