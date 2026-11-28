@@ -85,11 +85,11 @@ final class HomeWeather {
   host.removeAllViews();
   if(!enabled(activity))return;
   LinearLayout card=new LinearLayout(activity);card.setOrientation(LinearLayout.VERTICAL);
-  card.setPadding(dp(16),dp(16),dp(16),dp(16));
+  card.setPadding(dp(12),dp(10),dp(12),dp(10));
   card.setBackground(bg(0xff26354e,20));card.setElevation(dp(2));
-  int width=Math.min(activity.getResources().getDisplayMetrics().widthPixels-dp(32),dp(520));
-  LinearLayout.LayoutParams cardParams=new LinearLayout.LayoutParams(Math.max(dp(260),width),-2);
-  cardParams.topMargin=dp(22);cardParams.bottomMargin=dp(20);
+  int width=Math.min(activity.getResources().getDisplayMetrics().widthPixels-dp(48),dp(360));
+  LinearLayout.LayoutParams cardParams=new LinearLayout.LayoutParams(Math.max(1,width),-2);
+  cardParams.topMargin=dp(28);cardParams.bottomMargin=dp(12);
   host.addView(card,cardParams);
   LinearLayout header=new LinearLayout(activity);header.setGravity(Gravity.CENTER_VERTICAL);
   TextView heading=text("LOCAL WEATHER",12,0xffbfd8ff,true);heading.setLetterSpacing(.15f);
@@ -108,7 +108,7 @@ final class HomeWeather {
    explanation.setLineSpacing(dp(3),1f);card.addView(explanation);
   }
   LinearLayout actions=new LinearLayout(activity);actions.setGravity(Gravity.CENTER_VERTICAL);
-  LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,-2);ap.topMargin=dp(12);card.addView(actions,ap);
+  LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,-2);ap.topMargin=dp(6);card.addView(actions,ap);
   String mode=prefs().getString(PREFIX+"mode","");
   boolean hasSaved=!mode.isEmpty();
   Button select=button(hasSaved?"Change area":"Choose a town",this::chooseTown);
@@ -120,7 +120,7 @@ final class HomeWeather {
   });
   actions.addView(location,new LinearLayout.LayoutParams(0,dp(48),1));
   TextView note=text("ECMWF forecast via Open-Meteo · updates about every 90 min",11,MUTED,false);
-  LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=dp(10);card.addView(note,np);
+  LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=dp(5);card.addView(note,np);
   card.setContentDescription("Orion local weather forecast and weather location controls");
   if(hasSaved&&System.currentTimeMillis()-prefs().getLong(PREFIX+"updated",0)>CACHE_TTL_MS){
    if("town".equals(mode))refreshSaved();
@@ -145,14 +145,14 @@ final class HomeWeather {
   boolean daylight=days.optInt(current,1)==1;
   String place=prefs().getString(PREFIX+"label","Approximate location");
   TextView location=text(place,17,WHITE,true);
-  LinearLayout.LayoutParams locp=new LinearLayout.LayoutParams(-1,-2);locp.topMargin=dp(12);card.addView(location,locp);
+  LinearLayout.LayoutParams locp=new LinearLayout.LayoutParams(-1,-2);locp.topMargin=dp(6);card.addView(location,locp);
   LinearLayout summary=new LinearLayout(activity);summary.setGravity(Gravity.CENTER_VERTICAL);
   LinearLayout.LayoutParams summp=new LinearLayout.LayoutParams(-1,-2);summp.topMargin=dp(6);card.addView(summary,summp);
   WeatherIcon currentIcon=new WeatherIcon(activity,code,daylight);
-  summary.addView(currentIcon,new LinearLayout.LayoutParams(dp(72),dp(72)));
+  summary.addView(currentIcon,new LinearLayout.LayoutParams(dp(44),dp(44)));
   LinearLayout stats=new LinearLayout(activity);stats.setOrientation(LinearLayout.VERTICAL);
   stats.setPadding(dp(14),0,0,0);summary.addView(stats);
-  stats.addView(text(Math.round(temps.optDouble(current,0))+"°C",30,WHITE,true));
+  stats.addView(text(Math.round(temps.optDouble(current,0))+"°C",24,WHITE,true));
   stats.addView(text(description(code,daylight)+" · feels "+Math.round(feels.optDouble(current,0))+"°C",13,MUTED,false));
 
   LinearLayout metrics=new LinearLayout(activity);metrics.setGravity(Gravity.CENTER);
@@ -162,7 +162,7 @@ final class HomeWeather {
   addMetric(metrics,"RAIN",String.format(Locale.UK,"%.1f mm",rains.optDouble(current,0)));
 
   View divider=new View(activity);divider.setBackgroundColor(0xff49617e);
-  LinearLayout.LayoutParams line=new LinearLayout.LayoutParams(-1,dp(1));line.topMargin=dp(14);line.bottomMargin=dp(12);card.addView(divider,line);
+  LinearLayout.LayoutParams line=new LinearLayout.LayoutParams(-1,dp(1));line.topMargin=dp(8);line.bottomMargin=dp(6);card.addView(divider,line);
   LinearLayout forecast=new LinearLayout(activity);forecast.setGravity(Gravity.CENTER);card.addView(forecast);
   int offset=data.optInt("utc_offset_seconds",0);
   TimeZone tz=TimeZone.getTimeZone(data.optString("timezone","UTC"));
@@ -188,7 +188,7 @@ final class HomeWeather {
    String dayLabel=count==0?"Today":format.format(new Date((d*86400L-offset)*1000L+12L*3600000L));
    TextView dayText=text(dayLabel,12,MUTED,false);dayText.setGravity(Gravity.CENTER);dayCard.addView(dayText);
    WeatherIcon icon=new WeatherIcon(activity,sampleCode,sampleDay);
-   LinearLayout.LayoutParams iconp=new LinearLayout.LayoutParams(dp(38),dp(38));iconp.topMargin=dp(4);iconp.bottomMargin=dp(4);dayCard.addView(icon,iconp);
+   LinearLayout.LayoutParams iconp=new LinearLayout.LayoutParams(dp(26),dp(26));iconp.topMargin=dp(4);iconp.bottomMargin=dp(4);dayCard.addView(icon,iconp);
    TextView highLow=text(Math.round(high)+"°/"+Math.round(low)+"°",12,WHITE,true);
    highLow.setGravity(Gravity.CENTER);highLow.setMaxLines(1);dayCard.addView(highLow);
    count++;
@@ -197,7 +197,7 @@ final class HomeWeather {
   if(updated>0){
    long age=Math.max(0,(System.currentTimeMillis()-updated)/60000);
    TextView stamp=text(age<2?"Updated just now":"Updated "+age+" min ago"+(age>=180?" · cached":""),11,MUTED,false);
-   LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=dp(12);card.addView(stamp,sp);
+   LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=dp(6);card.addView(stamp,sp);
   }
  }
  private void addMetric(LinearLayout metrics,String title,String value){
