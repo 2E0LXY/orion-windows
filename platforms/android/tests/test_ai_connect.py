@@ -13,7 +13,7 @@ class AiConnectContracts(unittest.TestCase):
         self.assertIn('private volatile boolean running;',BRIDGE)
         self.assertNotIn('"0.0.0.0"',BRIDGE)
     def test_authorisation_limits(self):
-        self.assertIn('MessageDigest.isEqual(a,b)',BRIDGE)
+        self.assertIn('MessageDigest.isEqual(a,b)',BRIDGE)\n        self.assertIn('readHeaderLine(input)',BRIDGE)
         self.assertIn('System.currentTimeMillis()>deadline',BRIDGE)
         self.assertIn('if(origin!=null',BRIDGE)
         self.assertIn('length>MAX_BODY',BRIDGE)
@@ -22,7 +22,7 @@ class AiConnectContracts(unittest.TestCase):
         self.assertIn('host.requestApproval(name,',BRIDGE)
         self.assertIn('if(!running||!host.canControl())',BRIDGE)
         self.assertIn('void openIncognito(){\n  if(aiBridge!=null)aiBridge.stop();',MAIN)
-        self.assertIn('boolean aiCanControl(){return !geckoIncognito',MAIN)
+        self.assertIn('boolean aiCanControl(){return aiInForeground&&!geckoIncognito',MAIN)
         self.assertIn('setNegativeButton("Deny"',MAIN)
         self.assertIn('setPositiveButton("Allow once"',MAIN)
         self.assertIn('void onDestroy(){if(aiBridge!=null)aiBridge.stop();',MAIN)
