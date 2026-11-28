@@ -89,7 +89,7 @@ final class DnsSettings {
   TextView expl=new TextView(a);expl.setText("Cloudflare is Orion's default GeckoView resolver. Android Private DNS is device-wide and must be configured in system settings. Network and device policies still apply.");expl.setTextSize(14);expl.setTextColor(0xffb9c6da);expl.setLineSpacing(a.dp(4),1f);expl.setPadding(a.dp(16),a.dp(8),a.dp(16),a.dp(8));body.addView(expl);
   a.section(body,"IPv4 / IPv6 — AUTOMATIC DUAL STACK");
   a.settingRow(body,"Network IP support","View Android's actual IPv4/IPv6 addresses and DNS servers",()->{dialog.dismiss();networkDetails(a);});
-  a.settingRow(body,"Test IPv4 and IPv6","Measure TCP connect time on each IP family",()->{dialog.dismiss();testNetwork(a);});
+  a.settingRow(body,"Test IPv4 and IPv6","Measure selected resolver DNS response on each IP family",()->{dialog.dismiss();testNetwork(a);});
   a.section(body,"DNS TEST");
   a.settingRow(body,"Test selected DoH server",gecko?active:"Select a DoH provider first",()->{dialog.dismiss();testDns(a);});
   a.settingRow(body,"Resolver details","View IPv4, IPv6, DoH and Android Private DNS hostname",()->{dialog.dismiss();providerDetails(a,provider(prefs));});
@@ -159,28 +159,56 @@ final class DnsSettings {
   new AlertDialog.Builder(a).setTitle("Live network details").setMessage(out.toString()).setNegativeButton("Close",null).setPositiveButton("DNS settings",(d,i)->show(a)).show();
  }
  static void testNetwork(MainActivity a){
-  TextView result=new TextView(a);result.setText("Testing TCP 443 connections without DNS lookup…");result.setTextSize(15);result.setPadding(a.dp(24),a.dp(16),a.dp(24),a.dp(16));
-  AlertDialog dialog=new AlertDialog.Builder(a).setTitle("IPv4 / IPv6 connectivity").setView(result).setNegativeButton("Close",null).create();dialog.show();
+  final int p=provider(a.getPreferences(0));
+  final java.util.ArrayList<String> ips=new java.util.ArrayList<>();
+  if(p==0){
+   ConnectivityManager cm=(ConnectivityManager)a.getSystemService(Context.CONNECTIVITY_SERVICE);
+   Network net=cm==null?null:cm.getActiveNetwork();
+   LinkProperties link=net==null?null:cm.getLinkProperties(net);
+   if(link!=null)for(InetAddress ip:link.getDnsServers())ips.add(ip.getHostAddress());
+  }else for(String group:new String[]{IPV4[p],IPV6[p]})if(!group.isEmpty())for(String ip:group.split(" / "))ips.add(ip.trim());
+  TextView result=new TextView(a);result.setText("Testing "+NAMES[p]+"…");result.setTextSize(15);result.setPadding(a.dp(24),a.dp(16),a.dp(24),a.dp(16));
+  ScrollView scroll=new ScrollView(a);scroll.addView(result);
+  AlertDialog dialog=new AlertDialog.Builder(a).setTitle("IPv4 / IPv6 DNS diagnostics").setView(scroll).setNegativeButton("Close",null).create();dialog.show();
   new Thread(()->{
-   String v4=probe("1.1.1.1"),v6=probe("2606:4700:4700::1111");
-   a.runOnUiThread(()->{if(!a.isDestroyed()&&dialog.isShowing())result.setText("IPv4 (Cloudflare 1.1.1.1): "+v4+"\n\nIPv6 (Cloudflare 2606:4700:4700::1111): "+v6+"\n\nThese are TCP connection checks, not DNS resolution or browser routing tests.");});
+   StringBuilder out=new StringBuilder(NAMES[p]).append("\n\n");
+   if(ips.isEmpty())out.append("No static resolver addresses available. Use the DoH endpoint test.\n");
+   for(String ip:ips){
+    if(!dialog.isShowing())break;
+    out.append(ip.contains(":")?"IPv6: ":"IPv4: ").append(ip).append("\n").append(probe(ip)).append("\n\n");
+    final String snapshot=out.toString();a.runOnUiThread(()->{if(!a.isDestroyed()&&dialog.isShowing())result.setText(snapshot);});
+   }
+   out.append("Direct UDP DNS tests are unencrypted and may be blocked or intercepted by the network. They do not verify browser DoH traffic. AAAA resolution does not prove IPv6 connectivity.");
+   a.runOnUiThread(()->{if(!a.isDestroyed()&&dialog.isShowing())result.setText(out.toString());});
   },"orion-network-probe").start();
  }
  static String probe(String ip){
-  try(Socket socket=new Socket()){
+  try(java.net.DatagramSocket socket=new java.net.DatagramSocket()){
+   socket.setSoTimeout(2500);socket.connect(InetAddress.getByName(ip),53);
+   byte[] query=dnsQuery(1);byte[] answer=new byte[4096];
    long start=android.os.SystemClock.elapsedRealtimeNanos();
-   socket.connect(new InetSocketAddress(InetAddress.getByName(ip),443),3500);
-   return String.format(Locale.UK,"Reachable · %.1f ms",(android.os.SystemClock.elapsedRealtimeNanos()-start)/1e6);
-  }catch(Exception e){return "No TCP connection (timeout, firewall or unavailable path)";}
+   socket.send(new java.net.DatagramPacket(query,query.length));
+   java.net.DatagramPacket packet=new java.net.DatagramPacket(answer,answer.length);socket.receive(packet);
+   if(packet.getLength()<12||answer[0]!=query[0]||answer[1]!=query[1]||(answer[2]&128)==0)return "Invalid DNS reply";
+   if((answer[3]&15)!=0)return "DNS error "+(answer[3]&15);
+   return String.format(Locale.UK,"DNS reply · %.1f ms",(android.os.SystemClock.elapsedRealtimeNanos()-start)/1e6);
+  }catch(Exception e){return "No DNS reply: "+e.getClass().getSimpleName();}
+ }
+ static byte[] dnsQuery(int type)throws java.io.IOException{
+   ByteArrayOutputStream bytes=new ByteArrayOutputStream();
+   DataOutputStream query=new DataOutputStream(bytes);
+   query.writeShort(new java.security.SecureRandom().nextInt(65536));query.writeShort(0x0100);query.writeShort(1);query.writeShort(0);query.writeShort(0);query.writeShort(0);
+   for(String label:new String[]{"example","com"}){query.writeByte(label.length());query.writeBytes(label);}query.writeByte(0);query.writeShort(type);query.writeShort(1);query.flush();return bytes.toByteArray();
  }
  static void testDns(MainActivity a){
+  final int selected=provider(a.getPreferences(0));
   String endpoint=endpoint(a.getPreferences(0));
   if(!validDoh(endpoint)){new AlertDialog.Builder(a).setTitle("No DoH endpoint").setMessage("Select an encrypted DNS provider for GeckoView first. WebView uses Android system DNS.").setPositiveButton("OK",null).show();return;}
   TextView result=new TextView(a);result.setText("Resolving example.com over HTTPS…");result.setTextSize(15);result.setPadding(a.dp(24),a.dp(16),a.dp(24),a.dp(16));
   AlertDialog dialog=new AlertDialog.Builder(a).setTitle("DoH resolver test").setView(result).setNegativeButton("Close",null).create();dialog.show();
   new Thread(()->{
    String aResult=queryDns(endpoint,1),aaaaResult=queryDns(endpoint,28);
-   a.runOnUiThread(()->{if(!a.isDestroyed()&&dialog.isShowing())result.setText("Provider: "+NAMES[provider(a.getPreferences(0))]+"\n\nA record (IPv4): "+aResult+"\n\nAAAA record (IPv6): "+aaaaResult+"\n\nMeasured over HTTPS from this Android device. This tests the selected endpoint, not every WebView or GeckoView request.");});
+   a.runOnUiThread(()->{if(!a.isDestroyed()&&dialog.isShowing())result.setText("Provider: "+NAMES[selected]+"\n\nA record (IPv4): "+aResult+"\n\nAAAA record (IPv6): "+aaaaResult+"\n\nMeasured over HTTPS from this Android device. This tests the selected endpoint, not every WebView or GeckoView request.");});
   },"orion-doh-test").start();
  }
  static String queryDns(String endpoint,int type){
