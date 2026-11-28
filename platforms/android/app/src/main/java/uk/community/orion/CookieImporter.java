@@ -83,9 +83,21 @@ final class CookieImporter {
   preview.entries.add(new Entry("https://"+host+"/",h.toString(),host));preview.hosts.add(host);
  }
  private static boolean hasControl(String v){for(int i=0;i<v.length();i++){char c=v.charAt(i);if(c<32||c==127)return true;}return false;}
- static void apply(Preview preview,Runnable complete){
+ // Android cookie writes are asynchronous; report only acknowledged writes.
+ static void apply(Preview preview,java.util.function.IntConsumer complete){
   CookieManager cm=CookieManager.getInstance();
-  for(Entry e:preview.entries)cm.setCookie(e.url,e.header);
-  cm.flush();complete.run();
+  int count=preview.entries.size();
+  if(count==0){complete.accept(0);return;}
+  java.util.concurrent.atomic.AtomicInteger pending=new java.util.concurrent.atomic.AtomicInteger(count);
+  java.util.concurrent.atomic.AtomicInteger accepted=new java.util.concurrent.atomic.AtomicInteger();
+  for(Entry entry:preview.entries){
+   cm.setCookie(entry.url,entry.header,stored->{
+    if(Boolean.TRUE.equals(stored))accepted.incrementAndGet();
+    if(pending.decrementAndGet()==0){
+     cm.flush();
+     complete.accept(accepted.get());
+    }
+   });
+  }
  }
 }
