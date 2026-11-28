@@ -3,9 +3,7 @@ package uk.community.orion;
 import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -46,7 +44,6 @@ final class OrionAiBridge {
  private final Map<String,Boolean> scopes=Collections.synchronizedMap(new LinkedHashMap<>());
  private volatile boolean running;
  private volatile String token;
- private volatile String pairingCode;
  private volatile long deadline;
  private ServerSocket server;
  private Thread worker;
@@ -58,14 +55,12 @@ final class OrionAiBridge {
  boolean running(){return running;}
  int port(){return PORT;}
  String status(){return running?"Connected locally · "+latestEvent:"Disconnected";}
- String pairingCode(){return pairingCode;}
  String token(){return token;}
  void start(){
   if(running)return;
   byte[] secret=new byte[32];random.nextBytes(secret);
   StringBuilder out=new StringBuilder();for(byte b:secret)out.append(String.format(java.util.Locale.ROOT,"%02x",b&255));
   token=out.toString();
-  pairingCode=String.format(java.util.Locale.ROOT,"%06d",random.nextInt(1000000));
   deadline=System.currentTimeMillis()+15*60*1000L;
   scopes.clear();for(String name:new String[]{"browser_info","navigate","tabs","back","forward","reload","page_text","scroll","click","type"})scopes.put(name,true);
   try{
@@ -74,13 +69,13 @@ final class OrionAiBridge {
    worker=new Thread(this::serve,"orion-ai-local");worker.start();
    ui.removeCallbacks(expire);ui.postDelayed(expire,15*60*1000L);reportStatus();
   }catch(Exception e){
-   running=false;token=null;pairingCode=null;latestEvent="Unable to bind local port";
+   running=false;token=null;latestEvent="Unable to bind local port";
    try{if(server!=null)server.close();}catch(Exception ignored){}
    server=null;
   }
  }
  void stop(){
-  running=false;deadline=0;token=null;pairingCode=null;latestEvent="Disconnected";
+  running=false;deadline=0;token=null;latestEvent="Disconnected";
   ui.removeCallbacks(expire);reportStatus();
   try{if(server!=null)server.close();}catch(Exception ignored){}
   server=null;
@@ -123,12 +118,19 @@ final class OrionAiBridge {
    respond(out,403,"Forbidden","{}");return;
   }
   if(!authorise(authorisation)){respond(out,401,"Unauthorized","{}");return;}
+  if("GET".equals(verb)&&"/mcp".equals(path)){respond(out,405,"Method Not Allowed","{}");return;}
   if(!"POST".equals(verb)||!"/mcp".equals(path)||length<0||length>MAX_BODY){respond(out,400,"Bad Request","{}");return;}
   byte[] payload=new byte[length];int read=0;
   while(read<length){int n=input.read(payload,read,length-read);if(n<0)throw new java.io.EOFException();read+=n;}
   JSONObject requestJson;
   try{requestJson=new JSONObject(new String(payload,StandardCharsets.UTF_8));}
   catch(Exception e){respond(out,400,"Bad Request","{}");return;}
+  if(!"2.0".equals(requestJson.optString("jsonrpc",""))){respond(out,400,"Bad Request","{}");return;}
+  if(!requestJson.has("id")){
+   if(requestJson.optString("method","").startsWith("notifications/"))respond(out,202,"Accepted","");
+   else respond(out,400,"Bad Request","{}");
+   return;
+  }
   JSONObject reply=dispatch(requestJson);
   respond(out,200,"OK",reply.toString());
  }
@@ -185,7 +187,7 @@ final class OrionAiBridge {
    }else if(name.equals("scroll")){
     Object px=args.opt("pixels");
     if(!(px instanceof Integer)&&!(px instanceof Long))return failure(id,-32602,"pixels must be an integer");
-    if(Math.abs(args.optLong("pixels",0))>2000||args.length()!=1)return failure(id,-32602,"Scroll distance is out of range");
+    if(args.optLong("pixels",0)>2000||args.optLong("pixels",0)< -2000||args.length()!=1)return failure(id,-32602,"Scroll distance is out of range");
    }else if(name.equals("click")||name.equals("type")){
     String selector=args.optString("selector","");
     if(selector.isEmpty()||selector.length()>200)return failure(id,-32602,"CSS selector must be 1-200 characters");
