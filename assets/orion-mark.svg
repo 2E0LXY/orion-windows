@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" role="img" aria-labelledby="orion-symbol-title">
+  <title id="orion-symbol-title">Orion O and star</title>
+  <defs><linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#53e6ff"/><stop offset=".43" stop-color="#168bff"/><stop offset=".78" stop-color="#1461f6"/><stop offset="1" stop-color="#71f4ff"/></linearGradient><linearGradient id="trail" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#39b6ff"/><stop offset=".56" stop-color="#e3f6ff"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+  <circle cx="53" cy="56" r="34" stroke="url(#ring)" stroke-width="11" fill="none"/>
+  <path d="M8 91 Q21 60 51 45 Q72 35 91 30" fill="none" stroke="url(#trail)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M83 12 L88 25 L102 30 L88 35 L83 49 L78 35 L64 30 L78 25Z" fill="#fff"/>
+</svg>

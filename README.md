@@ -4,29 +4,36 @@ Open-source **Orion** work covering **Windows, Linux, and Android**. This reposi
 
 > **Release status:** Android is an **experimental debug APK**, Windows is a public-source build/recovery effort, and Linux is a preserved source snapshot. Features, build success, and security reviews are **different** things. Please see the platform-specific status below.
 
+<img src="assets/orion-mark.svg" width="76" height="76" alt="Orion blue ring, silver orbit and star symbol">
+
 ## Downloads — start here
+
+**[Download the latest Android ARM64 test APK directly](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — a single `.apk` file, **no ZIP to extract**. The test-branch CI publishes a versioned prerelease plus updates the stable test-download link after all automated checks pass. [Build history](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) · [Draft PR #3](https://github.com/2E0LXY/orion-windows/pull/3). The link is ready when the first new direct-release job succeeds.
 
 | Platform | Latest accessible download / source | Status |
 | --- | --- | --- |
-| **Android** | **[Download latest Orion Android test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** | Automatically replaced when a new Android CI build succeeds. **The stable link becomes available after its first successful publication.** |
+| **Android** | **[Download latest Orion Android test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** | Published directly from successful `chatgpt/geckoview-home-splash` push builds; not a production-signed release. |
 | Android — versioned | [All Orion releases](https://github.com/2E0LXY/orion-windows/releases) · [Android build runs](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) | Earlier working APKs remain available for comparison and rollback |
 | Android — previous verified | [Download verified test APK (build 46091875384)](https://github.com/2E0LXY/orion-windows/releases/download/android-dev-46091875384/app-debug.apk) | Versioned debug build; **does not contain every subsequent import change** |
 | **Windows** | [Windows branch and source](https://github.com/2E0LXY/orion-windows) · [Public WebKit build PR](https://github.com/2E0LXY/orion-windows/pull/2) | No verified community Windows installer available yet |
 | **Linux** | [Linux snapshot branch](https://github.com/2E0LXY/orion-windows/tree/archive/orion-linux) · [Cross-platform branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/cross-platform) | Source snapshot only; no verified Linux package available |
 
-**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; debug package currently includes both WebView and Mozilla GeckoView and is large (about **528 MB** for recent test builds). Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
+**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; test package includes Android System WebView and Mozilla GeckoView. Direct Android test releases package **arm64-v8a only** as standalone APK assets. Universal packaging remains available locally. Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
 
-**Latest development branch:** [`chatgpt/drive-sync`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
+**Latest development branch:** [`chatgpt/geckoview-home-splash`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/geckoview-home-splash) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
+
+**[Android setup, menu map and complete feature guide](platforms/android/README.md)** · [Android implementation roadmap](platforms/android/ROADMAP.md) · [Source-level regression tests](platforms/android/tests/test_ui_contract.py). The Android guide documents how to use each new control, its engine scope, verification status and known limitations.
 
 ## Android — feature and implementation status
 
-Android is implemented in **native Java** in [`platforms/android/`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync/platforms/android). The application label is **Orion Browser**. A passing CI build confirms compilation, **not** behaviour on a physical device.
+Android is implemented in **native Java** in [`platforms/android/`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/geckoview-home-splash/platforms/android). The application label is **Orion Browser**. A passing CI build confirms compilation, **not** behaviour on a physical device.
 
 | Area | Present in development source | Limitations / verification needed |
 | --- | --- | --- |
-| Branding and launch | Orion launcher icon, animated orbit-and-star startup screen, visible version; reduced-motion static state | Verify startup logo and animation on multiple Android devices, including cold starts |
-| Browser engines | Android System **WebView** (main browser) and optional **GeckoView** session via **Open in GeckoView** | GeckoView opens in a separate experimental screen, not a seamless per-tab engine swap; cookies and sessions are separate |
-| GeckoView UI | Orion-styled top bar, address field, back/forward/reload/home controls, menu and return to WebView | Extension manager, native tab integration and all site-permission bridging are outstanding |
+| Branding and launch | Orion launcher icon and shared native Orion start page | **Custom boot animation and replay controls removed** following device feedback; Android provides its standard operating-system launch screen |
+| Browser engines | Android System **WebView** (main browser) and optional **GeckoView** session via **Open in GeckoView** | Shared Orion home screen with GeckoView attribution and common menu; separate experimental session, not seamless per-tab switching; cookies remain separate |
+| Homepage and weather | Press-and-hold Home saves the current website, triple-tap resets to the built-in Orion homepage. Optional native **ECMWF IFS five-day forecast** with colourful drawn weather icons | Approximate GPS-area location only after Android permission consent, or user-chosen town without location permission. Forecast comes through the Open-Meteo ECMWF API, cached for offline use and refreshed after 90 minutes; Settings can hide weather or erase saved location. Current device testing pending |
+| GeckoView UI | Orion-styled top bar, address field, back/forward/reload/home controls, menu and return to WebView | Extension manager and native tab integration remain outstanding; camera, microphone and location delegates added, device testing pending |
 | Tabs | Multi-tab WebView, tab counter, 20-tab limit, tab picker, tablet strip, manual URL archiving/restoration | No full crash-safe session restore, tab groups or intelligent tab suspension |
 | Navigation | HTTP/HTTPS, address/search field, site navigation, back/forward/home/reload, configurable search | HTTP is unencrypted; user warning on explicit HTTP navigation; no universal HTTPS-only guarantee |
 | Search | Google, DuckDuckGo, Bing, Yahoo, Kagi, Brave Search, Startpage, Ecosia, Qwant, Mojeek, Swisscows, Wikipedia | Search integrations have not all been device-verified |
@@ -36,16 +43,59 @@ Android is implemented in **native Java** in [`platforms/android/`](https://gith
 | Password migration | Import browser/password-manager CSV, merge by URL and username, **Android Keystore AES-GCM encrypted local storage**, delete local vault | **Imported passwords do not yet autofill** and are not connected to GeckoView or Orion Connect; security audit pending |
 | Password export | User-confirmed export of imported credentials as standard **plaintext CSV** | CSV reveals passwords; store and transfer securely, then delete when no longer needed; no encrypted cross-device backup yet |
 | Cookie import | Opt-in Netscape `cookies.txt` or browser JSON export, domain preview, size/entry limits, WebView cookie import | Cookies may contain active sessions; GeckoView has a separate cookie store; **cookie export is not yet provided** |
-| Website permissions | WebView camera, microphone and approximate location: Ask every time, Block, or Allow on request; Android runtime permission remains required | GeckoView permissions not yet integrated with the same options; no site-by-site remembered allowlist |
-| Privacy | Third-party cookie blocking in WebView; basic request-domain ad/tracker filtering; no-cache loading option; clearing WebView cookies/storage/cache/history | Not complete ad blocking, anti-fingerprinting or anonymity; zero-cache mode is not guaranteed disk-free browsing |
+| Website permissions | WebView camera, microphone and approximate location: Ask every time, Block, or Allow on request; Android runtime permission remains required | GeckoView camera, microphone and location handlers added; notification requests blocked; device verification pending; no remembered per-site allowlist |
+| Privacy | Orion logo on far right opens Security and privacy: Incognito first, ad/tracker controls, HTTPS warnings, site permissions, DNS/local VPN and normal data clearing | Incognito uses a separate GeckoView private session, keeps its navigation out of Orion history and prevents normal bookmarking. One private tab only; real-device isolation tests and robust teardown are pending. Network/website logs, fingerprints and external downloads persist |
 | Filter lists | Optional EasyList/EasyPrivacy **domain-rule subset** updates; selected YouTube ad-request endpoints | No complete rules engine, cosmetic filtering, or guarantee of removing video ads |
 | Downloads | Native Android DownloadManager integration; experimental four-connection HTTPS range downloader with progress and cancellation | Range eligibility and validators required; single standard download fallback; no pause/resume/background foreground service |
 | Reader and page export | Experimental article-text reader; Android printing/**Save as PDF** | Reader extracts text, not full article formatting; full-page screenshot/translation remain outstanding |
 | Find and share | Find text on current WebView page; Android share sheet | GeckoView find-in-page not yet exposed |
-| Data controls | Clear browsing data; bookmarks and imported passwords stored locally | Some GeckoView data is not cleared by WebView actions; no guaranteed isolated private session |
+| Data controls | Clear normal WebView data from the Orion security panel; bookmarks and imported passwords stored locally | Private GeckoView mode is separate from normal browsing, but device verification is pending. Clearing WebView data does not erase all GeckoView data |
 | Account and sync | Orion Connect prototype documents and development relay | **Google OAuth sign-in, encryption, cross-device sync and push are not connected in the Android app** |
 | Extensions | GeckoView engine dependency included | WebExtensions/uBlock management **not yet implemented** |
 | Other outstanding | Background media controls, password autofill, passkeys, full-page translation, robust tab restore, production signing, comprehensive testing | Do not treat roadmap items as shipped features |
+
+### How to use the new Android features
+
+| What you want to do | Where to find it | Behaviour / scope |
+| --- | --- | --- |
+| **Open the original Orion homepage** | Home button, with no custom page selected | Native Orion logo and ECMWF forecast card for normal browsing in both engines. The operating system displays its standard launch screen; the unreliable custom boot overlay and replay entry are removed. |
+| **Set a website as homepage** | Open the website → **press and hold Home** | The URL is saved across restarts. With a custom homepage, the built-in weather card is not shown. |
+| **Restore the built-in Orion homepage** | **Tap Home three times quickly** | Removes the saved homepage URL. Set the optional toolbar shortcut back to **Home** if previously changed. |
+| **Get local weather** | Built-in Orion start page → **Use my location** | Explicit Android coarse-location permission; rounded coordinates, local place label when available, five forecast days and cached results. |
+| **Choose weather location without GPS** | Start page → **Choose a town** | Searches location names, then loads ECMWF IFS forecasts from Open-Meteo. |
+| **Hide / clear weather data** | **Settings → Homepage weather** | Toggle the card or delete the saved location and forecast cache. |
+| **Open all privacy controls** | **Orion icon on far right of bottom toolbar** | One Security and privacy panel for Incognito, ad-block/filter settings, HTTPS, website permissions, JavaScript, images, cache, DNS and data clearing. |
+| **Start / end Incognito** | Orion security panel → **Start Incognito mode** or **End Incognito session** | One experimental GeckoView private-mode tab, separate from normal WebView and GeckoView browsing; screenshots restricted during the session. Does **not** hide network traffic or external downloads. |
+| **Change secure DNS** | Orion security panel → **DNS and Secure DNS** | Cloudflare is the default GeckoView DoH provider. Android-managed WebView DNS is unchanged unless the optional DNS-only VPN is enabled with Android consent. |
+| **Use the WebView DNS VPN** | DNS and Secure DNS → **Local DNS VPN** | Opt-in Orion-scoped DNS-over-HTTPS forwarding; IPv4/IPv6 virtual routes and service controls. Still experimental and **not DNS-leak verified**. |
+| **Manage camera, microphone or location** | Orion security panel → **Camera, microphone and location** | Ask, Block or Allow-on-request behaviour, subject to Android runtime permissions and engine limitations. |
+| **Import browser data** | Menu → **Import browser data** | Bookmark HTML/JSON, password CSV into local encrypted migration storage, or compatible WebView cookie exports. Autofill and cross-engine cookie sync are not implemented. |
+
+**Privacy statement:** The GeckoView Incognito session is configured for separate temporary browser storage; normal Orion history/bookmark writes are disabled, but data teardown and crash/restart behaviour are **not yet hardware verified**. Your IP address, network traffic patterns, signed-in accounts, device fingerprint and downloaded files may remain observable or persist after you close the session. Android security and network policies continue to apply.
+
+### Orion security and Incognito — Android
+
+The **Orion icon on the far right of the bottom toolbar** opens a native privacy and security panel. Incognito is the first action. Ad-block and filter rules, HTTPS warnings, JavaScript/image controls, camera/microphone/location permissions, DNS and the experimental local VPN, and normal browsing-data management now live in this menu.
+
+Incognito starts a **GeckoView private-mode session**, even when the ordinary engine is Android WebView. Cookies and temporary site data are isolated from ordinary tabs by GeckoView; Orion skips private navigations in its saved history and disallows private bookmarks and saving a normal homepage. Homepage weather is hidden; Android blocks screenshots via FLAG_SECURE. Closing Incognito returns to normal tabs. This version supports **one private tab** only, and the actual data teardown and crash/relaunch behaviour still need real-device testing.
+
+Incognito **does not provide network anonymity**: network operators and websites still observe connections; websites can fingerprint browser characteristics; downloads, shares, external accounts and logs can persist. VPN and device management policies are unaffected. Private extensions and multi-tab Incognito are not implemented.
+
+### Homepage weather — Android
+
+The built-in Orion homepage displays a native weather card for both WebView and GeckoView. Colour weather icons indicate sun, clouds, rain, snow and thunderstorms, with Celsius temperatures, humidity, wind, precipitation and five local forecast days. The card requests **ECMWF IFS data via Open-Meteo's ECMWF forecast endpoint** and shows visible attribution; it does not use an ECMWF private API key. A user can explicitly choose approximate location or search for a town. Coordinates from Android location are rounded to two decimals before storage or transmission. Saved forecast data are cached for offline display, with refreshes after approximately 90 minutes. Clear the stored location or hide the card from Settings → Homepage weather. No automatic GPS permission prompt is made on launch, and custom external homepages do not display the card. Hosted API licensing must be checked before commercial distribution. [Data source](https://open-meteo.com/en/docs/ecmwf-api).
+
+### DNS and network — Android
+
+Open **Orion logo (right of bottom toolbar) → Security and privacy → DNS and Secure DNS**.
+
+- Cloudflare is the default GeckoView DNS-over-HTTPS (DoH) provider; strict mode is the default, with optional system DNS fallback.
+- Presets: Cloudflare, Control D, Quad9, Google, OpenDNS, NextDNS, AdGuard, CleanBrowsing, DNS.Watch and Mullvad, plus Android system DNS and custom HTTPS DoH URL. NextDNS requires account configuration; DNS.Watch is reference-only.
+- WebView uses Android-managed DNS by default; Android Private DNS settings and DoT hostnames are linked. **An experimental, user-consented local DNS VPN** is also included for selected DoH providers. It scopes its virtual DNS routes to Orion, but does not yet guarantee all WebView DNS queries are captured. Physical-device testing and DNS-leak verification are required.
+- Live network details show assigned IPv4/IPv6 addresses and Android DNS servers. Selected-provider diagnostics query each listed primary/secondary IPv4/IPv6 address independently over UDP port 53, reporting response time or error. These diagnostic queries are unencrypted.
+- Separate encrypted DoH A/AAAA query tests measure endpoint response times. AAAA resolution is not proof of IPv6 transport availability.
+- Android manages dual-stack routing. Forced IP-family selection, independent WebView DNS, automatic provider benchmarking and verification of the resolver used by every browser request are not implemented.
+- Physical-device testing of DNS enforcement, weather location permissions, forecast cards and UI remains outstanding. The custom boot animation has been removed.
 
 ### Import browser data — Android
 
@@ -66,12 +116,13 @@ Prerequisites: **JDK 17**, Android SDK with **API 36**, Android Gradle Plugin **
 ```bash
 git clone https://github.com/2E0LXY/orion-windows.git
 cd orion-windows
-git checkout chatgpt/drive-sync
+git checkout chatgpt/geckoview-home-splash
 cd platforms/android
-gradle --no-daemon assembleDebug
+gradle --no-daemon -PorionArm64=true assembleDebug
+# Omit -PorionArm64=true for universal packaging
 ```
 
-Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`. This is an experimental debug APK, not a signed distribution release. CI also publishes versioned GitHub releases and updates the stable Android test-APK shortcut when successful.
+Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`. This is an experimental debug APK, not a signed distribution release. Push builds of the Android development branch publish direct APK GitHub Releases; PR checks validate builds but do not publish user-downloadable ZIP artifacts.
 
 See the [Android roadmap](platforms/android/ROADMAP.md), [Android APK workflow](.github/workflows/android-prototype.yml), and [Android source tree](platforms/android/app/src/main/java/uk/community/orion/).
 
@@ -99,7 +150,7 @@ Design goals: user-authorised sharing of links, bookmarks and settings between A
 
 ## Releases, testing and support
 
-- **[Latest Android APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — stable shortcut, activated by first successful publication of the new workflow.
+- **[Latest Android APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — direct download with no ZIP extraction after a successful new CI publication.
 - **[All downloadable releases](https://github.com/2E0LXY/orion-windows/releases)** — versioned Android builds and any future installers.
 - **[Android Actions](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml)** — status, compile errors and build artefacts.
 - **[Connect tests](https://github.com/2E0LXY/orion-windows/actions/workflows/orion-connect.yml)**.
@@ -437,3 +488,12 @@ CEF is provisioned automatically by the `OrionCefSetup` project, which runs
 - `docs/` — manually edited documentation.
 - `docs_ai/` — generated/managed notes (architecture, web extensions, profile
   storage, CEF performance, WebDriver design).
+
+
+### Canonical Orion brand and direct APK publishing (November 2026)
+
+The canonical **Orion** identity is the blue circular ring, pale orbit and white star shown in the original Android launcher. Source: [scalable Orion symbol](assets/orion-mark.svg); Android uses the matching [vector launcher drawable](platforms/android/app/src/main/res/drawable/orion_icon.xml). Windows and Linux upstream assets are retained for build and licence compatibility; this independent community artwork is used for new Orion promotional materials and pages. The previous custom startup overlay was removed; the operating system can show its own icon-based splash.
+
+[**Download Android test APK directly**](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk). The Android workflow now tests and builds ARM64, verifies its native libraries, publishes a **versioned prerelease** and updates the **same direct .apk link** plus a SHA-256 checksum file. Unlike GitHub Actions artifacts, Release assets do **not** require ZIP extraction. No build output, debug APK, copied archive or IDE cache is tracked in the repository. Check the [CI workflow](.github/workflows/android-prototype.yml) for publishing conditions.
+
+**Release gate:** automated tests and compilation must pass before publication. This is an **experimental debug build**, not a device-certified or production-signed release. Real-device browsing/privacy/DNS tests remain a separate gate. A changed debug signature may require uninstall/reinstall, which deletes local browser data.

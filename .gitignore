@@ -29,3 +29,14 @@ UnitTest/obj/
 
 # vcpkg installed packages
 vcpkg_installed/
+
+
+# Android: keep generated IDE, Gradle and package artefacts out of source control
+/platforms/android/.gradle/
+/platforms/android/**/build/
+/platforms/android/local.properties
+/platforms/android/.idea/
+*.apk
+*.aab
+*.apks
+*.idsig

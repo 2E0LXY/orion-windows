@@ -18,7 +18,7 @@ final class BookmarkImporter {
   try(InputStream in=context.getContentResolver().openInputStream(file);ByteArrayOutputStream out=new ByteArrayOutputStream()){
    if(in==null)throw new IOException("Cannot open selected file");byte[] block=new byte[8192];int n;
    while((n=in.read(block))>=0){if(out.size()+n>MAX_BYTES)throw new IOException("File is too large (8 MB limit)");out.write(block,0,n);}
-   text=out.toString(StandardCharsets.UTF_8.name()).replace("\\uFEFF","");
+   text=out.toString(StandardCharsets.UTF_8.name()).replace("\uFEFF","");
   }
   LinkedHashSet<String> result=new LinkedHashSet<>();String first=text.trim();
   if(first.startsWith("{")||first.startsWith("["))parseJson(first,result);
