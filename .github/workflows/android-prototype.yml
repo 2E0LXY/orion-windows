@@ -1,7 +1,7 @@
 name: Android prototype APK
 on:
   push:
-    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync, chatgpt/android-recovery-session, claude/android-recovery-fixes]
+    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync, chatgpt/android-recovery-session, claude/android-recovery-fixes, claude/android-connect]
     paths:
       - 'platforms/android/**'
       - '.github/workflows/android-prototype.yml'
@@ -33,6 +33,9 @@ jobs:
       - name: Source-level UI and packaging regression tests
         working-directory: platforms/android
         run: python3 -m unittest discover -s tests -v
+      - name: JVM unit tests (sync core)
+        working-directory: platforms/android
+        run: gradle --no-daemon -PorionArm64=true testDebugUnitTest
       - name: Build ARM64 debug APK
         working-directory: platforms/android
         run: gradle --no-daemon -PorionArm64=true assembleDebug
