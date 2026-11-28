@@ -635,7 +635,7 @@ public class MainActivity extends Activity {
   }else if(request==COOKIE_IMPORT_REQUEST){
    new Thread(()->{try{CookieImporter.Preview preview=CookieImporter.read(getApplicationContext(),source);runOnUiThread(()->{if(isFinishing()||isDestroyed())return;StringBuilder hosts=new StringBuilder();int shown=0;for(String host:preview.hosts){if(shown++>=18){hosts.append("\n…and ").append(preview.hosts.size()-18).append(" more sites");break;}hosts.append("\n").append(host);}
     new AlertDialog.Builder(this).setTitle("Import "+preview.entries.size()+" cookies?").setMessage("Into WebView only, from "+preview.hosts.size()+" sites:"+hosts+"\n\nCookies may enable account sessions. Only continue if you trust every domain.")
-     .setNegativeButton("Cancel",null).setPositiveButton("Import cookies",(d,i)->CookieImporter.apply(preview,()->Toast.makeText(this,"Cookies imported into WebView",Toast.LENGTH_LONG).show())).show();
+     .setNegativeButton("Cancel",null).setPositiveButton("Import cookies",(d,i)->CookieImporter.apply(preview,accepted->Toast.makeText(this,"Imported "+accepted+" of "+preview.entries.size()+" cookies into WebView",Toast.LENGTH_LONG).show())).show();
     });}catch(Exception e){importError("Cookie import failed",e);}},"orion-cookie-import").start();
   }
  }
