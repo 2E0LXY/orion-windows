@@ -5,6 +5,9 @@ android { namespace 'uk.community.orion'; compileSdk 36
  if (providers.gradleProperty('orionArm64').orNull == 'true') {
   defaultConfig { ndk { abiFilters 'arm64-v8a' } }
  }
+ // Stable signing key (CI secrets) so in-app updates install over the previous build; debug key otherwise.
+ signingConfigs { orion { if (System.getenv('ORION_KEYSTORE')) { storeFile file(System.getenv('ORION_KEYSTORE')); storePassword System.getenv('ORION_KEYSTORE_PASSWORD'); keyAlias System.getenv('ORION_KEY_ALIAS'); keyPassword System.getenv('ORION_KEY_PASSWORD') } } }
+ buildTypes { debug { if (System.getenv('ORION_KEYSTORE')) { signingConfig signingConfigs.orion } } }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 

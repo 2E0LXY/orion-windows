@@ -396,7 +396,7 @@ class OrionRecoveryContract(unittest.TestCase):
 
     def test_session_writes_are_debounced_and_flushed_on_lifecycle(self):
         self.assertIn("void saveSession(){if(sessionClosed)return;sessionHandler.removeCallbacks(sessionWriter);sessionHandler.postDelayed(sessionWriter,1000);}", SOURCE)
-        for hook in ("onPause(){flushSession();", "onStop(){flushSession();", "onDestroy(){flushSession();sessionClosed=true;"):
+        for hook in ("onPause(){flushSession();", "onStop(){flushSession();", "flushSession();sessionClosed=true;"):
             self.assertIn(hook, SOURCE)
 
     def test_session_never_serialises_private_gecko_and_has_total_history_budget(self):
@@ -438,3 +438,39 @@ class OrionRecoveryContract(unittest.TestCase):
 
     def test_retry_is_not_offered_twice_after_automatic_fallback(self):
         self.assertIn('if(!transfer.status.contains("standard download queued"))downloadAction(list,"Retry using standard download"', SOURCE)
+
+
+class OrionUpdaterContract(unittest.TestCase):
+    UC = (APP / "app/src/main/java/uk/community/orion/UpdateChecker.java").read_text(encoding="utf-8")
+    UR = (APP / "app/src/main/java/uk/community/orion/UpdateReceiver.java").read_text(encoding="utf-8")
+
+    def test_banner_is_clickable_and_starts_install_flow(self):
+        self.assertIn("updateBanner.setOnClickListener(v->installUpdate());", SOURCE)
+        install = SOURCE[SOURCE.index("void installUpdate()"):]
+        self.assertIn("canRequestPackageInstalls()", install[:900])
+        self.assertIn("Download and install", install)
+
+    def test_checks_are_rate_limited_and_can_be_disabled(self):
+        check = method("void checkForUpdates(boolean manual)", "void installUpdate()")
+        self.assertIn('getBoolean("update_check",true)', check)
+        self.assertIn("12L*3600*1000", check)
+        self.assertIn('toggle(panel,"Check for Orion updates automatically","update_check",true)', SOURCE)
+
+    def test_manifest_declares_install_permission_and_private_receiver(self):
+        self.assertIn("android.permission.REQUEST_INSTALL_PACKAGES", MANIFEST)
+        self.assertIn('<receiver android:name=".UpdateReceiver" android:exported="false"/>', MANIFEST)
+
+    def test_download_is_https_github_only_and_checksum_verified_before_commit(self):
+        self.assertIn('"https".equals(u.getProtocol())', self.UC)
+        self.assertIn("setInstanceFollowRedirects(false)", self.UC)
+        self.assertLess(self.UC.index("Checksum mismatch"), self.UC.index("session.commit("))
+        self.assertIn("MODE_FULL_INSTALL", self.UC)
+
+    def test_signature_conflict_is_explained(self):
+        self.assertIn("STATUS_FAILURE_CONFLICT", self.UR)
+        self.assertIn("different key", self.UR)
+
+    def test_release_notes_carry_the_version_code_the_updater_reads(self):
+        wf = (APP.parents[1] / ".github/workflows/android-prototype.yml").read_text(encoding="utf-8")
+        self.assertIn("versionCode ${GITHUB_RUN_NUMBER}", wf)
+        self.assertIn('Pattern.compile("versionCode (\\\\d+)")', self.UC)

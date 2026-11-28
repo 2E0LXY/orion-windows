@@ -1,7 +1,7 @@
 name: Android prototype APK
 on:
   push:
-    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync, chatgpt/android-recovery-session, claude/android-recovery-fixes]
+    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync, chatgpt/android-recovery-session, claude/android-recovery-fixes, claude/android-updater]
     paths:
       - 'platforms/android/**'
       - '.github/workflows/android-prototype.yml'
@@ -30,6 +30,20 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
+      - name: Stable signing key (only if repository secrets are configured)
+        env:
+          KS_B64: ${{ secrets.ORION_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ORION_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ORION_KEY_ALIAS }}
+          KS_KEYPASS: ${{ secrets.ORION_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/orion.jks"
+            { echo "ORION_KEYSTORE=$RUNNER_TEMP/orion.jks"; echo "ORION_KEYSTORE_PASSWORD=$KS_PASS"; echo "ORION_KEY_ALIAS=$KS_ALIAS"; echo "ORION_KEY_PASSWORD=${KS_KEYPASS:-$KS_PASS}"; } >> "$GITHUB_ENV"
+            echo "Using stable signing key"
+          else
+            echo "No signing secrets: debug key varies per run, so in-app updates cannot install over an older build"
+          fi
       - name: Source-level UI and packaging regression tests
         working-directory: platforms/android
         run: python3 -m unittest discover -s tests -v
@@ -71,7 +85,7 @@ jobs:
           set -euo pipefail
           dev_tag="android-dev-${GITHUB_RUN_ID}"
           latest_tag="android-latest-test"
-          notes="Experimental ARM64 debug APK; commit ${GITHUB_SHA}; workflow ${GITHUB_RUN_ID}. Automated checks passed. Real-device privacy, DNS and install testing remain UNVERIFIED. Debug signing may vary across runs."
+          notes="Experimental ARM64 debug APK; versionCode ${GITHUB_RUN_NUMBER}; commit ${GITHUB_SHA}; workflow ${GITHUB_RUN_ID}. Automated checks passed. Real-device privacy, DNS and install testing remain UNVERIFIED. Debug signing may vary across runs."
           gh release create "$dev_tag" Orion-Browser-Android-test.apk Orion-Browser-Android-test.apk.sha256 \
             --target "$GITHUB_SHA" --prerelease --title "Orion Android experimental ${GITHUB_RUN_ID}" --notes "$notes"
           if ! gh release view "$latest_tag" >/dev/null 2>&1; then
