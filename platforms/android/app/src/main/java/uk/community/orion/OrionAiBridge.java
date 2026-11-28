@@ -33,9 +33,11 @@ final class OrionAiBridge {
   String describePage();
   String currentUrl();
   void openUrl(String url);
+  void perform(String tool, JSONObject args, Result response);
   void requestApproval(String tool, String detail, Approval response);
  }
  interface Approval { void complete(boolean accepted); }
+ interface Result { void complete(String response); }
  private static final int MAX_BODY=16384, TIMEOUT_MS=20000, PORT=18796;
  private final Activity activity;
  private final Host host;
@@ -65,7 +67,7 @@ final class OrionAiBridge {
   token=out.toString();
   pairingCode=String.format(java.util.Locale.ROOT,"%06d",random.nextInt(1000000));
   deadline=System.currentTimeMillis()+15*60*1000L;
-  scopes.clear();scopes.put("browser_info",true);scopes.put("navigate",true);
+  scopes.clear();for(String name:new String[]{"browser_info","navigate","tabs","back","forward","reload","page_text","scroll","click","type"})scopes.put(name,true);
   try{
    server=new ServerSocket(PORT,8,InetAddress.getByName("127.0.0.1"));
    running=true;latestEvent="Awaiting approval";
@@ -159,8 +161,17 @@ final class OrionAiBridge {
    result.put("ok",true);
   }else if(method.equals("tools/list")){
    JSONArray tools=new JSONArray();
-   tools.put(new JSONObject().put("name","browser_info").put("description","Read the current tab URL and page title after approval").put("inputSchema",new JSONObject().put("type","object").put("properties",new JSONObject()).put("additionalProperties",false)));
-   tools.put(new JSONObject().put("name","navigate").put("description","Ask the user to open an HTTPS page in the current normal browser tab").put("inputSchema",new JSONObject().put("type","object").put("properties",new JSONObject().put("url",new JSONObject().put("type","string"))).put("required",new JSONArray().put("url")).put("additionalProperties",false)));
+   tools.put(tool("browser_info","Read current normal tab title and URL",new JSONObject()));
+   tools.put(tool("tabs","List normal browser tabs with titles and URLs",new JSONObject()));
+   tools.put(tool("navigate","Open an HTTPS URL",new JSONObject().put("url",new JSONObject().put("type","string")),"url"));
+   tools.put(tool("back","Go back in the active tab",new JSONObject()));
+   tools.put(tool("forward","Go forward in the active tab",new JSONObject()));
+   tools.put(tool("reload","Reload the active tab",new JSONObject()));
+   tools.put(tool("page_text","Read visible webpage text from WebView (not GeckoView)",new JSONObject()));
+   tools.put(tool("scroll","Scroll WebView by a signed number of pixels",new JSONObject().put("pixels",new JSONObject().put("type","integer")),"pixels"));
+   tools.put(tool("click","Click a non-form element by CSS selector in WebView",new JSONObject().put("selector",new JSONObject().put("type","string")),"selector"));
+   tools.put(tool("type","Enter text into a non-sensitive field in WebView without submitting",new JSONObject()
+    .put("selector",new JSONObject().put("type","string")).put("text",new JSONObject().put("type","string")),"selector","text"));
    result.put("tools",tools);
   }else if(method.equals("tools/call")){
    JSONObject params=msg.optJSONObject("params");
@@ -170,25 +181,46 @@ final class OrionAiBridge {
    String url=args.optString("url","");
    if(name.equals("navigate")){
     android.net.Uri parsed=android.net.Uri.parse(url);
-    if(!"https".equalsIgnoreCase(parsed.getScheme())||parsed.getHost()==null||parsed.getUserInfo()!=null||url.length()>2048)return failure(id,-32602,"Only valid HTTPS URLs are allowed");
+    if(!"https".equalsIgnoreCase(parsed.getScheme())||parsed.getHost()==null||parsed.getUserInfo()!=null||url.length()>2048||args.length()!=1)return failure(id,-32602,"Only valid HTTPS URLs are allowed");
+   }else if(name.equals("scroll")){
+    Object px=args.opt("pixels");
+    if(!(px instanceof Integer)&&!(px instanceof Long))return failure(id,-32602,"pixels must be an integer");
+    if(Math.abs(args.optLong("pixels",0))>2000||args.length()!=1)return failure(id,-32602,"Scroll distance is out of range");
+   }else if(name.equals("click")||name.equals("type")){
+    String selector=args.optString("selector","");
+    if(selector.isEmpty()||selector.length()>200)return failure(id,-32602,"CSS selector must be 1-200 characters");
+    if(name.equals("click")&&args.length()!=1)return failure(id,-32602,"Unexpected click arguments");
+    if(name.equals("type")&&
+      (args.length()!=2||!(args.opt("text") instanceof String)||args.optString("text","").length()>1000))
+      return failure(id,-32602,"Text must be no more than 1000 characters");
    }else if(args.length()!=0)return failure(id,-32602,"Unexpected arguments");
    CountDownLatch done=new CountDownLatch(1);
    AtomicReference<String> output=new AtomicReference<>("Rejected or unavailable");
+   final String summary=name.equals("navigate")?url:name.equals("click")?args.optString("selector"):
+    name.equals("type")?"Type into "+args.optString("selector")+" (up to "+args.optString("text").length()+" characters)":
+    name.equals("page_text")?"Read webpage text; may contain personal information":name.equals("tabs")?"List all normal browser tabs":
+    name.equals("browser_info")?"Read current title and URL":name.equals("scroll")?"Scroll "+args.optInt("pixels")+" pixels":"Operate normal browser: "+name;
    ui.post(()->{
     if(!running||!host.canControl()){done.countDown();return;}
-    host.requestApproval(name,name.equals("navigate")?url:"Read current page title and URL",approved->{
-     if(approved&&running&&host.canControl()){
-      try{if(name.equals("navigate")){host.openUrl(url);output.set("Navigation requested");}
-       else output.set(host.describePage());}
-      catch(Exception e){output.set("Action failed");}
+    host.requestApproval(name,summary,approved->{
+     if(!approved||!running||!host.canControl()){
+      output.set("Denied or browser unavailable");
+      latestEvent=name+" · denied";reportStatus();done.countDown();return;
      }
-     latestEvent=name+" · "+(approved?"approved":"rejected");reportStatus();done.countDown();
+     latestEvent=name+" · approved";reportStatus();
+     try{host.perform(name,args,resultText->{output.set(resultText);done.countDown();});}
+     catch(Exception e){output.set("Action failed");done.countDown();}
     });
    });
-   if(!done.await(15,TimeUnit.SECONDS))return failure(id,-32001,"User approval timed out");
+   if(!done.await(18,TimeUnit.SECONDS))return failure(id,-32001,"User approval or action timed out");
    result.put("content",new JSONArray().put(new JSONObject().put("type","text").put("text",output.get())));
   }else return failure(id,-32601,"Method not found");
   return new JSONObject().put("jsonrpc","2.0").put("id",id==null?JSONObject.NULL:id).put("result",result);
+ }
+ private JSONObject tool(String name,String description,JSONObject properties,String... required)throws Exception{
+  JSONObject schema=new JSONObject().put("type","object").put("properties",properties).put("additionalProperties",false);
+  if(required.length>0){JSONArray fields=new JSONArray();for(String field:required)fields.put(field);schema.put("required",fields);}
+  return new JSONObject().put("name",name).put("description",description).put("inputSchema",schema);
  }
  private JSONObject failure(Object id,int code,String message)throws Exception{
   return new JSONObject().put("jsonrpc","2.0").put("id",id==null?JSONObject.NULL:id).put("error",new JSONObject().put("code",code).put("message",message));
