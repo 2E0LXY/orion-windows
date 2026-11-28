@@ -47,6 +47,9 @@ jobs:
       - name: Source-level UI and packaging regression tests
         working-directory: platforms/android
         run: python3 -m unittest discover -s tests -v
+      - name: JVM unit tests (sync core)
+        working-directory: platforms/android
+        run: gradle --no-daemon -PorionArm64=true testDebugUnitTest
       - name: Build ARM64 debug APK
         working-directory: platforms/android
         run: gradle --no-daemon -PorionArm64=true assembleDebug
@@ -95,3 +98,18 @@ jobs:
           gh release upload "$latest_tag" Orion-Browser-Android-test.apk Orion-Browser-Android-test.apk.sha256 --clobber
           gh release edit "$latest_tag" --notes "$notes"
           echo "Direct APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/${latest_tag}/Orion-Browser-Android-test.apk"
+      # Claude integration build: separate prerelease tag so the chatgpt android-latest-test channel is never overwritten.
+      - name: Publish Claude integration test APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/android-test-integration'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="android-claude-test"
+          notes="Experimental ARM64 debug APK (Claude integration: recovery fixes, updater, GeckoView session restore, sync core); versionCode ${GITHUB_RUN_NUMBER}; commit ${GITHUB_SHA}; workflow ${GITHUB_RUN_ID}. Automated checks passed. Real-device testing UNVERIFIED. Debug signing may vary across runs."
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" --prerelease --title "Orion Android - Claude integration test APK" --notes "$notes"
+          fi
+          gh release upload "$tag" Orion-Browser-Android-test.apk Orion-Browser-Android-test.apk.sha256 --clobber
+          gh release edit "$tag" --notes "$notes"
+          echo "Direct APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/Orion-Browser-Android-test.apk"

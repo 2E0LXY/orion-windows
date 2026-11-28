@@ -11,4 +11,8 @@ android { namespace 'uk.community.orion'; compileSdk 36
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 
-dependencies { implementation 'org.mozilla.geckoview:geckoview:153.0.20260810162159' }
+dependencies {
+ implementation 'org.mozilla.geckoview:geckoview:153.0.20260810162159'
+ testImplementation 'junit:junit:4.13.2'
+ testImplementation 'org.json:json:20240303'
+}
