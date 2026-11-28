@@ -580,13 +580,18 @@ public class MainActivity extends Activity {
  Runnable refresh=()->{list.removeAllViews();String q=search.getText().toString().toLowerCase(Locale.ROOT);TreeSet<String> urls=new TreeSet<>(getPreferences(0).getStringSet("bookmarks",Collections.emptySet()));for(String u:urls){if(!u.toLowerCase(Locale.ROOT).contains(q))continue;LinearLayout row=new LinearLayout(this);Button open=new Button(this);open.setAllCaps(false);open.setText(u);open.setOnClickListener(v->{dialog.dismiss();navigate(u);});row.addView(open,new LinearLayout.LayoutParams(0,-2,1));Button edit=new Button(this);edit.setText("Edit");edit.setOnClickListener(v->editBookmark(u,()->{dialog.dismiss();bookmarks();}));row.addView(edit);list.addView(row);}if(list.getChildCount()==0){TextView empty=new TextView(this);empty.setText("No matching bookmarks");empty.setTextColor(0xffb9c6da);empty.setPadding(dp(16),dp(16),dp(16),dp(16));list.addView(empty);}};
  search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){refresh.run();}public void afterTextChanged(android.text.Editable e){}});add.setOnClickListener(v->editBookmark(null,refresh));refresh.run();dialog.setContentView(page);dialog.show();dialog.getWindow().setLayout(-1,-1);page.setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets i=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());v.setPadding(i.left,i.top,i.right,i.bottom);}else{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());}return insets;});page.requestApplyInsets();}
  void importBrowserData(){
- String[] choices={"Import bookmarks · HTML / JSON","Import passwords · CSV","Export passwords · CSV","Delete stored passwords","Import cookies · txt / JSON","Android Autofill · Unavailable"};
+ boolean hasImportedPasswords=new java.io.File(getFilesDir(),"imported_passwords.enc").length()>0;
+ String[] choices={"Import bookmarks · HTML / JSON","Import passwords · CSV",
+  hasImportedPasswords?"Export passwords · CSV":"Export passwords · Unavailable (vault empty)",
+  hasImportedPasswords?"Delete stored passwords":"Delete stored passwords · Unavailable (vault empty)",
+  "Import cookies · txt / JSON","Android Autofill · Unavailable"};
   android.widget.ArrayAdapter<String> options=new android.widget.ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,choices){
-   @Override public boolean isEnabled(int position){return position!=5;}
+   @Override public boolean isEnabled(int position){return position!=5&&(hasImportedPasswords||(position!=2&&position!=3));}
    @Override public View getView(int position,View convertView,android.view.ViewGroup parent){
     View view=super.getView(position,convertView,parent);
-    if(view instanceof TextView)((TextView)view).setTextColor(position==5?0xff919bab:0xfff1f5f9);
-    view.setEnabled(position!=5);
+    boolean enabled=isEnabled(position);
+    if(view instanceof TextView)((TextView)view).setTextColor(enabled?0xfff1f5f9:0xff919bab);
+    view.setEnabled(enabled);
     return view;
    }
   };
