@@ -2,12 +2,14 @@
 
 Experimental native Java browser for Android 8.0+ with Android System WebView and Mozilla GeckoView. Not an official Kagi release.
 
-**[Latest verified ARM64 test build](https://github.com/2E0LXY/orion-windows/actions/runs/46121304241/artifacts/15253277892)** (98.4 MB ZIP; extract app-debug.apk). [Build logs](https://github.com/2E0LXY/orion-windows/actions/runs/46121304241) · [Draft PR #3](https://github.com/2E0LXY/orion-windows/pull/3) · [Full feature matrix](../../README.md).
+**[Latest Android ARM64 builds](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml)** (choose a successful run, download the ARM64 artefact and extract app-debug.apk). [Build logs](https://github.com/2E0LXY/orion-windows/actions) · [Draft PR #3](https://github.com/2E0LXY/orion-windows/pull/3) · [Full feature matrix](../../README.md).
 
 ## Features
 
 - Shared native Orion home branding, GeckoView attribution and common browser menus. **The custom boot animation and its replay controls are removed**; Android manages the system launch screen.
 - WebView tabs, experimental GeckoView session, configurable search, bookmarks, reading list, history, desktop mode, text zoom, dark appearance.
+- **Orion security icon at the right of the bottom toolbar** opens Security and privacy. Incognito appears first, followed by ad/tracker controls, HTTPS warnings, JavaScript/image settings, camera/microphone/location permissions, DNS and local DNS VPN, and normal browsing-data controls. These have moved out of the ordinary browser menu and the general Settings screen.
+- **Experimental Incognito:** separate GeckoView session using GeckoView's private mode, even when normal browsing is WebView. Private cookies and site storage are partitioned from normal sessions; Orion does not record private navigation in its saved history, allow private bookmarks or save the current private page as a normal homepage. Homepage weather is hidden. The app blocks screenshots and recents previews during the private session. Closing the session destroys the private tab. Only one private tab is currently supported, and physical-device storage-isolation tests are outstanding. Incognito does not hide traffic from networks, websites, accounts, or downloads saved outside the browser.
 - **Homepage weather:** colour weather icons and five-day ECMWF IFS forecasts using the Open-Meteo ECMWF API. Requires a user-selected town or a one-time Android coarse-location permission request triggered by tapping **Use my location**. The stored latitude/longitude is rounded to 0.01 degrees (roughly 1 km latitude), not raw GPS precision. Android geocoding labels the nearby town where available. Forecasts are cached and refreshed when older than 90 minutes. Weather appears only on the Orion start screen, not saved external homepages. Settings → Homepage weather can hide the card or clear saved location/data. Network access to Open-Meteo is only for selected weather requests; forecast data are model predictions, not observations.
 - Bookmark import, local encrypted credential migration store, user-confirmed password CSV export and WebView cookie import. No autofill or GeckoView cookie migration.
 - WebView and GeckoView camera, microphone and approximate location controls, subject to Android permissions; GeckoView notifications blocked.
@@ -16,7 +18,7 @@ Experimental native Java browser for Android 8.0+ with Android System WebView an
 
 ### DNS and network — Android
 
-Open **Orion menu → DNS and network** in either engine, or **Settings → Privacy and Security → DNS and Secure DNS**.
+Open **Orion logo (far right of bottom toolbar) → Security and privacy → DNS and Secure DNS**.
 
 - Cloudflare is the default GeckoView DNS-over-HTTPS (DoH) provider; strict mode is the default, with optional system DNS fallback.
 - Presets: Cloudflare, Control D, Quad9, Google, OpenDNS, NextDNS, AdGuard, CleanBrowsing, DNS.Watch and Mullvad, plus Android system DNS and custom HTTPS DoH URL. NextDNS requires account configuration; DNS.Watch is reference-only.
@@ -37,7 +39,7 @@ gradle --no-daemon -PorionArm64=true assembleDebug
 
 Omit the property for universal packaging. Output: app/build/outputs/apk/debug/app-debug.apk.
 
-Latest referenced CI: Android compilation, source regression checks, ABI verification and style checks passed for an earlier revision; check the newest branch CI for the current weather implementation. Physical-device testing and security review remain outstanding. Debug signing may vary between builds; back up data before uninstalling. No production signing, full private browsing, extension management, password autofill or functional cross-device sync yet.
+Check the newest branch CI for compilation, UI regressions and ARM64 ABI checks; a successful build does not verify Incognito isolation on a real device. Physical-device testing and security review remain outstanding. Debug signing may vary between builds; back up data before uninstalling. No production signing, device-verified multi-tab private browsing, extension management, password autofill or functional cross-device sync yet.
 
 ### Weather data and attribution
 
