@@ -282,7 +282,7 @@ public class MainActivity extends Activity {
        parcel.writeBundle(bundle);
        byte[] raw=parcel.marshall();
        if(raw.length<=500000)tab.put("history",android.util.Base64.encodeToString(raw,android.util.Base64.NO_WRAP));
-      }finally{parcel.recycle();}
+      }catch(Exception ignored){}finally{parcel.recycle();}
      }
     }
     items.put(tab);
@@ -527,7 +527,7 @@ public class MainActivity extends Activity {
   }
  }
  void downloadPage(String url,String disposition,String mime){if(!allowed(url)){Toast.makeText(this,"Unsupported download address",Toast.LENGTH_SHORT).show();return;}String name=URLUtil.guessFileName(url,disposition,mime).replaceAll("[^a-zA-Z0-9._ -]","_");if(name.isEmpty()||name.equals(".")||name.equals(".."))name="download";final String filename=name;new AlertDialog.Builder(this).setTitle("Download file?").setMessage(filename+"\n"+Uri.parse(url).getHost()).setNegativeButton("Cancel",null).setPositiveButton("Parallel (4)",(d,i)->ParallelDownload.start(this,url,filename,()->standardDownload(url,filename))).setNeutralButton("Standard",(d,i)->standardDownload(url,filename)).show();}
- void standardDownload(String url,String filename){try{android.app.DownloadManager.Request req=new android.app.DownloadManager.Request(Uri.parse(url));req.setTitle(filename);req.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,filename);long downloadId=((android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(req);rememberDownload(downloadId);Toast.makeText(this,"Download queued · swipe up from the bottom toolbar for status",Toast.LENGTH_LONG).show();}catch(Exception e){Toast.makeText(this,"Unable to queue download",Toast.LENGTH_SHORT).show();}}
+ void standardDownload(String url,String filename){try{android.app.DownloadManager.Request req=new android.app.DownloadManager.Request(Uri.parse(url));req.setTitle(filename);req.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,filename);long downloadId=((android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(req);rememberDownload(downloadId);getPreferences(0).edit().putString("download_url_"+downloadId,url).putString("download_name_"+downloadId,filename).apply();ParallelDownload.State old=ParallelDownload.snapshot();if(old!=null&&old.finished&&!old.success&&url.equals(old.url))old.status="Parallel failed · standard download queued";Toast.makeText(this,"Download queued · swipe up from the bottom toolbar for status",Toast.LENGTH_LONG).show();}catch(Exception e){ParallelDownload.State old=ParallelDownload.snapshot();if(old!=null&&url.equals(old.url)&&old.finished&&!old.success)old.status="Standard download could not be queued · tap Retry";Toast.makeText(this,"Unable to queue download",Toast.LENGTH_SHORT).show();}}
 
  // Standard download IDs survive app restarts; the system owns their transfer state.
  void rememberDownload(long id){
@@ -570,6 +570,12 @@ public class MainActivity extends Activity {
    card.addView(stop,new LinearLayout.LayoutParams(-1,dp(48)));
   }
  }
+
+ void downloadAction(LinearLayout parent,String text,Runnable action){
+  Button button=geckoButton(text,text,action);
+  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(44));lp.topMargin=dp(4);
+  parent.addView(button,lp);
+ }
  void updateDownloadRows(LinearLayout list){
   list.removeAllViews();boolean any=false;
   ParallelDownload.State transfer=ParallelDownload.snapshot();
@@ -579,6 +585,10 @@ public class MainActivity extends Activity {
    String details=transfer.status+(total>0?" · "+percentage+"%":"");
    if(!transfer.finished&&total>0)details+=String.format(Locale.UK," · %.2f MB/s",transfer.bytesPerSecond/1048576.0);
    downloadRow(list,transfer.name,details,percentage,transfer.finished?null:()->ParallelDownload.cancel());
+   if(transfer.finished&&!transfer.success&&!transfer.cancelled.get()){
+    downloadAction(list,"Retry using standard download",()->standardDownload(transfer.url,transfer.name));
+    downloadAction(list,"Restart parallel download",()->ParallelDownload.start(this,transfer.url,transfer.name,()->standardDownload(transfer.url,transfer.name)));
+   }
    if(!transfer.finished&&total>0){
     long segmentSize=total/4;
     for(int i=0;i<4;i++){
@@ -609,6 +619,14 @@ public class MainActivity extends Activity {
     String description=state+(total>0?" · "+percentage+"%":"")+(status==android.app.DownloadManager.STATUS_RUNNING?" · Android managed":"");
     boolean active=status==android.app.DownloadManager.STATUS_RUNNING||status==android.app.DownloadManager.STATUS_PAUSED||status==android.app.DownloadManager.STATUS_PENDING;
     downloadRow(list,name,description,percentage,active?()->manager.remove(id):null);
+    if(status==android.app.DownloadManager.STATUS_FAILED){
+     String retryUrl=getPreferences(0).getString("download_url_"+id,"");
+     String retryName=getPreferences(0).getString("download_name_"+id,name);
+     if(allowed(retryUrl)){
+      downloadAction(list,"Retry standard download",()->standardDownload(retryUrl,retryName));
+      downloadAction(list,"Restart parallel download",()->ParallelDownload.start(this,retryUrl,retryName,()->standardDownload(retryUrl,retryName)));
+     }
+    }
    }catch(Exception ignored){list.addView(downloadLabel("Unable to inspect a system download",13));}
   }
   if(!any)list.addView(downloadLabel("No downloads yet. Start a download to see progress here.",15));
@@ -678,7 +696,7 @@ public class MainActivity extends Activity {
  void finishLocation(boolean allow){GeolocationPermissions.Callback cb=pendingLocation;pendingLocation=null;if(cb!=null)cb.invoke(locationOrigin,allow&&secureOrigin(permissionTab,locationOrigin),false);}
  @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){super.onRequestPermissionsResult(code,permissions,results);boolean ok=results.length>0;for(int result:results)ok&=result==android.content.pm.PackageManager.PERMISSION_GRANTED;if(code==HomeWeather.LOCATION_REQUEST){if(homeWeather!=null)homeWeather.onPermissionResult(ok);return;}if(code==41)finishMedia(ok);if(code==42)finishLocation(ok);if(code==43){org.mozilla.geckoview.GeckoSession.PermissionDelegate.Callback cb=geckoAndroidCallback;geckoAndroidCallback=null;if(cb!=null){if(ok&&geckoActive)cb.grant();else cb.reject();}}}
  void show(int i){if(geckoActive)closeGecko();if(selected>=0&&selected<tabs.size())tabs.get(selected).onPause();hideHome();content.removeAllViews();selected=i;current().onResume();content.addView(current(),new FrameLayout.LayoutParams(-1,-1));address.setText(allowed(current().getUrl())?current().getUrl():"");count.setContentDescription("Switch tabs, "+tabs.size()+" open");count.invalidate();back.setEnabled(current().canGoBack());forward.setEnabled(current().canGoForward());refreshTabletTabs();if(homeTabs.contains(current()))showHome(false);saveSession();}
- void chooseTab(){String[] names=new String[tabs.size()];for(int i=0;i<names.length;i++)names[i]=tabs.get(i).getTitle()==null?"New tab":tabs.get(i).getTitle();new AlertDialog.Builder(this).setTitle("Tabs").setItems(names,(d,i)->show(i)).setPositiveButton("Archived tabs",(d,i)->archivedTabs()).setNeutralButton("Close current",(d,i)->{WebView w=current();content.removeAllViews();tabs.remove(selected);w.destroy();selected=-1;if(tabs.isEmpty())newTab();else show(Math.min(selected>=0?selected:0,tabs.size()-1));}).show();}
+ void chooseTab(){String[] names=new String[tabs.size()];for(int i=0;i<names.length;i++)names[i]=tabs.get(i).getTitle()==null?"New tab":tabs.get(i).getTitle();new AlertDialog.Builder(this).setTitle("Tabs").setItems(names,(d,i)->show(i)).setPositiveButton("Archived tabs",(d,i)->archivedTabs()).setNeutralButton("Close current",(d,i)->{WebView w=current();content.removeAllViews();int previous=selected;tabs.remove(selected);w.destroy();selected=-1;if(tabs.isEmpty())newTab();else show(Math.min(previous,tabs.size()-1));}).show();}
  void archivedTabs(){String[] urls=new TreeSet<>(getPreferences(0).getStringSet("archived_tabs",Collections.emptySet())).toArray(new String[0]);new AlertDialog.Builder(this).setTitle("Archived tabs").setItems(urls,(d,i)->{if(tabs.size()>=20){Toast.makeText(this,"Close a tab before restoring",Toast.LENGTH_SHORT).show();return;}newTab();navigate(urls[i]);Set<String> set=new HashSet<>(Arrays.asList(urls));set.remove(urls[i]);getPreferences(0).edit().putStringSet("archived_tabs",set).apply();}).setPositiveButton("Archive current",(d,i)->{String url=current().getUrl();if(!allowed(url))return;Set<String> set=new HashSet<>(getPreferences(0).getStringSet("archived_tabs",Collections.emptySet()));set.add(url);getPreferences(0).edit().putStringSet("archived_tabs",set).apply();WebView w=current();content.removeAllViews();int index=selected;tabs.remove(index);selected=-1;w.destroy();if(tabs.isEmpty())newTab();else show(Math.min(index,tabs.size()-1));}).setNegativeButton("Close",null).show();}
  void save(){if(geckoIncognito){Toast.makeText(this,"Bookmarks are not saved in Incognito",Toast.LENGTH_SHORT).show();return;}String u=geckoActive?geckoAddress:current().getUrl();if(!allowed(u))return;Set<String> set=new HashSet<>(getPreferences(0).getStringSet("bookmarks",Collections.emptySet()));set.add(u);getPreferences(0).edit().putStringSet("bookmarks",set).apply();Toast.makeText(this,"Bookmark saved",Toast.LENGTH_SHORT).show();}
  void bookmarks(){Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("‹ Bookmarks");close.setOnClickListener(v->dialog.dismiss());page.addView(close);EditText search=new EditText(this);search.setSingleLine(true);search.setHint("Search bookmarks");search.setTextColor(0xfff1f5f9);search.setHintTextColor(0xffb9c6da);page.addView(search);Button add=new Button(this);add.setText("Add bookmark");page.addView(add);ScrollView scroll=new ScrollView(this);LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);scroll.addView(list);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
