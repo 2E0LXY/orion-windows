@@ -22,9 +22,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
+      - name: UI regression contract tests
+        working-directory: platforms/android
+        run: python3 -m unittest discover -s tests -v
       - name: Build debug APK
         working-directory: platforms/android
         run: gradle --no-daemon assembleDebug
+      - name: Verify APK output and SHA256
+        run: |
+          test -s platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum platforms/android/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
         with:
           name: orion-community-debug
