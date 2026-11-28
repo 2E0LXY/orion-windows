@@ -6,7 +6,7 @@
 
 | Platform | Download or source | Current status |
 | --- | --- | --- |
-| **Android — latest test APK** | **[Direct APK download](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** · [All releases](https://github.com/2E0LXY/orion-windows/releases) | Stable shortcut is published by successful Android builds on \`chatgpt/drive-sync\`; debug build only |
+| **Android — latest test APK** | **[Direct APK download](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** · [All releases](https://github.com/2E0LXY/orion-windows/releases) | Stable shortcut is published by successful Android builds on `chatgpt/drive-sync`; debug build only |
 | **Android — fallback** | [Last verified versioned APK (46091875384)](https://github.com/2E0LXY/orion-windows/releases/download/android-dev-46091875384/app-debug.apk) | Use versioned releases if the stable shortcut is not yet available |
 | **Windows** | [Source / public WebKit port PR](https://github.com/2E0LXY/orion-windows/pull/2) | Source only; no verified Windows installer |
 | **Linux** | [Source snapshot](https://github.com/2E0LXY/orion-windows/tree/archive/orion-linux) | Source only; no verified Linux installer |
@@ -87,7 +87,7 @@ The app is composed of three primary layers:
   `orion-linux` core module statically and loads exactly one engine plugin at
   runtime. The engine plugins (`OrionEngineWK.dll`, `OrionEngineB.dll`)
   implement a common `BrowserEngine` interface and are loaded from
-  `engines\webkit\` or `engines\blink\`.
+  `engines\webkit` or `engines\blink`.
 - **`external/orion-gtk` — cross-platform core module.** Shared with Orion for
   Linux. It owns the database, settings, profiles, history, bookmarks,
   passwords, reading list, sync, and the WebExtensions runtime. It is built
