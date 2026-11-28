@@ -29,6 +29,7 @@ import org.json.JSONObject;
 final class OrionAiBridge {
  interface Host {
   boolean canControl();
+  void onStatusChanged();
   String describePage();
   String currentUrl();
   void openUrl(String url);
@@ -48,6 +49,8 @@ final class OrionAiBridge {
  private ServerSocket server;
  private Thread worker;
  private volatile String latestEvent="Disconnected";
+ private final Runnable expire=()->{if(running&&System.currentTimeMillis()>=deadline)stop();};
+ private void reportStatus(){ui.post(()->host.onStatusChanged());}
 
  OrionAiBridge(Activity activity,Host host){this.activity=activity;this.host=host;}
  boolean running(){return running;}
@@ -67,6 +70,7 @@ final class OrionAiBridge {
    server=new ServerSocket(PORT,8,InetAddress.getByName("127.0.0.1"));
    running=true;latestEvent="Awaiting approval";
    worker=new Thread(this::serve,"orion-ai-local");worker.start();
+   ui.removeCallbacks(expire);ui.postDelayed(expire,15*60*1000L);reportStatus();
   }catch(Exception e){
    running=false;token=null;pairingCode=null;latestEvent="Unable to bind local port";
    try{if(server!=null)server.close();}catch(Exception ignored){}
@@ -75,6 +79,7 @@ final class OrionAiBridge {
  }
  void stop(){
   running=false;deadline=0;token=null;pairingCode=null;latestEvent="Disconnected";
+  ui.removeCallbacks(expire);reportStatus();
   try{if(server!=null)server.close();}catch(Exception ignored){}
   server=null;
  }
@@ -177,7 +182,7 @@ final class OrionAiBridge {
        else output.set(host.describePage());}
       catch(Exception e){output.set("Action failed");}
      }
-     latestEvent=name+" · "+(approved?"approved":"rejected");done.countDown();
+     latestEvent=name+" · "+(approved?"approved":"rejected");reportStatus();done.countDown();
     });
    });
    if(!done.await(15,TimeUnit.SECONDS))return failure(id,-32001,"User approval timed out");
