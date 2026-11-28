@@ -55,9 +55,16 @@ Tap the **Orion logo at the far right of the bottom toolbar**. The full-height n
 3. **Website security:** HTTPS/HTTP warnings, JavaScript, image loading and no HTTP cache option.
 4. **Site permissions:** camera, microphone and approximate location — Ask every time, Block or Allow on request, subject to Android permission and browser-engine support.
 5. **Encrypted DNS and network:** provider choice, diagnostics, Android Private DNS and experimental local DNS VPN.
-6. **Browsing data:** explicitly clear normal WebView cookies, site storage, cache and tab history.
+6. **Browsing data:** explicitly clear normal WebView cookies, site storage, cache and tab history **and Orion's separate recent-URL history**.
 
 The standard browser menu and general Settings screen no longer duplicate the main privacy controls.
+
+### Disabled controls and feature availability
+
+Orion greys out unfinished functions and actions that cannot work in the current context. Grey rows are visibly marked **Unavailable** and cannot be activated. **Sync, imported-password autofill, extension management and Orion Connect** are disabled; the import/export menu also disables the unimplemented autofill shortcut. Page-only commands (reload, find, bookmark, share, reader and print as supported by the engine) are disabled while the native homepage is shown. Importing into the normal browser is disabled while GeckoView Incognito is active. DNS diagnostics requiring a configured DoH endpoint and filter-list switches without downloaded lists are likewise greyed out.
+
+Available features may still be experimental or only support WebView. UI availability is not a substitute for on-device acceptance. See the [full Android audit and outstanding verification matrix](../../docs/android-audit-2026-11-28.md).
+
 
 ### No HTTP cache
 
