@@ -1,13 +1,13 @@
 name: Android prototype APK
 on:
   push:
-    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync]
+    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync, chatgpt/android-recovery-session]
     paths:
       - 'platforms/android/**'
       - '.github/workflows/android-prototype.yml'
       - 'assets/orion-mark.svg'
   pull_request:
-    branches: [chatgpt/drive-sync]
+    branches: [chatgpt/drive-sync, chatgpt/geckoview-home-splash]
     paths: ['platforms/android/**', '.github/workflows/android-prototype.yml', 'assets/orion-mark.svg']
   workflow_dispatch:
 concurrency:
