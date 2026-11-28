@@ -30,8 +30,9 @@ class DefaultBrowserContracts(unittest.TestCase):
         self.assertIn('settingRow(panel,"Orion AI Connect"',SOURCE)
         self.assertIn('void aiConnectSettings()',SOURCE)
         self.assertIn('if(geckoIncognito){Toast.makeText(this,"Close Incognito before sharing"',SOURCE)
-        self.assertIn('disabledSettingRow(items,"Read webpage content"',SOURCE)
-        self.assertIn('disabledSettingRow(items,"Click, type, screenshots, downloads"',SOURCE)
+        self.assertIn('settingRow(items,"Read webpage text (WebView)"',SOURCE)
+        self.assertIn('settingRow(items,"Scroll, click and type (WebView)"',SOURCE)
+        self.assertIn('disabledSettingRow(items,"Screenshots and downloads"',SOURCE)
 
 if __name__ == "__main__":
     unittest.main()
