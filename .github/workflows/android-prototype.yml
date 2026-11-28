@@ -3,6 +3,9 @@ on:
   push:
     branches: [chatgpt/android, chatgpt/drive-sync]
     paths: ['platforms/android/**', '.github/workflows/android-prototype.yml']
+  pull_request:
+    branches: [chatgpt/drive-sync]
+    paths: ['platforms/android/**', '.github/workflows/android-prototype.yml']
   workflow_dispatch:
 concurrency:
   group: orion-android-test-apk
@@ -38,12 +41,14 @@ jobs:
           path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish experimental APK
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="android-dev-${GITHUB_RUN_ID}"
           gh release create "$tag" platforms/android/app/build/outputs/apk/debug/app-debug.apk --target "$GITHUB_SHA" --prerelease --title "Android experimental build ${GITHUB_RUN_ID}" --notes "Debug build; not security reviewed or device tested."
       - name: Publish latest APK shortcut
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
