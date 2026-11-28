@@ -54,6 +54,16 @@ Android is implemented in **native Java** in [`platforms/android/`](https://gith
 | Extensions | GeckoView engine dependency included | WebExtensions/uBlock management **not yet implemented** |
 | Other outstanding | Background media controls, password autofill, passkeys, full-page translation, robust tab restore, production signing, comprehensive testing | Do not treat roadmap items as shipped features |
 
+### Screenshots — Android test build, 28 November 2026
+
+Captured on a physical phone from the Claude integration test APK. Capture date does not imply the feature is verified; see the status tables above.
+
+| | | |
+|---|---|---|
+| <img src="platforms/android/docs/screenshots/start-page-weather.webp" width="220" alt="Orion start page with ECMWF IFS local weather card"><br>**Start page and weather** — ECMWF IFS five-day forecast, Change area / Refresh | <img src="platforms/android/docs/screenshots/main-menu.webp" width="220" alt="Orion main menu"><br>**Main menu** — new tab, Open in GeckoView, bookmarks, reading list, history, import | <img src="platforms/android/docs/screenshots/downloads-multi-connection.webp" width="220" alt="Downloads panel showing four parallel connections"><br>**Downloads** — four-connection range download with per-connection progress and cancel |
+| <img src="platforms/android/docs/screenshots/security-privacy-1.webp" width="220" alt="Security and privacy panel: Incognito and tracker controls"><br>**Security and privacy (1)** — Incognito, ad blocker, EasyList/EasyPrivacy, YouTube request filtering | <img src="platforms/android/docs/screenshots/security-privacy-2.webp" width="220" alt="Security and privacy panel: website security, permissions, DNS, browsing data"><br>**Security and privacy (2)** — HTTPS warnings, JavaScript, images, cache, site permissions, DNS, clear data | <img src="platforms/android/docs/screenshots/search-engine-picker.webp" width="220" alt="Search engine picker listing twelve engines"><br>**Search engine** — Google, DuckDuckGo, Bing, Yahoo, Kagi, Brave, Startpage, Ecosia, Qwant, Mojeek, Swisscows, Wikipedia |
+| <img src="platforms/android/docs/screenshots/settings-updates.webp" width="220" alt="Settings showing automatic update check and Check for updates now"><br>**Settings and updates** — automatic update check toggle and *Check for updates now* | | |
+
 ### How to use the new Android features
 
 | What you want to do | Where to find it | Behaviour / scope |

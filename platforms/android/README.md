@@ -15,6 +15,22 @@ Experimental **native Java** Android browser combining **Android System WebView*
 - Test APKs use **debug signing** and have **not undergone a production security review**. A signing mismatch may prevent an in-place upgrade; uninstalling erases local app data. Export important browser data before changing signatures.
 - **Build success is not physical-device confirmation.** Live weather, location permissions, WebView DNS tunnelling and Incognito teardown require Android device testing.
 
+## Screenshots
+
+Physical-device captures from the 28 November 2026 test build (not a verification of every feature).
+
+<p>
+<img src="docs/screenshots/start-page-weather.webp" width="180" alt="Start page with ECMWF weather">
+<img src="docs/screenshots/main-menu.webp" width="180" alt="Main menu">
+<img src="docs/screenshots/downloads-multi-connection.webp" width="180" alt="Four-connection download panel">
+<img src="docs/screenshots/security-privacy-1.webp" width="180" alt="Security and privacy, part 1">
+</p>
+<p>
+<img src="docs/screenshots/security-privacy-2.webp" width="180" alt="Security and privacy, part 2">
+<img src="docs/screenshots/search-engine-picker.webp" width="180" alt="Search engine picker">
+<img src="docs/screenshots/settings-updates.webp" width="180" alt="Settings with update check">
+</p>
+
 ## Using the browser
 
 | Control | Behaviour |
