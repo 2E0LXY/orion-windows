@@ -12,7 +12,9 @@ Status reflects prototype source, not device acceptance.
 ## Privacy and security
 - [ ] Complete ad/tracker filtering: current domain subset only; implement exceptions, rule compatibility, updates and regression tests.
 - [ ] Cookie/annoyance filtering: never silently consent to optional tracking.
-- [ ] Isolated private sessions and biometric protection; require verified isolation and safety review.
+- [x] Experimental single GeckoView Incognito session using engine private mode; no normal history entries and screenshots blocked. Storage isolation is not device-verified.
+- [ ] Test private cookie partitioning, form data, shutdown and crash/restart on physical devices; add private tab management.
+- [ ] Optional biometric protection using supported Android authentication.
 - [ ] HTTPS upgrades and phishing protection: current HTTPS-only and WebView Safe Browsing are partial; test certificate failures and warnings.
 - [ ] Anti-fingerprinting and telemetry controls: no app telemetry currently; audit engine behaviour, avoid unsupported anonymity claims.
 
