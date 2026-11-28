@@ -308,7 +308,18 @@ public class MainActivity extends Activity {
    geckoSession=new org.mozilla.geckoview.GeckoSession(new org.mozilla.geckoview.GeckoSessionSettings.Builder().usePrivateMode(incognito).build());
    final org.mozilla.geckoview.GeckoSession session=geckoSession;
    geckoAddress=initial==null?"":initial;
-   session.setContentDelegate(new org.mozilla.geckoview.GeckoSession.ContentDelegate(){});
+   session.setContentDelegate(new org.mozilla.geckoview.GeckoSession.ContentDelegate(){
+    @Override public void onExternalResponse(org.mozilla.geckoview.GeckoSession source,org.mozilla.geckoview.WebResponse response){
+     if(geckoSession!=source||!geckoActive||response==null)return;
+     String url=response.uri;
+     if(!allowed(url)){Toast.makeText(MainActivity.this,"This GeckoView download type is not supported",Toast.LENGTH_LONG).show();return;}
+     new AlertDialog.Builder(MainActivity.this)
+      .setTitle("GeckoView download")
+      .setMessage("Download this file?\\n"+Uri.parse(url).getHost()+"\\n\\nOrion's downloader makes a new request, so protected or session-only downloads may not work.")
+      .setNegativeButton("Cancel",null)
+      .setPositiveButton("Continue",(d,i)->downloadPage(url,null,null)).show();
+    }
+   });
    session.setPermissionDelegate(new org.mozilla.geckoview.GeckoSession.PermissionDelegate(){
     @Override public void onAndroidPermissionsRequest(org.mozilla.geckoview.GeckoSession sess,String[] permissions,org.mozilla.geckoview.GeckoSession.PermissionDelegate.Callback cb){
      if(!geckoActive||sess!=geckoSession||permissions==null||permissions.length==0||geckoAndroidCallback!=null){cb.reject();return;}
