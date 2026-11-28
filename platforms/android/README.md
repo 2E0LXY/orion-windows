@@ -8,6 +8,14 @@ Experimental **native Java** Android browser combining **Android System WebView*
 
 > **Development-status note (28 November 2026):** Default-browser support and AI sharing are in the [draft AI Connect branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/default-browser-ai-connect), not necessarily in the latest published test APK. GitHub Actions source checks/builds are not evidence of real-device pairing. Do not use the direct APK download link as proof that it contains these changes.
 
+## Customisable menu and website shortcuts (development)
+
+The Orion WebView and GeckoView menus now include **Install and create shortcut** and a persistent **Customise menu** control, matching the requested Android menu options without copying Brave branding.
+
+- **Install and create shortcut** requests a pinned Android Home screen launcher shortcut for the current normal HTTP/HTTPS page. Android's launcher must support the pin request and may ask for confirmation. This creates a **website shortcut opening Orion**, not a standalone installed PWA or isolated web app. It is unavailable on Orion's start screen and in Incognito.
+- **Customise menu** opens native checkboxes to show/hide individual menu entries. Choices are stored locally and shared across WebView and GeckoView by stable action identifier. Save applies changes; Reset restores all defaults. The Customise menu action remains visible so it cannot be hidden accidentally.
+- Both functions are included on development branch `chatgpt/default-browser-ai-connect`. Installation and launcher-specific behavior require real-device testing before release approval.
+
 ## Android default browser and AI control
 
 **Default browser (development branch):** Settings → General → Default browser opens Android's system-managed browser-role prompt (Android 10+) or the default-apps settings screen on older devices. Orion advertises HTTP and HTTPS `VIEW` intents, accepts shared external website links on launch and while running, validates schemes, and closes an Incognito GeckoView session before opening a normal external link. Android retains the final choice. This has not yet been checked on a physical device.
