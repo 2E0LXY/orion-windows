@@ -20,7 +20,7 @@ The Orion WebView and GeckoView menus now include **Install and create shortcut*
 
 Both engines now use the same menu ordering, labels and saved visibility preferences. **Customise menu**, **Add website to Home screen**, bookmarks, reading list, history, imports, share link, downloads, Settings, reload and engine switching appear consistently. The shortcut action works from a normal loaded webpage in either engine; Android's launcher must approve creation.
 
-**Important engine limitations:** Find in page, Reader mode and Print / Save PDF currently use Android WebView APIs. In GeckoView they remain visible but greyed out and marked **WebView only**, rather than silently operating on a different, hidden WebView tab. Normal GeckoView is still a single separate session; full GeckoView multi-tab parity, downloads initiated by GeckoView pages, extension management and Gecko-specific find/print integrations require further implementation and device testing. A shared menu alone does not establish feature parity.
+**GeckoView Find in page** now uses Mozilla's native `GeckoSession.getFinder()` API, including Next, Previous and clearing search highlights. **Reader mode and Print / Save PDF** currently use Android WebView APIs; in GeckoView they remain visible but greyed out and marked **WebView only**, rather than silently operating on a different, hidden WebView tab. Normal GeckoView is still a single separate session; full GeckoView multi-tab parity, downloads initiated by GeckoView pages, extension management and Gecko-specific find/print integrations require further implementation and device testing. A shared menu alone does not establish feature parity.
 
 ## Android default browser and AI control
 
