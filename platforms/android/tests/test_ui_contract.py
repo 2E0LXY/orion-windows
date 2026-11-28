@@ -221,6 +221,11 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('getPreferences(0).edit().remove("recent_history").apply()', history)
         self.assertIn("for(WebView w:tabs)w.clearHistory()", history)
 
+    def test_bookmark_import_strips_a_real_utf8_bom(self):
+        importer = (APP / "app/src/main/java/uk/community/orion/BookmarkImporter.java").read_text(encoding="utf-8")
+        self.assertIn(r'replace("\uFEFF","")', importer)
+        self.assertNotIn(r'replace("\\uFEFF","")', importer)
+
     def test_dns_controls_disabled_without_valid_provider(self):
         self.assertIn('if(!gecko)a.disabledSettingRow(body,"GeckoView DNS fallback"', DNS)
         self.assertIn('if(!gecko&&!vpnActive)a.disabledSettingRow(body,"Local DNS VPN"', DNS)
