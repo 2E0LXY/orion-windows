@@ -52,12 +52,19 @@ Tap the **Orion logo at the far right of the bottom toolbar**. The full-height n
 
 1. **Private browsing:** Start / End Incognito and **What Incognito does and doesn't hide**.
 2. **Trackers and content:** WebView ad blocker, EasyList, EasyPrivacy, YouTube ad-request filtering, rule-list update and limitations.
-3. **Website security:** HTTPS/HTTP warnings, JavaScript, image loading and zero-cache option.
+3. **Website security:** HTTPS/HTTP warnings, JavaScript, image loading and no HTTP cache option.
 4. **Site permissions:** camera, microphone and approximate location — Ask every time, Block or Allow on request, subject to Android permission and browser-engine support.
 5. **Encrypted DNS and network:** provider choice, diagnostics, Android Private DNS and experimental local DNS VPN.
 6. **Browsing data:** explicitly clear normal WebView cookies, site storage, cache and tab history.
 
 The standard browser menu and general Settings screen no longer duplicate the main privacy controls.
+
+### No HTTP cache
+
+**Orion icon → Security and privacy → Website security → No HTTP cache (WebView).** Enabling this sets WebView's `LOAD_NO_CACHE` mode (network loads rather than use of the HTTP cache), clears existing WebView HTTP cache data, and requests further clearing after page loads and on activity destruction. The same switch also requests GeckoView HTTP cache clearing after completed GeckoView loads; **GeckoView's HTTP cache write prevention is not controlled by WebView's `LOAD_NO_CACHE` setting**.
+
+**Clear cached resources now** calls both engines' public cache-clearing APIs without intentionally clearing cookies, bookmarks or saved site data. This does **not** guarantee that no temporary files are ever created: Android System WebView, GeckoView, HTTP networking, downloads and Android itself can maintain internal files, memory caches, GPU caches and temporary state outside app-level guarantees. The application does not delete internal browser-engine directories by file-system traversal. A strict no-disk-write guarantee would require engine-level modifications and on-device filesystem verification. The toggle does not change the website's HTTP caching headers or the Android DownloadManager files.
+
 
 ### Incognito (experimental)
 
