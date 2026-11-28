@@ -224,6 +224,17 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('getPreferences(0).edit().remove("recent_history").apply()', history)
         self.assertIn("for(WebView w:tabs)w.clearHistory()", history)
 
+    def test_cookie_import_waits_for_confirmed_android_writes(self):
+        importer = (APP / "app/src/main/java/uk/community/orion/CookieImporter.java").read_text(encoding="utf-8")
+        self.assertIn("java.util.function.IntConsumer complete", importer)
+        self.assertIn("cm.setCookie(entry.url,entry.header,stored->", importer)
+        self.assertIn("Boolean.TRUE.equals(stored)", importer)
+        self.assertIn("if(pending.decrementAndGet()==0)", importer)
+        self.assertIn("cm.flush();", importer)
+        self.assertIn("complete.accept(accepted.get())", importer)
+        self.assertIn('CookieImporter.apply(preview,accepted->Toast.makeText(this,"Imported "+accepted+', SOURCE)
+        self.assertNotIn("cm.flush();complete.run()", importer)
+
     def test_private_browser_data_is_excluded_from_backup_and_transfer(self):
         self.assertIn('android:allowBackup="false"', MANIFEST)
         self.assertIn('android:dataExtractionRules="@xml/data_extraction_rules"', MANIFEST)
