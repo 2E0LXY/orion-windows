@@ -14,7 +14,7 @@ import java.util.*;
 
 public class MainActivity extends Activity {
  final ArrayList<WebView> tabs=new ArrayList<>();
- static final int BOOKMARK_IMPORT_REQUEST=807, PASSWORD_IMPORT_REQUEST=808, PASSWORD_EXPORT_REQUEST=809, COOKIE_IMPORT_REQUEST=810;
+ static final int BOOKMARK_IMPORT_REQUEST=807, PASSWORD_IMPORT_REQUEST=808, PASSWORD_EXPORT_REQUEST=809, COOKIE_IMPORT_REQUEST=810, DNS_VPN_REQUEST=811;
  LinearLayout root, bar, navigation, tabletTabs; FrameLayout content, homeOverlay; EditText address; Button count; ProgressBar progress; Button back,forward; int selected=-1;
  final Set<WebView> homeTabs=Collections.newSetFromMap(new IdentityHashMap<WebView,Boolean>());
  @Override public void onCreate(Bundle b){super.onCreate(b);AdBlocker.load(this,getPreferences(0));
@@ -370,6 +370,11 @@ public class MainActivity extends Activity {
  }
  @Override protected void onActivityResult(int request,int result,Intent data){
   super.onActivityResult(request,result,data);
+  if(request==DNS_VPN_REQUEST){
+   if(result==RESULT_OK)startDnsVpn();
+   else Toast.makeText(this,"Secure DNS VPN not enabled",Toast.LENGTH_LONG).show();
+   return;
+  }
   if(result!=RESULT_OK||data==null||data.getData()==null)return;
   final Uri source=data.getData();
   if(request==BOOKMARK_IMPORT_REQUEST){
@@ -444,6 +449,12 @@ public class MainActivity extends Activity {
  section(panel,"BROWSER DATA");settingRow(panel,"Bookmarks","Saved websites",()->bookmarks());settingRow(panel,"Reading list","Saved pages and read status",()->readingList());settingRow(panel,"Browsing history","Recent visited pages",()->historyLibrary());settingRow(panel,"Import browser data","Bookmarks, password options and cookie limitations",()->importBrowserData());
  section(panel,"ABOUT");settingRow(panel,"Replay launch animation","Inspect the orbit-and-star animation",()->{dialog.dismiss();showStartup();});settingRow(panel,"Orion Browser",installedVersion(),()->new AlertDialog.Builder(this).setTitle("About Orion").setMessage("Experimental community browser. Orion Connect, isolated private browsing, extensions and password sync are not implemented.").setPositiveButton("OK",null).show());
  dialog.setContentView(page);dialog.show();dialog.getWindow().setLayout(-1,-1);dialog.getWindow().getDecorView().setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets i=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());page.setPadding(i.left,i.top,i.right,i.bottom);}return insets;});dialog.getWindow().getDecorView().requestApplyInsets();}
+ void startDnsVpn(){
+  if(android.net.VpnService.prepare(this)!=null){Toast.makeText(this,"VPN permission required",Toast.LENGTH_LONG).show();return;}
+  Intent start=new Intent(this,OrionDnsVpnService.class).setAction(OrionDnsVpnService.ACTION_START);
+  try{startForegroundService(start);Toast.makeText(this,"Starting Orion Secure DNS",Toast.LENGTH_LONG).show();}
+  catch(Exception e){Toast.makeText(this,"Unable to start Secure DNS: "+e.getClass().getSimpleName(),Toast.LENGTH_LONG).show();}
+ }
  void dnsSettings(){DnsSettings.show(this);}
  void openDnsSettings(){DnsSettings.openPrivateDns(this);}
  void syncSettings(){new AlertDialog.Builder(this).setTitle("Sync").setMessage("Use your Google account to synchronise bookmarks, settings and shared links across devices.\n\nGoogle Sign-In is not configured in this test build. No account data is collected or uploaded.").setPositiveButton("Sign in with Google",(d,i)->new AlertDialog.Builder(this).setTitle("Google Sign-In unavailable").setMessage("The Orion OAuth client must be registered before sign-in can be enabled.").setPositiveButton("OK",null).show()).setNegativeButton("Close",null).show();}
