@@ -16,9 +16,11 @@ Open-source **Orion** work covering **Windows, Linux, and Android**. This reposi
 | **Windows** | [Windows branch and source](https://github.com/2E0LXY/orion-windows) · [Public WebKit build PR](https://github.com/2E0LXY/orion-windows/pull/2) | No verified community Windows installer available yet |
 | **Linux** | [Linux snapshot branch](https://github.com/2E0LXY/orion-windows/tree/archive/orion-linux) · [Cross-platform branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/cross-platform) | Source snapshot only; no verified Linux package available |
 
-**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; debug package currently includes both WebView and Mozilla GeckoView ; current ARM64 test ZIP is **98.4 MB** (arm64-v8a only). Universal packaging remains available locally. Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
+**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; test package includes Android System WebView and Mozilla GeckoView. CI's ARM64 artifacts package **arm64-v8a only** and ZIP sizes vary between runs. Universal packaging remains available locally. Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
 
 **Latest development branch:** [`chatgpt/geckoview-home-splash`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/geckoview-home-splash) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
+
+**[Android setup, menu map and complete feature guide](platforms/android/README.md)** · [Android implementation roadmap](platforms/android/ROADMAP.md) · [Source-level regression tests](platforms/android/tests/test_ui_contract.py). The Android guide documents how to use each new control, its engine scope, verification status and known limitations.
 
 ## Android — feature and implementation status
 
@@ -49,6 +51,25 @@ Android is implemented in **native Java** in [`platforms/android/`](https://gith
 | Account and sync | Orion Connect prototype documents and development relay | **Google OAuth sign-in, encryption, cross-device sync and push are not connected in the Android app** |
 | Extensions | GeckoView engine dependency included | WebExtensions/uBlock management **not yet implemented** |
 | Other outstanding | Background media controls, password autofill, passkeys, full-page translation, robust tab restore, production signing, comprehensive testing | Do not treat roadmap items as shipped features |
+
+### How to use the new Android features
+
+| What you want to do | Where to find it | Behaviour / scope |
+| --- | --- | --- |
+| **Open the original Orion homepage** | Home button, with no custom page selected | Native Orion logo and ECMWF forecast card for normal browsing in both engines. The operating system displays its standard launch screen; the unreliable custom boot overlay and replay entry are removed. |
+| **Set a website as homepage** | Open the website → **press and hold Home** | The URL is saved across restarts. With a custom homepage, the built-in weather card is not shown. |
+| **Restore the built-in Orion homepage** | **Tap Home three times quickly** | Removes the saved homepage URL. Set the optional toolbar shortcut back to **Home** if previously changed. |
+| **Get local weather** | Built-in Orion start page → **Use my location** | Explicit Android coarse-location permission; rounded coordinates, local place label when available, five forecast days and cached results. |
+| **Choose weather location without GPS** | Start page → **Choose a town** | Searches location names, then loads ECMWF IFS forecasts from Open-Meteo. |
+| **Hide / clear weather data** | **Settings → Homepage weather** | Toggle the card or delete the saved location and forecast cache. |
+| **Open all privacy controls** | **Orion icon on far right of bottom toolbar** | One Security and privacy panel for Incognito, ad-block/filter settings, HTTPS, website permissions, JavaScript, images, cache, DNS and data clearing. |
+| **Start / end Incognito** | Orion security panel → **Start Incognito mode** or **End Incognito session** | One experimental GeckoView private-mode tab, separate from normal WebView and GeckoView browsing; screenshots restricted during the session. Does **not** hide network traffic or external downloads. |
+| **Change secure DNS** | Orion security panel → **DNS and Secure DNS** | Cloudflare is the default GeckoView DoH provider. Android-managed WebView DNS is unchanged unless the optional DNS-only VPN is enabled with Android consent. |
+| **Use the WebView DNS VPN** | DNS and Secure DNS → **Local DNS VPN** | Opt-in Orion-scoped DNS-over-HTTPS forwarding; IPv4/IPv6 virtual routes and service controls. Still experimental and **not DNS-leak verified**. |
+| **Manage camera, microphone or location** | Orion security panel → **Camera, microphone and location** | Ask, Block or Allow-on-request behaviour, subject to Android runtime permissions and engine limitations. |
+| **Import browser data** | Menu → **Import browser data** | Bookmark HTML/JSON, password CSV into local encrypted migration storage, or compatible WebView cookie exports. Autofill and cross-engine cookie sync are not implemented. |
+
+**Privacy statement:** The GeckoView Incognito session is configured for separate temporary browser storage; normal Orion history/bookmark writes are disabled, but data teardown and crash/restart behaviour are **not yet hardware verified**. Your IP address, network traffic patterns, signed-in accounts, device fingerprint and downloaded files may remain observable or persist after you close the session. Android security and network policies continue to apply.
 
 ### Orion security and Incognito — Android
 
