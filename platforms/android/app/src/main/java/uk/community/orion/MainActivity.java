@@ -65,7 +65,10 @@ public class MainActivity extends Activity {
     if(splash.getParent()==host)splash.animate().alpha(0f).setDuration(260L).withEndAction(finish).start();
    }
   });
-  splash.postOnAnimation(()->{if(!isFinishing()&&!isDestroyed()&&splash.isAttachedToWindow())animator.start();});
+  // Guard against a device never dispatching the first animation frame.
+  splash.postDelayed(()->{if(splash.getParent()==host&&!animator.isStarted())animator.start();},300L);
+  // post() runs after attachment/layout even when the first frame has not been drawn yet.
+  splash.post(()->{if(!isFinishing()&&!isDestroyed()&&splash.getParent()==host&&!animator.isStarted())animator.start();});
  }
  class StartupView extends View {
   float phase=0f;
