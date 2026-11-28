@@ -28,6 +28,19 @@ final class ParallelDownload {
   volatile boolean finished=false,success=false;
   State(String n,String u){name=n;url=u;}
  }
+ // Activity was recreated or closed (for example rotation) before the transfer failed: queue the system download directly.
+ static void queueStandard(Context c,String url,String name,State transfer){
+  try{
+   DownloadManager.Request req=new DownloadManager.Request(android.net.Uri.parse(url));
+   req.setTitle(name);req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+   req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,name);
+   long id=((DownloadManager)c.getSystemService(Context.DOWNLOAD_SERVICE)).enqueue(req);
+   SharedPreferences prefs=c.getSharedPreferences(MainActivity.class.getName(),Context.MODE_PRIVATE);
+   String ids=id+(prefs.getString("download_ids","").isEmpty()?"":","+prefs.getString("download_ids",""));
+   prefs.edit().putString("download_ids",ids).putString("download_url_"+id,url).putString("download_name_"+id,name).apply();
+   transfer.status="Parallel failed · standard download queued";
+  }catch(Exception e){transfer.status="Automatic fallback failed · retry manually";transfer.error=e.getClass().getSimpleName();}
+ }
  static State snapshot(){return state;}
  static void cancel(){State s=state;if(s!=null&&!s.finished)s.cancelled.set(true);}
  static HttpURLConnection connect(String url,String range,String tag)throws IOException{
@@ -43,6 +56,7 @@ final class ParallelDownload {
   final State transfer=new State(name,url);
   state=transfer;
   Toast.makeText(a,"Download started · swipe up on the bottom toolbar for progress",Toast.LENGTH_LONG).show();
+  final Context app=a.getApplicationContext();
   new Thread(()->{
    File temp=null;ExecutorService pool=null;android.net.Uri output=null;boolean eligible=false,success=false;
    try{
@@ -54,7 +68,7 @@ final class ParallelDownload {
      total=Long.parseLong(cr.substring(10));if(total<1048576||total>2147483648L)throw new IOException("Size outside experimental range");
     }finally{probe.disconnect();}
     eligible=true;transfer.total=total;transfer.status="Downloading (4 connections)";
-    temp=File.createTempFile("orion-range-",".part",a.getCacheDir());final File file=temp;
+    temp=File.createTempFile("orion-range-",".part",app.getCacheDir());final File file=temp;
     try(RandomAccessFile f=new RandomAccessFile(file,"rw")){f.setLength(total);}
     pool=Executors.newFixedThreadPool(4);ArrayList<Future<?>> jobs=new ArrayList<>();
     for(int i=0;i<4;i++){final int segment=i;final long start=total*i/4,end=total*(i+1)/4-1;
@@ -83,15 +97,15 @@ final class ParallelDownload {
     if(transfer.done.get()!=total||transfer.cancelled.get())throw new IOException("Incomplete");
     transfer.status="Saving to Downloads";
     ContentValues values=new ContentValues();values.put(MediaStore.Downloads.DISPLAY_NAME,name);values.put(MediaStore.Downloads.MIME_TYPE,"application/octet-stream");values.put(MediaStore.Downloads.IS_PENDING,1);
-    output=a.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,values);if(output==null)throw new IOException("Cannot create output");
-    try(InputStream in=new FileInputStream(file);OutputStream out=a.getContentResolver().openOutputStream(output)){
+    output=app.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,values);if(output==null)throw new IOException("Cannot create output");
+    try(InputStream in=new FileInputStream(file);OutputStream out=app.getContentResolver().openOutputStream(output)){
      if(out==null)throw new IOException("Cannot open output");byte[] buf=new byte[65536];int n;
      while((n=in.read(buf))!=-1){if(transfer.cancelled.get())throw new IOException("Cancelled");out.write(buf,0,n);}
     }
-    values.clear();values.put(MediaStore.Downloads.IS_PENDING,0);a.getContentResolver().update(output,values,null,null);success=true;
+    values.clear();values.put(MediaStore.Downloads.IS_PENDING,0);app.getContentResolver().update(output,values,null,null);success=true;
    }catch(Exception e){
     transfer.error=e.getClass().getSimpleName()+": "+(e.getMessage()==null?"transfer interrupted":e.getMessage());
-    if(output!=null)a.getContentResolver().delete(output,null,null);
+    if(output!=null)app.getContentResolver().delete(output,null,null);
    }finally{
     if(pool!=null){pool.shutdownNow();try{pool.awaitTermination(25,TimeUnit.SECONDS);}catch(InterruptedException ignored){Thread.currentThread().interrupt();}}
     if(temp!=null)temp.delete();
@@ -102,9 +116,12 @@ final class ParallelDownload {
     busy.set(false);
     final boolean ok=success;
     a.runOnUiThread(()->{
-     if(a.isFinishing()||a.isDestroyed())return;
-     if(fallbackNeeded){try{fallback.run();}catch(Exception e){transfer.status="Automatic fallback failed · retry manually";transfer.error=e.getClass().getSimpleName();}}
-     else Toast.makeText(a,ok?"Download complete":transfer.cancelled.get()?"Download cancelled":"Parallel download failed; retry with standard download",Toast.LENGTH_LONG).show();
+     boolean gone=a.isFinishing()||a.isDestroyed();
+     if(fallbackNeeded){
+      if(gone){queueStandard(app,url,name,transfer);return;}
+      try{fallback.run();}catch(Exception e){transfer.status="Automatic fallback failed · retry manually";transfer.error=e.getClass().getSimpleName();}
+     }
+     else if(!gone)Toast.makeText(a,ok?"Download complete":transfer.cancelled.get()?"Download cancelled":"Parallel download failed; retry with standard download",Toast.LENGTH_LONG).show();
     });
    }
   },"orion-download").start();

@@ -174,7 +174,7 @@ public class MainActivity extends Activity {
 
    session.setNavigationDelegate(new org.mozilla.geckoview.GeckoSession.NavigationDelegate(){
     @Override public void onLocationChange(org.mozilla.geckoview.GeckoSession sess,String url,java.util.List<org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean hasUserGesture){
-     if(geckoActive&&geckoSession==sess){geckoAddress=url;if(!geckoIncognito){recordVisit(url);saveSession();}if(!address.hasFocus())address.setText(allowed(url)?url:"");}
+     if(geckoActive&&geckoSession==sess){geckoAddress=url;if(!geckoIncognito)recordVisit(url);if(!geckoIncognito)saveSession();if(!address.hasFocus())address.setText(allowed(url)?url:"");}
     }
     @Override public void onCanGoBack(org.mozilla.geckoview.GeckoSession sess,boolean canGoBack){
      if(geckoActive&&geckoSession==sess){geckoCanGoBack=canGoBack;back.setEnabled(canGoBack);}
@@ -262,8 +262,22 @@ public class MainActivity extends Activity {
  void homeActive(){if(geckoIncognito){originalHome();return;}String url=getPreferences(0).getString(PREF_HOMEPAGE,"");if(allowed(url))navigate(url);else originalHome();}
 
  // Session files are local app-private data. Private GeckoView sessions are never serialised.
- void saveSession(){
-  if(restoringSession||tabs.isEmpty()||selected<0)return;
+ final Handler sessionHandler=new Handler(Looper.getMainLooper());
+ final Runnable sessionWriter=()->writeSession();
+ boolean sessionClosed=false;
+ // Coalesce bursts (page loads, tab switches, Gecko location changes) into one write; lifecycle callbacks flush immediately.
+ void saveSession(){if(sessionClosed)return;sessionHandler.removeCallbacks(sessionWriter);sessionHandler.postDelayed(sessionWriter,1000);}
+ void flushSession(){sessionHandler.removeCallbacks(sessionWriter);writeSession();}
+ void clearSavedSession(){
+  sessionHandler.removeCallbacks(sessionWriter);
+  new java.io.File(getFilesDir(),"orion-session.json").delete();new java.io.File(getFilesDir(),"orion-session.tmp").delete();
+  SharedPreferences.Editor editor=getPreferences(0).edit();
+  for(String key:new ArrayList<>(getPreferences(0).getAll().keySet()))if(key.startsWith("download_url_")||key.startsWith("download_name_"))editor.remove(key);
+  editor.apply();
+ }
+ void writeSession(){
+  if(sessionClosed||restoringSession||tabs.isEmpty()||selected<0)return;
+  long historyBudget=900000;
   try{
    org.json.JSONObject state=new org.json.JSONObject();org.json.JSONArray items=new org.json.JSONArray();
    state.put("version",1);state.put("selected",selected);
@@ -281,7 +295,7 @@ public class MainActivity extends Activity {
       try{
        parcel.writeBundle(bundle);
        byte[] raw=parcel.marshall();
-       if(raw.length<=500000)tab.put("history",android.util.Base64.encodeToString(raw,android.util.Base64.NO_WRAP));
+       if(raw.length<=500000&&raw.length<=historyBudget){historyBudget-=raw.length;tab.put("history",android.util.Base64.encodeToString(raw,android.util.Base64.NO_WRAP));}
       }catch(Exception ignored){}finally{parcel.recycle();}
      }
     }
@@ -313,7 +327,7 @@ public class MainActivity extends Activity {
     if(tab.optBoolean("home",false))continue;
     String url=tab.optString("url","");
     if(!allowed(url))continue;
-    String encoded=tab.optString("history","");
+    String encoded=tab.optString("history","");boolean restored=false;
     if(!encoded.isEmpty()){
      try{
       byte[] raw=android.util.Base64.decode(encoded,android.util.Base64.DEFAULT);
@@ -321,13 +335,13 @@ public class MainActivity extends Activity {
       try{
        parcel.unmarshall(raw,0,raw.length);parcel.setDataPosition(0);
        Bundle history=parcel.readBundle(getClassLoader());
-       if(history!=null)w.restoreState(history);
+       if(history!=null&&w.restoreState(history)!=null)restored=true;
       }finally{parcel.recycle();}
      }catch(Exception ignored){}
     }
     int y=Math.max(0,tab.optInt("scrollY",0));
     if(y>0)pendingScroll.put(w,y);
-    homeTabs.remove(w);w.loadUrl(url);
+    homeTabs.remove(w);if(!restored)w.loadUrl(url);
    }
    if(tabs.isEmpty())return false;
    show(active);
@@ -533,7 +547,8 @@ public class MainActivity extends Activity {
  void rememberDownload(long id){
   ArrayList<String> ids=new ArrayList<>();ids.add(Long.toString(id));
   for(String value:getPreferences(0).getString("download_ids","").split(",")){
-   if(!value.isEmpty()&&!value.equals(Long.toString(id))&&ids.size()<20)ids.add(value);
+   if(value.isEmpty()||value.equals(Long.toString(id)))continue;
+   if(ids.size()<20)ids.add(value);else getPreferences(0).edit().remove("download_url_"+value).remove("download_name_"+value).apply();
   }
   getPreferences(0).edit().putString("download_ids",android.text.TextUtils.join(",",ids)).apply();
  }
@@ -586,7 +601,7 @@ public class MainActivity extends Activity {
    if(!transfer.finished&&total>0)details+=String.format(Locale.UK," · %.2f MB/s",transfer.bytesPerSecond/1048576.0);
    downloadRow(list,transfer.name,details,percentage,transfer.finished?null:()->ParallelDownload.cancel());
    if(transfer.finished&&!transfer.success&&!transfer.cancelled.get()){
-    downloadAction(list,"Retry using standard download",()->standardDownload(transfer.url,transfer.name));
+    if(!transfer.status.contains("standard download queued"))downloadAction(list,"Retry using standard download",()->standardDownload(transfer.url,transfer.name));
     downloadAction(list,"Restart parallel download",()->ParallelDownload.start(this,transfer.url,transfer.name,()->standardDownload(transfer.url,transfer.name)));
    }
    if(!transfer.finished&&total>0){
@@ -878,9 +893,9 @@ public class MainActivity extends Activity {
  void sitePermissions(){Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setBackgroundColor(0xff171d28);Button close=geckoButton("‹","Back to browser",()->dialog.dismiss());LinearLayout heading=new LinearLayout(this);heading.setGravity(Gravity.CENTER_VERTICAL);heading.setBackgroundColor(0xff293344);heading.addView(close,new LinearLayout.LayoutParams(dp(56),dp(56)));TextView name=new TextView(this);name.setText("Site permissions");name.setTextSize(20);name.setTextColor(0xfff1f5f9);heading.addView(name);page.addView(heading);ScrollView scroll=new ScrollView(this);LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.VERTICAL);options.setPadding(dp(8),dp(16),dp(8),dp(24));scroll.addView(options);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));TextView explain=new TextView(this);explain.setText("Camera, microphone and location settings apply to both engines on secure HTTPS sites. Android system permission is also required. GeckoView notification requests are blocked in this test build.");explain.setTextSize(14);explain.setTextColor(0xffb9c6da);explain.setPadding(dp(12),0,dp(12),dp(16));options.addView(explain);permissionChoice(options,"Camera","site_camera");permissionChoice(options,"Microphone","site_microphone");permissionChoice(options,"Approximate location","site_location");settingRow(options,"Android app permissions","Manage camera, microphone and location access in Android settings",()->startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))));dialog.setContentView(page);dialog.show();Window win=dialog.getWindow();win.setLayout(-1,-1);win.setStatusBarColor(0xff171d28);win.setNavigationBarColor(0xff171d28);win.getDecorView().setSystemUiVisibility(0);page.setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());page.setPadding(b.left,b.top,b.right,b.bottom);}else page.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});page.requestApplyInsets();}
  void permissionChoice(LinearLayout parent,String title,String key){String[] values={"Ask every time","Block","Allow on request"};int choice=Math.max(0,Math.min(2,getPreferences(0).getInt(key,0)));settingRow(parent,title,values[choice],()->new AlertDialog.Builder(this).setTitle(title).setSingleChoiceItems(values,getPreferences(0).getInt(key,0),(d,i)->{getPreferences(0).edit().putInt(key,i).apply();d.dismiss();Toast.makeText(this,title+": "+values[i],Toast.LENGTH_SHORT).show();}).setNegativeButton("Cancel",null).show());}
  void privacy(){new AlertDialog.Builder(this).setTitle("Privacy protections").setMessage("HTTPS is preferred, but HTTP remains available after a warning. HTTP is unencrypted. WebView blocks third-party cookies; GeckoView uses its own cookie controls. Camera, microphone and location choices apply to secure HTTPS sites in both engines and require Android system permissions. GeckoView notification requests are blocked in this test build. Incognito uses GeckoView private mode with separate temporary site data; normal WebView tabs are unaffected. It does not conceal traffic from websites or networks, and downloads can remain on the device.").setNeutralButton("Site permissions",(d,i)->sitePermissions()).setPositiveButton("OK",null).show();}
- void clearBrowsingData(){new AlertDialog.Builder(this).setTitle("Clear browsing data?").setMessage("Clear normal WebView cookies, site storage, cache and tab history, plus Orion recent URL history. GeckoView data may require separate clearing. This may sign you out. Bookmarks are retained.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,i)->{WebStorage.getInstance().deleteAllData();getPreferences(0).edit().remove("recent_history").apply();for(WebView w:tabs){w.clearCache(true);w.clearHistory();w.clearFormData();}CookieManager cookies=CookieManager.getInstance();cookies.removeAllCookies(removed->{cookies.flush();if(!isFinishing()&&!isDestroyed())Toast.makeText(this,"Normal WebView cookies, site data and Orion recent history cleared",Toast.LENGTH_LONG).show();});}).show();}
+ void clearBrowsingData(){new AlertDialog.Builder(this).setTitle("Clear browsing data?").setMessage("Clear normal WebView cookies, site storage, cache and tab history, plus Orion recent URL history. GeckoView data may require separate clearing. This may sign you out. Bookmarks are retained.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,i)->{WebStorage.getInstance().deleteAllData();getPreferences(0).edit().remove("recent_history").apply();clearSavedSession();for(WebView w:tabs){w.clearCache(true);w.clearHistory();w.clearFormData();}CookieManager cookies=CookieManager.getInstance();cookies.removeAllCookies(removed->{cookies.flush();if(!isFinishing()&&!isDestroyed())Toast.makeText(this,"Normal WebView cookies, site data and Orion recent history cleared",Toast.LENGTH_LONG).show();});}).show();}
  @Override public void onBackPressed(){if(address.hasFocus()){address.clearFocus();return;}if(geckoActive){if(geckoCanGoBack)geckoGoBack();else closeGecko();return;}if(selected>=0&&current().canGoBack()){current().goBack();return;}super.onBackPressed();}
- @Override protected void onPause(){saveSession();super.onPause();}
- @Override protected void onStop(){saveSession();super.onStop();}
- @Override protected void onDestroy(){saveSession();homeHandler.removeCallbacks(openHomeAfterTap);if(geckoActive)closeGecko();hideHome();content.removeAllViews();homeTabs.clear();if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);for(WebView w:tabs)w.destroy();super.onDestroy();}
+ @Override protected void onPause(){flushSession();super.onPause();}
+ @Override protected void onStop(){flushSession();super.onStop();}
+ @Override protected void onDestroy(){flushSession();sessionClosed=true;sessionHandler.removeCallbacks(sessionWriter);homeHandler.removeCallbacks(openHomeAfterTap);if(geckoActive)closeGecko();hideHome();content.removeAllViews();homeTabs.clear();if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);for(WebView w:tabs)w.destroy();super.onDestroy();}
 }

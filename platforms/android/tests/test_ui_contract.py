@@ -390,3 +390,38 @@ class OrionUiContract(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class OrionRecoveryContract(unittest.TestCase):
+    PD = (APP / "app/src/main/java/uk/community/orion/ParallelDownload.java").read_text(encoding="utf-8")
+
+    def test_session_writes_are_debounced_and_flushed_on_lifecycle(self):
+        self.assertIn("void saveSession(){if(sessionClosed)return;sessionHandler.removeCallbacks(sessionWriter);sessionHandler.postDelayed(sessionWriter,1000);}", SOURCE)
+        for hook in ("onPause(){flushSession();", "onStop(){flushSession();", "onDestroy(){flushSession();sessionClosed=true;"):
+            self.assertIn(hook, SOURCE)
+
+    def test_session_never_serialises_private_gecko_and_has_total_history_budget(self):
+        write = method("void writeSession()", "boolean restoreSession()")
+        self.assertIn('geckoActive&&!geckoIncognito?"gecko":"webview"', write)
+        self.assertIn('if(geckoActive&&!geckoIncognito&&allowed(geckoAddress))state.put("geckoUrl",geckoAddress);', write)
+        self.assertIn("historyBudget", write)
+
+    def test_restore_does_not_double_load_restored_history(self):
+        restore = method("boolean restoreSession()", "void originalHome()")
+        self.assertIn("w.restoreState(history)!=null)restored=true;", restore)
+        self.assertIn("if(!restored)w.loadUrl(url);", restore)
+
+    def test_clear_browsing_data_removes_saved_session_and_download_urls(self):
+        clear = method("void clearBrowsingData()", "void onBackPressed()")
+        self.assertIn("clearSavedSession();", clear)
+        saved = method("void clearSavedSession()", "void writeSession()")
+        self.assertIn('orion-session.json', saved)
+        self.assertIn('key.startsWith("download_url_")', saved)
+
+    def test_parallel_fallback_survives_activity_destruction(self):
+        self.assertIn("getApplicationContext()", self.PD)
+        self.assertIn("queueStandard(app,url,name,transfer)", self.PD)
+        self.assertNotIn("a.getContentResolver()", self.PD)
+        self.assertIn("boolean fallbackNeeded=!success&&!transfer.cancelled.get();", self.PD)
+
+    def test_retry_is_not_offered_twice_after_automatic_fallback(self):
+        self.assertIn('if(!transfer.status.contains("standard download queued"))downloadAction(list,"Retry using standard download"', SOURCE)
