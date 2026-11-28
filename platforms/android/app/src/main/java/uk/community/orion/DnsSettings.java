@@ -69,12 +69,12 @@ final class DnsSettings {
  static void show(MainActivity a){
   SharedPreferences prefs=a.getPreferences(0);
   Dialog dialog=new Dialog(a,android.R.style.Theme_Material_NoActionBar);
-  LinearLayout root=new LinearLayout(a);root.setOrientation(1);root.setBackgroundColor(0xff171d28);
+  LinearLayout root=new LinearLayout(a);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff171d28);
   Button close=new Button(a);close.setText("‹  DNS and network");close.setAllCaps(false);close.setTextSize(20);close.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
   close.setTextColor(0xfff1f5f9);close.setBackgroundColor(0xff293344);close.setPadding(a.dp(16),0,0,0);close.setMinHeight(a.dp(56));
   close.setContentDescription("Back to Orion settings");close.setOnClickListener(v->dialog.dismiss());root.addView(close,new LinearLayout.LayoutParams(-1,a.dp(56)));
   ScrollView scroll=new ScrollView(a);scroll.setFillViewport(true);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-  LinearLayout body=new LinearLayout(a);body.setPadding(a.dp(12),a.dp(8),a.dp(12),a.dp(32));body.setOrientation(1);scroll.addView(body);
+  LinearLayout body=new LinearLayout(a);body.setPadding(a.dp(12),a.dp(8),a.dp(12),a.dp(32));body.setOrientation(LinearLayout.VERTICAL);scroll.addView(body);
   a.section(body,"ACTIVE RESOLVER");
   int p=provider(prefs);
   String active=endpoint(prefs);
