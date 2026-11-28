@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
    geckoAddress=initial;
    session.setContentDelegate(new org.mozilla.geckoview.GeckoSession.ContentDelegate(){});
    session.setNavigationDelegate(new org.mozilla.geckoview.GeckoSession.NavigationDelegate(){
-    @Override public void onLocationChange(org.mozilla.geckoview.GeckoSession sess,String url){
+    @Override public void onLocationChange(org.mozilla.geckoview.GeckoSession sess,String url,java.util.List<org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission> permissions,Boolean hasUserGesture){
      if(geckoActive&&geckoSession==sess){geckoAddress=url;recordVisit(url);if(!address.hasFocus())address.setText(allowed(url)?url:"");}
     }
     @Override public void onCanGoBack(org.mozilla.geckoview.GeckoSession sess,boolean canGoBack){
