@@ -117,10 +117,11 @@ final class OrionAiBridge {
   }
   if(!authorise(authorisation)){respond(out,401,"Unauthorized","{}");return;}
   if(!"POST".equals(verb)||!"/mcp".equals(path)||length<0||length>MAX_BODY){respond(out,400,"Bad Request","{}");return;}
-  char[] chars=new char[length];int read=0;
-  while(read<length){int n=in.read(chars,read,length-read);if(n<0)throw new java.io.EOFException();read+=n;}
+  byte[] payload=new byte[length];int read=0;
+  java.io.InputStream input=socket.getInputStream();
+  while(read<length){int n=input.read(payload,read,length-read);if(n<0)throw new java.io.EOFException();read+=n;}
   JSONObject requestJson;
-  try{requestJson=new JSONObject(new String(chars));}
+  try{requestJson=new JSONObject(new String(payload,StandardCharsets.UTF_8));}
   catch(Exception e){respond(out,400,"Bad Request","{}");return;}
   JSONObject reply=dispatch(requestJson);
   respond(out,200,"OK",reply.toString());
