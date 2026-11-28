@@ -30,14 +30,15 @@ jobs:
         run: python3 -m unittest discover -s tests -v
       - name: Build debug APK
         working-directory: platforms/android
-        run: gradle --no-daemon assembleDebug
+        run: gradle --no-daemon -PorionArm64=true assembleDebug
       - name: Verify APK output and SHA256
         run: |
           test -s platforms/android/app/build/outputs/apk/debug/app-debug.apk
           sha256sum platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          python3 -c "import zipfile; z=zipfile.ZipFile('platforms/android/app/build/outputs/apk/debug/app-debug.apk'); a={n.split('/')[1] for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')}; print('Native ABIs:',a); assert a == {'arm64-v8a'}"
       - uses: actions/upload-artifact@v4
         with:
-          name: orion-community-debug
+          name: orion-community-arm64-debug
           path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish experimental APK
