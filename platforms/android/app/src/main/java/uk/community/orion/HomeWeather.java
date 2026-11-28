@@ -10,6 +10,8 @@ import android.graphics.Path;
 import android.graphics.drawable.GradientDrawable;
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.Geocoder;
+import android.location.Address;
 import android.location.LocationManager;
 import android.os.Handler;
 import android.os.Looper;
@@ -227,14 +229,13 @@ final class HomeWeather {
   if(locationManager==null){chooseTown();return;}
   try{
    Location last=null;
-   for(String provider:new String[]{LocationManager.NETWORK_PROVIDER,LocationManager.GPS_PROVIDER}){
+   for(String provider:new String[]{LocationManager.NETWORK_PROVIDER,LocationManager.PASSIVE_PROVIDER}){
     if(!locationManager.isProviderEnabled(provider))continue;
     Location loc=locationManager.getLastKnownLocation(provider);
     if(loc!=null&&(last==null||loc.getTime()>last.getTime()))last=loc;
    }
    if(last!=null&&System.currentTimeMillis()-last.getTime()<30*60*1000L){useCoordinates(last);return;}
-   String provider=locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)?LocationManager.NETWORK_PROVIDER:
-     locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)?LocationManager.GPS_PROVIDER:null;
+   String provider=locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)?LocationManager.NETWORK_PROVIDER:null;
    if(provider==null){Toast.makeText(activity,"Turn on Android location or choose a town",Toast.LENGTH_LONG).show();return;}
    Toast.makeText(activity,"Finding approximate location…",Toast.LENGTH_SHORT).show();
    if(listener!=null)locationManager.removeUpdates(listener);
@@ -257,13 +258,40 @@ final class HomeWeather {
    catch(Exception e){Toast.makeText(activity,"Location unavailable — choose a town",Toast.LENGTH_LONG).show();}
  }
  private void useCoordinates(Location location){
-  // No precise GPS coordinate is stored or transmitted by Orion.
+  // Use Android's coarse location only; send and store rounded coordinates, not raw GPS data.
   double lat=Math.round(location.getLatitude()*100.0)/100.0;
   double lon=Math.round(location.getLongitude()*100.0)/100.0;
-  prefs().edit().putString(PREFIX+"mode","gps").putString(PREFIX+"label","Near your location")
-   .putString(PREFIX+"lat",Double.toString(lat)).putString(PREFIX+"lon",Double.toString(lon))
-   .remove(PREFIX+"cache").apply();
-  fetch(lat,lon,"Near your location");
+  if(!Double.isFinite(lat)||!Double.isFinite(lon))return;
+  boolean changed=!"gps".equals(prefs().getString(PREFIX+"mode",""))||
+   !Double.toString(lat).equals(prefs().getString(PREFIX+"lat",""))||
+   !Double.toString(lon).equals(prefs().getString(PREFIX+"lon",""));
+  android.content.SharedPreferences.Editor edit=prefs().edit().putString(PREFIX+"mode","gps")
+   .putString(PREFIX+"label",changed?"Near your location":prefs().getString(PREFIX+"label","Near your location"))
+   .putString(PREFIX+"lat",Double.toString(lat)).putString(PREFIX+"lon",Double.toString(lon));
+  if(changed)edit.remove(PREFIX+"cache");
+  edit.apply();
+  // Reverse geocode off the UI thread. Weather still works when Android has no geocoder.
+  final int lookup=++sequence;
+  new Thread(()->{
+   String label=changed?"Near your location":prefs().getString(PREFIX+"label","Near your location");
+   try{
+    if(Geocoder.isPresent()){
+     java.util.List<Address> addresses=new Geocoder(activity,Locale.getDefault()).getFromLocation(lat,lon,1);
+     if(addresses!=null&&!addresses.isEmpty()){
+      Address address=addresses.get(0);
+      String locality=address.getLocality();
+      if(locality==null||locality.isEmpty())locality=address.getSubAdminArea();
+      if(locality!=null&&!locality.isEmpty())label=locality;
+     }
+    }
+   }catch(Exception ignored){}
+   final String chosenLabel=label;
+   main.post(()->{
+    if(!safe()||lookup!=sequence)return;
+    prefs().edit().putString(PREFIX+"label",chosenLabel).apply();
+    fetch(lat,lon,chosenLabel);
+   });
+  },"orion-weather-area").start();
  }
  private void chooseTown(){
   if(!safe())return;
