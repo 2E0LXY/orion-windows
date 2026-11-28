@@ -6,27 +6,29 @@ Open-source **Orion** work covering **Windows, Linux, and Android**. This reposi
 
 ## Downloads — start here
 
+**[Latest verified ARM64 development build (28 November 2026)](https://github.com/2E0LXY/orion-windows/actions/runs/46121304241/artifacts/15253277892)** — 98.4 MB ZIP; extract `app-debug.apk`. Includes the direct DNS and network menu in both engines. [CI run](https://github.com/2E0LXY/orion-windows/actions/runs/46121304241) · [Draft PR #3](https://github.com/2E0LXY/orion-windows/pull/3). The stable release shortcut below may contain older code until the PR is merged and published.
+
 | Platform | Latest accessible download / source | Status |
 | --- | --- | --- |
-| **Android** | **[Download latest Orion Android test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** | Automatically replaced when a new Android CI build succeeds. **The stable link becomes available after its first successful publication.** |
+| **Android** | **[Download latest Orion Android test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** | Updated by eligible publishing-branch builds, not draft PR builds. **The stable link becomes available after its first successful publication.** |
 | Android — versioned | [All Orion releases](https://github.com/2E0LXY/orion-windows/releases) · [Android build runs](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) | Earlier working APKs remain available for comparison and rollback |
 | Android — previous verified | [Download verified test APK (build 46091875384)](https://github.com/2E0LXY/orion-windows/releases/download/android-dev-46091875384/app-debug.apk) | Versioned debug build; **does not contain every subsequent import change** |
 | **Windows** | [Windows branch and source](https://github.com/2E0LXY/orion-windows) · [Public WebKit build PR](https://github.com/2E0LXY/orion-windows/pull/2) | No verified community Windows installer available yet |
 | **Linux** | [Linux snapshot branch](https://github.com/2E0LXY/orion-windows/tree/archive/orion-linux) · [Cross-platform branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/cross-platform) | Source snapshot only; no verified Linux package available |
 
-**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; debug package currently includes both WebView and Mozilla GeckoView and is large (about **528 MB** for recent test builds). Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
+**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; debug package currently includes both WebView and Mozilla GeckoView ; current ARM64 test ZIP is **98.4 MB** (arm64-v8a only). Universal packaging remains available locally. Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
 
-**Latest development branch:** [`chatgpt/drive-sync`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
+**Latest development branch:** [`chatgpt/geckoview-home-splash`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/geckoview-home-splash) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
 
 ## Android — feature and implementation status
 
-Android is implemented in **native Java** in [`platforms/android/`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/drive-sync/platforms/android). The application label is **Orion Browser**. A passing CI build confirms compilation, **not** behaviour on a physical device.
+Android is implemented in **native Java** in [`platforms/android/`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/geckoview-home-splash/platforms/android). The application label is **Orion Browser**. A passing CI build confirms compilation, **not** behaviour on a physical device.
 
 | Area | Present in development source | Limitations / verification needed |
 | --- | --- | --- |
-| Branding and launch | Orion launcher icon, animated orbit-and-star startup screen, visible version; reduced-motion static state | Verify startup logo and animation on multiple Android devices, including cold starts |
-| Browser engines | Android System **WebView** (main browser) and optional **GeckoView** session via **Open in GeckoView** | GeckoView opens in a separate experimental screen, not a seamless per-tab engine swap; cookies and sessions are separate |
-| GeckoView UI | Orion-styled top bar, address field, back/forward/reload/home controls, menu and return to WebView | Extension manager, native tab integration and all site-permission bridging are outstanding |
+| Branding and launch | Orion launcher icon, animated orbit-and-star startup screen, visible version; reduced-motion static state | Replay boot animation available in both menus; prior device test failed, revised scheduling requires retest |
+| Browser engines | Android System **WebView** (main browser) and optional **GeckoView** session via **Open in GeckoView** | Shared Orion home screen with GeckoView attribution and common menu; separate experimental session, not seamless per-tab switching; cookies remain separate |
+| GeckoView UI | Orion-styled top bar, address field, back/forward/reload/home controls, menu and return to WebView | Extension manager and native tab integration remain outstanding; camera, microphone and location delegates added, device testing pending |
 | Tabs | Multi-tab WebView, tab counter, 20-tab limit, tab picker, tablet strip, manual URL archiving/restoration | No full crash-safe session restore, tab groups or intelligent tab suspension |
 | Navigation | HTTP/HTTPS, address/search field, site navigation, back/forward/home/reload, configurable search | HTTP is unencrypted; user warning on explicit HTTP navigation; no universal HTTPS-only guarantee |
 | Search | Google, DuckDuckGo, Bing, Yahoo, Kagi, Brave Search, Startpage, Ecosia, Qwant, Mojeek, Swisscows, Wikipedia | Search integrations have not all been device-verified |
@@ -36,7 +38,7 @@ Android is implemented in **native Java** in [`platforms/android/`](https://gith
 | Password migration | Import browser/password-manager CSV, merge by URL and username, **Android Keystore AES-GCM encrypted local storage**, delete local vault | **Imported passwords do not yet autofill** and are not connected to GeckoView or Orion Connect; security audit pending |
 | Password export | User-confirmed export of imported credentials as standard **plaintext CSV** | CSV reveals passwords; store and transfer securely, then delete when no longer needed; no encrypted cross-device backup yet |
 | Cookie import | Opt-in Netscape `cookies.txt` or browser JSON export, domain preview, size/entry limits, WebView cookie import | Cookies may contain active sessions; GeckoView has a separate cookie store; **cookie export is not yet provided** |
-| Website permissions | WebView camera, microphone and approximate location: Ask every time, Block, or Allow on request; Android runtime permission remains required | GeckoView permissions not yet integrated with the same options; no site-by-site remembered allowlist |
+| Website permissions | WebView camera, microphone and approximate location: Ask every time, Block, or Allow on request; Android runtime permission remains required | GeckoView camera, microphone and location handlers added; notification requests blocked; device verification pending; no remembered per-site allowlist |
 | Privacy | Third-party cookie blocking in WebView; basic request-domain ad/tracker filtering; no-cache loading option; clearing WebView cookies/storage/cache/history | Not complete ad blocking, anti-fingerprinting or anonymity; zero-cache mode is not guaranteed disk-free browsing |
 | Filter lists | Optional EasyList/EasyPrivacy **domain-rule subset** updates; selected YouTube ad-request endpoints | No complete rules engine, cosmetic filtering, or guarantee of removing video ads |
 | Downloads | Native Android DownloadManager integration; experimental four-connection HTTPS range downloader with progress and cancellation | Range eligibility and validators required; single standard download fallback; no pause/resume/background foreground service |
@@ -46,6 +48,18 @@ Android is implemented in **native Java** in [`platforms/android/`](https://gith
 | Account and sync | Orion Connect prototype documents and development relay | **Google OAuth sign-in, encryption, cross-device sync and push are not connected in the Android app** |
 | Extensions | GeckoView engine dependency included | WebExtensions/uBlock management **not yet implemented** |
 | Other outstanding | Background media controls, password autofill, passkeys, full-page translation, robust tab restore, production signing, comprehensive testing | Do not treat roadmap items as shipped features |
+
+### DNS and network — Android
+
+Open **Orion menu → DNS and network** in either engine, or **Settings → Privacy and Security → DNS and Secure DNS**.
+
+- Cloudflare is the default GeckoView DNS-over-HTTPS (DoH) provider; strict mode is the default, with optional system DNS fallback.
+- Presets: Cloudflare, Control D, Quad9, Google, OpenDNS, NextDNS, AdGuard, CleanBrowsing, DNS.Watch and Mullvad, plus Android system DNS and custom HTTPS DoH URL. NextDNS requires account configuration; DNS.Watch is reference-only.
+- WebView uses Android-managed DNS; the app links to Android Private DNS settings and shows provider DoT hostnames where available.
+- Live network details show assigned IPv4/IPv6 addresses and Android DNS servers. Selected-provider diagnostics query each listed primary/secondary IPv4/IPv6 address independently over UDP port 53, reporting response time or error. These diagnostic queries are unencrypted.
+- Separate encrypted DoH A/AAAA query tests measure endpoint response times. AAAA resolution is not proof of IPv6 transport availability.
+- Android manages dual-stack routing. Forced IP-family selection, independent WebView DNS, automatic provider benchmarking and verification of the resolver used by every browser request are not implemented.
+- Physical-device testing of DNS enforcement, permission prompts, startup animation and UI remains outstanding.
 
 ### Import browser data — Android
 
@@ -66,12 +80,13 @@ Prerequisites: **JDK 17**, Android SDK with **API 36**, Android Gradle Plugin **
 ```bash
 git clone https://github.com/2E0LXY/orion-windows.git
 cd orion-windows
-git checkout chatgpt/drive-sync
+git checkout chatgpt/geckoview-home-splash
 cd platforms/android
-gradle --no-daemon assembleDebug
+gradle --no-daemon -PorionArm64=true assembleDebug
+# Omit -PorionArm64=true for universal packaging
 ```
 
-Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`. This is an experimental debug APK, not a signed distribution release. CI also publishes versioned GitHub releases and updates the stable Android test-APK shortcut when successful.
+Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`. This is an experimental debug APK, not a signed distribution release. Eligible development-branch push builds publish releases; draft PR builds upload test artefacts only.
 
 See the [Android roadmap](platforms/android/ROADMAP.md), [Android APK workflow](.github/workflows/android-prototype.yml), and [Android source tree](platforms/android/app/src/main/java/uk/community/orion/).
 
