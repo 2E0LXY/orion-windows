@@ -33,7 +33,51 @@ public class MainActivity extends Activity {
  back=button("back","Back",()->{if(geckoActive)geckoGoBack();else if(current().canGoBack())current().goBack();},true);
  forward=button("forward","Forward",()->{if(geckoActive)geckoGoForward();else if(current().canGoForward())current().goForward();},true);
  Button homeButton=button("home","Home. Hold to save current page; triple tap to reset",()->homeTap(),true);homeButton.setOnLongClickListener(v->{saveCurrentHomepage();return true;});count=button("tabs","Switch tabs",()->chooseTab(),true);button("menu","Browser menu",()->menu(),true);Button orionSecurity=button("orion","Orion security and privacy",()->securityPrivacy(),true);Drawable officialOrion=getDrawable(R.drawable.orion_icon);if(officialOrion!=null){officialOrion.setBounds(0,0,dp(24),dp(24));orionSecurity.setCompoundDrawables(null,officialOrion,null,null);}updateToolbar();tabletTabs=new LinearLayout(this);root.addView(tabletTabs,0,new LinearLayout.LayoutParams(-1,dp(48)));tabletTabs.setVisibility(View.GONE);
- address.setOnTouchListener(new View.OnTouchListener(){float x,y;public boolean onTouch(View v,android.view.MotionEvent e){if(!getPreferences(0).getBoolean("tab_swipe",true))return false;if(e.getActionMasked()==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();}if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(e.getX()-x)>dp(80)&&Math.abs(e.getY()-y)<dp(40)&&tabs.size()>1){show((selected+(e.getX()>x?-1:1)+tabs.size())%tabs.size());return true;}return false;}});setContentView(root);root.requestApplyInsets();newTab();if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);
+ address.setOnTouchListener(new View.OnTouchListener(){float x,y;public boolean onTouch(View v,android.view.MotionEvent e){if(!getPreferences(0).getBoolean("tab_swipe",true))return false;if(e.getActionMasked()==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();}if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(e.getX()-x)>dp(80)&&Math.abs(e.getY()-y)<dp(40)&&tabs.size()>1){show((selected+(e.getX()>x?-1:1)+tabs.size())%tabs.size());return true;}return false;}});setContentView(root);root.requestApplyInsets();newTab();openExternalUrl(getIntent());if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);
+ }
+
+ // Android owns default-browser selection; Orion never changes it silently.
+ @Override protected void onNewIntent(Intent intent){
+  super.onNewIntent(intent);setIntent(intent);openExternalUrl(intent);
+ }
+ void openExternalUrl(Intent intent){
+  if(intent==null||!Intent.ACTION_VIEW.equals(intent.getAction()))return;
+  Uri uri=intent.getData();
+  if(uri==null)return;
+  String url=uri.toString();
+  if(!allowed(url)){Toast.makeText(this,"Unsupported link",Toast.LENGTH_SHORT).show();return;}
+  if(geckoIncognito)closeGecko();
+  if(selected>=0)navigate(url);
+ }
+ boolean isDefaultBrowser(){
+  if(Build.VERSION.SDK_INT>=29){
+   android.app.role.RoleManager roles=getSystemService(android.app.role.RoleManager.class);
+   return roles!=null&&roles.isRoleAvailable(android.app.role.RoleManager.ROLE_BROWSER)
+    &&roles.isRoleHeld(android.app.role.RoleManager.ROLE_BROWSER);
+  }
+  Intent test=new Intent(Intent.ACTION_VIEW,Uri.parse("https://example.com/"));
+  android.content.pm.ResolveInfo resolved=getPackageManager().resolveActivity(test,android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+  return resolved!=null&&resolved.activityInfo!=null&&getPackageName().equals(resolved.activityInfo.packageName);
+ }
+ void requestDefaultBrowser(){
+  if(isDefaultBrowser()){Toast.makeText(this,"Orion is already the default browser",Toast.LENGTH_SHORT).show();return;}
+  if(Build.VERSION.SDK_INT>=29){
+   android.app.role.RoleManager roles=getSystemService(android.app.role.RoleManager.class);
+   if(roles!=null&&roles.isRoleAvailable(android.app.role.RoleManager.ROLE_BROWSER)){
+    startActivityForResult(roles.createRequestRoleIntent(android.app.role.RoleManager.ROLE_BROWSER),812);
+    return;
+   }
+  }
+  Intent chooser=new Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS);
+  try{startActivity(chooser);}catch(android.content.ActivityNotFoundException e){
+   Toast.makeText(this,"Open Android Settings to choose your default browser",Toast.LENGTH_LONG).show();
+  }
+ }
+ void aiConnectSettings(){
+  // No network listener, token, accessibility service or model access is installed.
+  new AlertDialog.Builder(this).setTitle("Orion AI Connect")
+   .setMessage("Remote control is not connected. No AI can read or operate Orion through this setting yet.\\n\\nPlanned: explicit pairing, a visible connected indicator, separate read and navigation permissions, one-action confirmation for input and downloads, session expiry and a disconnect control. Private tabs, passwords and cookies will never be exposed.")
+   .setPositiveButton("OK",null).show();
  }
  String installedVersion(){try{android.content.pm.PackageInfo p=getPackageManager().getPackageInfo(getPackageName(),0);return "Version "+p.versionName+" · Build "+(Build.VERSION.SDK_INT>=28?p.getLongVersionCode():p.versionCode);}catch(Exception e){return "Version unavailable";}}
  int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
@@ -736,6 +780,9 @@ public class MainActivity extends Activity {
  void settings(){Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("‹  Settings");close.setAllCaps(false);close.setTextColor(0xfff1f5f9);close.setBackgroundColor(0xff293344);close.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);close.setPadding(dp(16),0,0,0);close.setMinHeight(dp(56));close.setOnClickListener(v->dialog.dismiss());page.addView(close);ScrollView scroll=new ScrollView(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(0,0,0,dp(24));scroll.addView(panel);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));String[] engines={"Google","DuckDuckGo","Bing","Yahoo","Kagi","Brave Search","Startpage","Ecosia","Qwant","Mojeek","Swisscows","Wikipedia"};
  section(panel,"ACCOUNT");disabledSettingRow(panel,"Sync","Google sign-in and cross-device syncing are not connected");
  section(panel,"GENERAL");settingRow(panel,"Search engine",engines[Math.max(0,Math.min(engines.length-1,getPreferences(0).getInt("engine",0)))],()->new AlertDialog.Builder(this).setTitle("Search engine").setSingleChoiceItems(engines,getPreferences(0).getInt("engine",0),(d,i)->{getPreferences(0).edit().putInt("engine",i).apply();d.dismiss();dialog.dismiss();settings();}).setNegativeButton("Cancel",null).show());
+ settingRow(panel,"Default browser",isDefaultBrowser()?"Orion is the default":"Choose Orion in Android's browser selector",()->requestDefaultBrowser());
+ section(panel,"AI CONTROL");disabledSettingRow(panel,"Orion AI Connect","Unavailable · secure AI pairing and permissions are not implemented");
+ settingRow(panel,"AI Connect security plan","Review what future AI connections may access",()->aiConnectSettings());
  section(panel,"DISPLAY");settingRow(panel,"Homepage weather","ECMWF IFS forecast · location, visibility and saved area",()->HomeWeather.settings(this));settingRow(panel,"Toolbar shortcut","Choose Home, Bookmark or Reload",()->new AlertDialog.Builder(this).setTitle("Toolbar shortcut").setSingleChoiceItems(new String[]{"Home","Bookmark","Reload"},getPreferences(0).getInt("shortcut",0),(d,i)->{getPreferences(0).edit().putInt("shortcut",i).apply();updateToolbar();d.dismiss();}).setNegativeButton("Cancel",null).show());toggle(panel,"Swipe across address bar to switch tabs","tab_swipe",true);toggle(panel,"Dark web pages (WebView · experimental)","darkpages",false);settingRow(panel,"Text size",getPreferences(0).getInt("zoom",100)+"%",()->{String[] labels={"75%","100%","125%","150%","200%"};int[] sizes={75,100,125,150,200};new AlertDialog.Builder(this).setTitle("Text size").setItems(labels,(d,i)->{getPreferences(0).edit().putInt("zoom",sizes[i]).apply();applyAll();dialog.dismiss();settings();}).show();});toggle(panel,"Desktop websites (WebView)","desktop",false);
  settingRow(panel,"Security and privacy","Use the Orion icon at the right of the bottom toolbar",()->{dialog.dismiss();securityPrivacy();});
  section(panel,"BROWSER DATA");settingRow(panel,"Bookmarks","Saved websites",()->bookmarks());settingRow(panel,"Reading list","Saved pages and read status",()->readingList());settingRow(panel,"Browsing history","Recent visited pages",()->historyLibrary());
