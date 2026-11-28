@@ -15,7 +15,7 @@ import java.util.*;
 public class MainActivity extends Activity {
  final ArrayList<WebView> tabs=new ArrayList<>();
  static final int BOOKMARK_IMPORT_REQUEST=807, PASSWORD_IMPORT_REQUEST=808, PASSWORD_EXPORT_REQUEST=809, COOKIE_IMPORT_REQUEST=810, DNS_VPN_REQUEST=811;
- LinearLayout root, bar, navigation, tabletTabs; FrameLayout content, homeOverlay; HomeWeather homeWeather; EditText address; Button count; ProgressBar progress; Button back,forward; int selected=-1;
+ LinearLayout root, bar, navigation, tabletTabs; FrameLayout content, homeOverlay; HomeWeather homeWeather; EditText address; Button count; ProgressBar progress; Button back,forward; TextView aiBanner; int selected=-1;
  final Set<WebView> homeTabs=Collections.newSetFromMap(new IdentityHashMap<WebView,Boolean>());
  @Override public void onCreate(Bundle b){super.onCreate(b);AdBlocker.load(this,getPreferences(0));
  getWindow().setStatusBarColor(0xff171d28);getWindow().setNavigationBarColor(0xff171d28);
@@ -30,10 +30,190 @@ public class MainActivity extends Activity {
  address.setOnEditorActionListener((v,a,e)->{if(a==EditorInfo.IME_ACTION_GO){submit();return true;}return false;});
  button("go","Open address",()->submit(),false);
  navigation=new LinearLayout(this);navigation.setGravity(Gravity.CENTER_VERTICAL);root.addView(navigation,new LinearLayout.LayoutParams(-1,dp(56)));bar=navigation;
+ aiBanner=new TextView(this);
+ aiBanner.setText("AI SHARING ACTIVE · TAP TO DISCONNECT");
+ aiBanner.setTextSize(14);aiBanner.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
+ aiBanner.setTextColor(0xffffffff);aiBanner.setGravity(Gravity.CENTER);
+ aiBanner.setBackground(round(0xff22537c,8));aiBanner.setMinHeight(dp(48));
+ aiBanner.setContentDescription("AI sharing is active. Tap to disconnect or manage permissions");
+ aiBanner.setOnClickListener(v->aiConnectSettings());
+ aiBanner.setVisibility(View.GONE);root.addView(aiBanner,new LinearLayout.LayoutParams(-1,dp(48)));
  back=button("back","Back",()->{if(geckoActive)geckoGoBack();else if(current().canGoBack())current().goBack();},true);
  forward=button("forward","Forward",()->{if(geckoActive)geckoGoForward();else if(current().canGoForward())current().goForward();},true);
  Button homeButton=button("home","Home. Hold to save current page; triple tap to reset",()->homeTap(),true);homeButton.setOnLongClickListener(v->{saveCurrentHomepage();return true;});count=button("tabs","Switch tabs",()->chooseTab(),true);button("menu","Browser menu",()->menu(),true);Button orionSecurity=button("orion","Orion security and privacy",()->securityPrivacy(),true);Drawable officialOrion=getDrawable(R.drawable.orion_icon);if(officialOrion!=null){officialOrion.setBounds(0,0,dp(24),dp(24));orionSecurity.setCompoundDrawables(null,officialOrion,null,null);}updateToolbar();tabletTabs=new LinearLayout(this);root.addView(tabletTabs,0,new LinearLayout.LayoutParams(-1,dp(48)));tabletTabs.setVisibility(View.GONE);
- address.setOnTouchListener(new View.OnTouchListener(){float x,y;public boolean onTouch(View v,android.view.MotionEvent e){if(!getPreferences(0).getBoolean("tab_swipe",true))return false;if(e.getActionMasked()==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();}if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(e.getX()-x)>dp(80)&&Math.abs(e.getY()-y)<dp(40)&&tabs.size()>1){show((selected+(e.getX()>x?-1:1)+tabs.size())%tabs.size());return true;}return false;}});setContentView(root);root.requestApplyInsets();newTab();if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);
+ address.setOnTouchListener(new View.OnTouchListener(){float x,y;public boolean onTouch(View v,android.view.MotionEvent e){if(!getPreferences(0).getBoolean("tab_swipe",true))return false;if(e.getActionMasked()==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();}if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(e.getX()-x)>dp(80)&&Math.abs(e.getY()-y)<dp(40)&&tabs.size()>1){show((selected+(e.getX()>x?-1:1)+tabs.size())%tabs.size());return true;}return false;}});setContentView(root);root.requestApplyInsets();newTab();openExternalUrl(getIntent());if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);
+ }
+
+ // Android owns default-browser selection; Orion never changes it silently.
+ @Override protected void onNewIntent(Intent intent){
+  super.onNewIntent(intent);setIntent(intent);openExternalUrl(intent);
+ }
+ void openExternalUrl(Intent intent){
+  if(intent==null||!Intent.ACTION_VIEW.equals(intent.getAction()))return;
+  Uri uri=intent.getData();
+  if(uri==null)return;
+  String url=uri.toString();
+  if(!allowed(url)){Toast.makeText(this,"Unsupported link",Toast.LENGTH_SHORT).show();return;}
+  if(geckoIncognito)closeGecko();
+  if(selected>=0)navigate(url);
+ }
+ boolean isDefaultBrowser(){
+  if(Build.VERSION.SDK_INT>=29){
+   android.app.role.RoleManager roles=getSystemService(android.app.role.RoleManager.class);
+   return roles!=null&&roles.isRoleAvailable(android.app.role.RoleManager.ROLE_BROWSER)
+    &&roles.isRoleHeld(android.app.role.RoleManager.ROLE_BROWSER);
+  }
+  Intent test=new Intent(Intent.ACTION_VIEW,Uri.parse("https://example.com/"));
+  android.content.pm.ResolveInfo resolved=getPackageManager().resolveActivity(test,android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+  return resolved!=null&&resolved.activityInfo!=null&&getPackageName().equals(resolved.activityInfo.packageName);
+ }
+ void requestDefaultBrowser(){
+  if(isDefaultBrowser()){Toast.makeText(this,"Orion is already the default browser",Toast.LENGTH_SHORT).show();return;}
+  if(Build.VERSION.SDK_INT>=29){
+   android.app.role.RoleManager roles=getSystemService(android.app.role.RoleManager.class);
+   if(roles!=null&&roles.isRoleAvailable(android.app.role.RoleManager.ROLE_BROWSER)){
+    startActivityForResult(roles.createRequestRoleIntent(android.app.role.RoleManager.ROLE_BROWSER),812);
+    return;
+   }
+  }
+  Intent chooser=new Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS);
+  try{startActivity(chooser);}catch(android.content.ActivityNotFoundException e){
+   Toast.makeText(this,"Open Android Settings to choose your default browser",Toast.LENGTH_LONG).show();
+  }
+ }
+ OrionAiBridge aiBridge;
+ void updateAiBanner(){
+  if(aiBanner==null)return;
+  boolean active=aiBridge!=null&&aiBridge.running();
+  aiBanner.setVisibility(active?View.VISIBLE:View.GONE);
+  if(active)aiBanner.setText("AI SHARING ACTIVE · TAP TO DISCONNECT");
+ }
+ boolean aiInForeground=false;
+ @Override protected void onStart(){super.onStart();aiInForeground=true;}
+ @Override protected void onStop(){aiInForeground=false;super.onStop();}
+ boolean aiCanControl(){return aiInForeground&&!geckoIncognito&&!isFinishing()&&!isDestroyed();}
+ String aiPageInfo(){
+  if(geckoIncognito)return "Private tabs cannot be shared";
+  if(homeOverlay!=null)return "Orion start page";
+  String url=geckoActive?geckoAddress:selected>=0?current().getUrl():"";
+  if(!allowed(url))return "No shareable webpage";
+  String title=geckoActive?"GeckoView page":current().getTitle();
+  return "Title: "+(title==null?"":title.substring(0,Math.min(120,title.length())))+"\nURL: "+url;
+ }
+ boolean aiWebPageReady(){
+  return aiCanControl()&&!geckoActive&&selected>=0&&homeOverlay==null&&allowed(current().getUrl());
+ }
+ void aiDecodeJs(String encoded,OrionAiBridge.Result reply){
+  if(!aiCanControl()||geckoIncognito){reply.complete("Page no longer shareable");return;}
+  try{
+   org.json.JSONArray result=new org.json.JSONArray("["+encoded+"]");
+   String content=result.optString(0,"");
+   reply.complete(content.length()>12000?content.substring(0,12000):content);
+  }catch(Exception e){reply.complete("Unable to read webpage result");}
+ }
+ void aiConnectSettings(){
+  if(aiBridge==null)aiBridge=new OrionAiBridge(this,new OrionAiBridge.Host(){
+   @Override public boolean canControl(){return aiCanControl();}
+   @Override public void onStatusChanged(){updateAiBanner();}
+   @Override public String describePage(){return aiPageInfo();}
+   @Override public String currentUrl(){return geckoActive?geckoAddress:selected>=0?current().getUrl():"";}
+   @Override public void openUrl(String url){if(!geckoIncognito&&aiCanControl())navigate(url);}
+   @Override public void perform(String tool,org.json.JSONObject args,OrionAiBridge.Result reply){
+    if(!aiCanControl()){reply.complete("Orion is not in a shareable state");return;}
+    switch(tool){
+     case "browser_info":reply.complete(aiPageInfo());return;
+     case "navigate":navigate(args.optString("url",""));reply.complete("HTTPS navigation requested");return;
+     case "back":
+      if(geckoActive)geckoGoBack();else if(selected>=0&&current().canGoBack())current().goBack();
+      reply.complete("Back requested");return;
+     case "forward":
+      if(geckoActive)geckoGoForward();else if(selected>=0&&current().canGoForward())current().goForward();
+      reply.complete("Forward requested");return;
+     case "reload":reloadActive();reply.complete("Reload requested");return;
+     case "tabs":{
+      StringBuilder list=new StringBuilder("Normal browser tabs:\n");
+      for(int i=0;i<tabs.size();i++){
+       WebView tab=tabs.get(i);
+       String url=tab.getUrl(),title=tab.getTitle();
+       list.append(i==selected?"* ":"  ").append(i+1).append(". ")
+        .append(title==null?"New tab":title.substring(0,Math.min(80,title.length())))
+        .append(" — ").append(allowed(url)?url:"New tab").append("\n");
+      }
+      if(geckoActive)list.append("Active GeckoView page: ").append(allowed(geckoAddress)?geckoAddress:"Start page");
+      reply.complete(list.toString());return;
+     }
+     case "page_text":{
+      if(!aiWebPageReady()){reply.complete("Available only for a loaded normal WebView webpage");return;}
+      String js="(function(){try{return document.body?(document.body.innerText||'').slice(0,12000):'';}catch(e){return '';}})()";
+      current().evaluateJavascript(js,encoded->aiDecodeJs(encoded,reply));return;
+     }
+     case "scroll":{
+      if(!aiWebPageReady()){reply.complete("Scrolling is available only in WebView");return;}
+      current().scrollBy(0,args.optInt("pixels",0));reply.complete("Scroll requested");return;
+     }
+     case "click":{
+      if(!aiWebPageReady()){reply.complete("Clicking is available only in WebView");return;}
+      String selector=org.json.JSONObject.quote(args.optString("selector",""));
+      String js="(function(){try{var e=document.querySelector("+selector+");if(!e)return 'Element not found';"
+       +"if(e.closest('form')||e.matches('input,textarea,button,select,[contenteditable],[role=button]'))return 'Blocked: potentially sensitive or submitting control';"
+       +"e.click();return 'Clicked non-form element';}catch(x){return 'Selector error';}})()";
+      current().evaluateJavascript(js,encoded->aiDecodeJs(encoded,reply));return;
+     }
+     case "type":{
+      if(!aiWebPageReady()){reply.complete("Typing is available only in WebView");return;}
+      String selector=org.json.JSONObject.quote(args.optString("selector",""));
+      String value=org.json.JSONObject.quote(args.optString("text",""));
+      String js="(function(){try{var e=document.querySelector("+selector+");if(!e)return 'Element not found';"
+       +"if(!e.matches('input,textarea'))return 'Not a text field';"
+       +"var t=(e.type||'text').toLowerCase(),a=(e.autocomplete||'').toLowerCase();"
+       +"if(['password','hidden','file','email','tel','number','date','month','week','time'].includes(t)||/password|cc-|one-time-code|username/.test(a))return 'Sensitive field blocked';"
+       +"e.focus();e.value="+value+";e.dispatchEvent(new Event('input',{bubbles:true}));"
+       +"return 'Text entered; form not submitted';}catch(x){return 'Field error';}})()";
+      current().evaluateJavascript(js,encoded->aiDecodeJs(encoded,reply));return;
+     }
+     default:reply.complete("Tool unavailable");
+    }
+   }
+   @Override public void requestApproval(String tool,String detail,OrionAiBridge.Approval cb){
+    if(!aiCanControl()){cb.complete(false);return;}
+    new AlertDialog.Builder(MainActivity.this)
+     .setTitle("AI request: "+tool)
+     .setMessage(detail+"\n\nAllow this one request? AI sharing is restricted to normal browser tabs.")
+     .setNegativeButton("Deny",(d,w)->cb.complete(false))
+     .setPositiveButton("Allow once",(d,w)->cb.complete(true))
+     .setOnCancelListener(d->cb.complete(false)).show();
+   }
+  });
+  Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);
+  LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setPadding(dp(16),dp(20),dp(16),dp(20));page.setBackgroundColor(0xff171d28);
+  Button close=new Button(this);close.setAllCaps(false);close.setText("‹  Orion AI Connect");close.setContentDescription("Close Orion AI Connect");close.setOnClickListener(v->dialog.dismiss());page.addView(close,new LinearLayout.LayoutParams(-1,dp(56)));
+  ScrollView scroll=new ScrollView(this);LinearLayout items=new LinearLayout(this);items.setOrientation(LinearLayout.VERTICAL);scroll.addView(items);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+  section(items,"LOCAL CONNECTION");
+  settingRow(items,"Status",aiBridge.status(),()->{dialog.dismiss();aiConnectSettings();});
+  if(!aiBridge.running()){
+   settingRow(items,"Start AI sharing","Local device only · expires after 15 minutes · confirm every action",()->{
+    if(geckoIncognito){Toast.makeText(this,"Close Incognito before sharing",Toast.LENGTH_LONG).show();return;}
+    aiBridge.start();updateAiBanner();dialog.dismiss();aiConnectSettings();
+   });
+  }else{
+   settingRow(items,"Stop and disconnect","Revoke the active token immediately",()->{aiBridge.stop();updateAiBanner();dialog.dismiss();aiConnectSettings();});
+   section(items,"PAIRING");
+   settingRow(items,"Connection address","http://127.0.0.1:"+aiBridge.port()+"/mcp",()->{});
+   settingRow(items,"Copy session token","Secret: share only with a trusted local MCP client",()->{
+    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+    if(clipboard!=null&&aiBridge.token()!=null){clipboard.setPrimaryClip(ClipData.newPlainText("Orion AI session token",aiBridge.token()));Toast.makeText(this,"Temporary token copied; clipboard access is sensitive",Toast.LENGTH_LONG).show();}
+   });
+  }
+  section(items,"PERMISSIONS");
+  settingRow(items,"Read title, URL and normal tabs","Ask on every read request",()->{});
+  settingRow(items,"Read webpage text (WebView)","Ask once per request · may expose personal information",()->{});
+  settingRow(items,"Navigate, back, forward and reload","Ask on each request · HTTPS links only",()->{});
+  settingRow(items,"Scroll, click and type (WebView)","Ask on each request · blocks form submission and sensitive fields",()->{});
+  disabledSettingRow(items,"Screenshots and downloads","Not enabled while capture and file policies are being verified");
+  section(items,"BOUNDARIES");
+  TextView guidance=new TextView(this);guidance.setText("The listener accepts only this device's loopback connections. A desktop AI cannot reach it directly; use a trusted local bridge or connector. ChatGPT, Claude and Gemini require their own MCP/client connection. Incognito, passwords and cookies are excluded. Close this panel using the top control; sharing continues until disconnect or expiry.");
+  guidance.setTextSize(15);guidance.setTextColor(0xfff1f5f9);guidance.setPadding(dp(16),dp(12),dp(16),dp(16));items.addView(guidance);
+  dialog.setContentView(page);dialog.show();dialog.getWindow().setLayout(-1,-1);
  }
  String installedVersion(){try{android.content.pm.PackageInfo p=getPackageManager().getPackageInfo(getPackageName(),0);return "Version "+p.versionName+" · Build "+(Build.VERSION.SDK_INT>=28?p.getLongVersionCode():p.versionCode);}catch(Exception e){return "Version unavailable";}}
  int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
@@ -112,6 +292,7 @@ public class MainActivity extends Activity {
 
  void openGecko(){openGecko(false);}
  void openIncognito(){
+  if(aiBridge!=null)aiBridge.stop();updateAiBanner();
   if(geckoActive){closeGecko();}
   openGecko(true);
  }
@@ -124,10 +305,23 @@ public class MainActivity extends Activity {
    if(geckoRuntime==null)geckoRuntime=org.mozilla.geckoview.GeckoRuntime.create(getApplicationContext());
    DnsSettings.applyToGecko(geckoRuntime,getPreferences(0));
    geckoView=new org.mozilla.geckoview.GeckoView(this);
+   geckoView.setActivityContextDelegate(()->MainActivity.this);
    geckoSession=new org.mozilla.geckoview.GeckoSession(new org.mozilla.geckoview.GeckoSessionSettings.Builder().usePrivateMode(incognito).build());
+   geckoSession.setPrintDelegate(geckoView.getPrintDelegate());
    final org.mozilla.geckoview.GeckoSession session=geckoSession;
    geckoAddress=initial==null?"":initial;
-   session.setContentDelegate(new org.mozilla.geckoview.GeckoSession.ContentDelegate(){});
+   session.setContentDelegate(new org.mozilla.geckoview.GeckoSession.ContentDelegate(){
+    @Override public void onExternalResponse(org.mozilla.geckoview.GeckoSession source,org.mozilla.geckoview.WebResponse response){
+     if(geckoSession!=source||!geckoActive||response==null)return;
+     String url=response.uri;
+     if(!allowed(url)){Toast.makeText(MainActivity.this,"This GeckoView download type is not supported",Toast.LENGTH_LONG).show();return;}
+     new AlertDialog.Builder(MainActivity.this)
+      .setTitle("GeckoView download")
+      .setMessage("Download this file?\\n"+Uri.parse(url).getHost()+"\\n\\nOrion's downloader makes a new request, so protected or session-only downloads may not work.")
+      .setNegativeButton("Cancel",null)
+      .setPositiveButton("Continue",(d,i)->downloadPage(url,null,null)).show();
+    }
+   });
    session.setPermissionDelegate(new org.mozilla.geckoview.GeckoSession.PermissionDelegate(){
     @Override public void onAndroidPermissionsRequest(org.mozilla.geckoview.GeckoSession sess,String[] permissions,org.mozilla.geckoview.GeckoSession.PermissionDelegate.Callback cb){
      if(!geckoActive||sess!=geckoSession||permissions==null||permissions.length==0||geckoAndroidCallback!=null){cb.reject();return;}
@@ -336,32 +530,108 @@ public class MainActivity extends Activity {
  void loadWebUrl(WebView w,String url){homeTabs.remove(w);if(!geckoActive&&w==current())hideHome();w.loadUrl(url);}
  
  Button geckoButton(String label,String description,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(18);b.setContentDescription(description);b.setTextColor(0xfff1f5f9);b.setMinHeight(dp(48));b.setMinWidth(dp(48));b.setPadding(0,0,0,0);b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,10)));b.setOnClickListener(v->action.run());return b;}
+  // Persist menu visibility by stable action ID, never by position.
+ static final String[] MENU_IDS={"new_tab","engine","reload","find","bookmark","bookmarks","reading","history","import","share","reader","print","downloads","install","settings"};
+ static final String[] MENU_TITLES={"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Install and create shortcut","Settings"};
+ boolean menuShown(String id){return getPreferences(0).getBoolean("menu_item_"+id,true);}
+ void customiseMenu(){
+  final String[] names=MENU_TITLES.clone();
+  final boolean[] enabled=new boolean[MENU_IDS.length];
+  for(int i=0;i<enabled.length;i++)enabled[i]=menuShown(MENU_IDS[i]);
+  new AlertDialog.Builder(this).setTitle("Customise Orion menu")
+    .setMultiChoiceItems(names,enabled,(d,i,checked)->enabled[i]=checked)
+    .setPositiveButton("Save",(d,w)->{
+      android.content.SharedPreferences.Editor edits=getPreferences(0).edit();
+      for(int i=0;i<MENU_IDS.length;i++)edits.putBoolean("menu_item_"+MENU_IDS[i],enabled[i]);
+      edits.apply();Toast.makeText(this,"Menu choices saved",Toast.LENGTH_SHORT).show();
+    })
+    .setNeutralButton("Reset",(d,w)->{
+      android.content.SharedPreferences.Editor edits=getPreferences(0).edit();
+      for(String id:MENU_IDS)edits.remove("menu_item_"+id);
+      edits.apply();Toast.makeText(this,"Default menu restored",Toast.LENGTH_SHORT).show();
+    }).setNegativeButton("Cancel",null).show();
+ }
+ void installOrShortcut(){
+  if(geckoIncognito){Toast.makeText(this,"Shortcuts are unavailable in Incognito",Toast.LENGTH_LONG).show();return;}
+  String url=geckoActive?geckoAddress:homeOverlay!=null?null:current().getUrl();
+  if(!allowed(url)){Toast.makeText(this,"Open a website to add a shortcut",Toast.LENGTH_LONG).show();return;}
+  String title=geckoActive?Uri.parse(url).getHost():current().getTitle();
+  if(title==null||title.trim().isEmpty())title=Uri.parse(url).getHost();
+  final String label=title.substring(0,Math.min(40,title.length()));
+  final String target=url;
+  new AlertDialog.Builder(this).setTitle("Add website to Home screen")
+    .setMessage("Create a launcher shortcut for "+label+"?\n\nThis opens the website in Orion. Installing websites as standalone apps is not supported yet.")
+    .setNegativeButton("Cancel",null)
+    .setPositiveButton("Create shortcut",(d,w)->{
+      if(android.os.Build.VERSION.SDK_INT<26){Toast.makeText(this,"Requires Android 8 or newer",Toast.LENGTH_LONG).show();return;}
+      android.content.pm.ShortcutManager manager=getSystemService(android.content.pm.ShortcutManager.class);
+      if(manager==null||!manager.isRequestPinShortcutSupported()){
+        Toast.makeText(this,"Your Home screen launcher does not support pinned shortcuts",Toast.LENGTH_LONG).show();return;
+      }
+      Intent open=new Intent(Intent.ACTION_VIEW,Uri.parse(target),this,MainActivity.class);
+      open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      String id="orion_site_"+Integer.toHexString(target.hashCode());
+      android.content.pm.ShortcutInfo shortcut=new android.content.pm.ShortcutInfo.Builder(this,id)
+       .setShortLabel(label)
+       .setLongLabel(label)
+       .setIcon(android.graphics.drawable.Icon.createWithResource(this,R.mipmap.ic_launcher))
+       .setIntent(open).build();
+      try{
+       if(!manager.requestPinShortcut(shortcut,null))
+        Toast.makeText(this,"Shortcut request was not accepted by your launcher",Toast.LENGTH_LONG).show();
+      }catch(Exception e){Toast.makeText(this,"Could not request Home screen shortcut",Toast.LENGTH_LONG).show();}
+    }).show();
+ }
  void menu(){
- Dialog dialog=new Dialog(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(16),dp(12),dp(16),dp(16));panel.setBackground(round(0xff293344,20));
- TextView title=new TextView(this);title.setText(geckoIncognito?"Orion · Incognito":geckoActive?"Orion · GeckoView":"Orion · WebView");title.setTextSize(22);title.setTextColor(0xfff1f5f9);title.setPadding(dp(8),dp(8),0,dp(12));panel.addView(title);
- ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
- String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Settings"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Settings"};
- Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->refreshOrReload(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->shareOrionIfHome(),()->showDownloadPanel(),()->importBrowserData(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->refreshOrReload(),()->findPage(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->shareOrionIfHome(),()->readerMode(),()->printPage(),()->showDownloadPanel(),()->settings()};
- if(homeOverlay!=null){
-   if(geckoActive){labels[2]="Refresh start page";labels[3]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark";labels[7]="Share Orion website";}
-   else{labels[2]="Refresh start page";labels[4]="Add bookmark";labels[9]="Share Orion website";}
+  Dialog dialog=new Dialog(this);
+  LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);
+  panel.setPadding(dp(16),dp(12),dp(16),dp(16));panel.setBackground(round(0xff293344,20));
+  TextView title=new TextView(this);title.setText(geckoIncognito?"Orion · Incognito":geckoActive?"Orion · GeckoView":"Orion · WebView");
+  title.setTextSize(22);title.setTextColor(0xfff1f5f9);title.setPadding(dp(8),dp(8),0,dp(12));panel.addView(title);
+  ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);
+  scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+  // Both engines expose one stable set of actions. Unsupported GeckoView-only
+  // operations stay visible but disabled; never operate a hidden WebView instead.
+  String[] labels=MENU_TITLES.clone();
+  labels[1]=geckoActive?"Return to WebView":"Open in GeckoView";
+  String[] ids=MENU_IDS;
+  Runnable[] tasks=new Runnable[]{
+   ()->{if(geckoActive){closeGecko();}newTab();},
+   ()->{if(geckoActive)closeGecko();else openGecko();},
+   ()->refreshOrReload(),
+   ()->findPage(),
+   ()->saveOrAddBookmark(),
+   ()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),
+   ()->shareOrionIfHome(),()->readerMode(),()->printPage(),()->showDownloadPanel(),
+   ()->installOrShortcut(),()->settings()
+  };
+  if(homeOverlay!=null){
+   labels[2]="Refresh start page";labels[4]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark";
+   labels[9]="Share Orion website";
   }
   boolean canUsePage=homeOverlay==null&&allowed(geckoActive?geckoAddress:current().getUrl());
   for(int i=0;i<labels.length;i++){
-   final Runnable task=tasks[i];
-   boolean requiresPage=!geckoActive&&(i==3||i==10||i==11);
-   boolean unavailable=(requiresPage&&!canUsePage)||(geckoIncognito&&geckoActive&&(i==3||i==9));
-   Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
-   button.setTextColor(unavailable?0xff919bab:0xfff1f5f9);
-   button.setTextSize(16);button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
-   button.setPadding(dp(16),0,dp(16),0);
-   button.setEnabled(!unavailable);
-   button.setContentDescription(labels[i]+(unavailable?", unavailable":""));
-   button.setBackground(unavailable?round(0xff293344,12):new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,12)));
-   actions.addView(button,new LinearLayout.LayoutParams(-1,dp(48)));
-   if(!unavailable)button.setOnClickListener(v->{dialog.dismiss();task.run();});
+    if(!menuShown(ids[i]))continue;
+    final Runnable task=tasks[i];
+    boolean requiresPage=ids[i].equals("find")||ids[i].equals("reader")||ids[i].equals("print")||ids[i].equals("install");
+    boolean engineUnsupported=false; // All current menu page tools now have engine-specific implementations.
+    boolean unavailable=(requiresPage&&!canUsePage)||engineUnsupported||(geckoIncognito&&(ids[i].equals("bookmark")||ids[i].equals("import")||ids[i].equals("install")));
+    if(engineUnsupported)labels[i]+=" · WebView only";
+    Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
+    button.setTextColor(unavailable?0xff919bab:0xfff1f5f9);button.setTextSize(16);
+    button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);button.setPadding(dp(16),0,dp(16),0);
+    button.setEnabled(!unavailable);button.setContentDescription(labels[i]+(unavailable?", unavailable":""));
+    button.setBackground(unavailable?round(0xff293344,12):new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,12)));
+    actions.addView(button,new LinearLayout.LayoutParams(-1,dp(48)));
+    if(!unavailable)button.setOnClickListener(v->{dialog.dismiss();task.run();});
   }
- dialog.setContentView(panel);dialog.show();Window win=dialog.getWindow();win.setBackgroundDrawableResource(android.R.color.transparent);win.setGravity(Gravity.BOTTOM);win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
+  Button customise=new Button(this);customise.setText("Customise menu");customise.setAllCaps(false);
+  customise.setTextSize(16);customise.setTextColor(0xfff1f5f9);customise.setMinHeight(dp(56));
+  customise.setContentDescription("Customise which Orion menu items are shown");
+  customise.setOnClickListener(v->{dialog.dismiss();customiseMenu();});panel.addView(customise,new LinearLayout.LayoutParams(-1,dp(56)));
+  dialog.setContentView(panel);dialog.show();Window win=dialog.getWindow();
+  win.setBackgroundDrawableResource(android.R.color.transparent);win.setGravity(Gravity.BOTTOM);
+  win.setLayout(-1,Math.min(dp(610),(int)(getResources().getDisplayMetrics().heightPixels*.85f)));
  }
  // Give page-independent menu actions explicit, useful home-screen behaviour.
  void refreshOrReload(){
@@ -429,6 +699,9 @@ public class MainActivity extends Activity {
   settingRow(panel,"Camera, microphone and location","Ask each time, Block or Allow on request",()->{dialog.dismiss();sitePermissions();});
   section(panel,"ENCRYPTED DNS AND NETWORK");
   settingRow(panel,"DNS and Secure DNS","Provider, IPv4/IPv6 diagnostics and local VPN",()->{dialog.dismiss();dnsSettings();});
+  section(panel,"AI SHARING");
+  settingRow(panel,"Orion AI Connect",aiBridge!=null&&aiBridge.running()?"Active · tap to disconnect":"Off · local MCP with per-request approval",()->{dialog.dismiss();aiConnectSettings();});
+  settingRow(panel,"Share current page with an AI app","Android share sheet · title and URL only · never Incognito",()->{dialog.dismiss();shareCurrentPageToAi();});
   section(panel,"BROWSING DATA");
   settingRow(panel,"Clear normal browsing data","WebView cookies, site data and history; Orion recent URL history",()->{dialog.dismiss();clearBrowsingData();});
   dialog.setContentView(page);dialog.show();
@@ -561,10 +834,67 @@ public class MainActivity extends Activity {
   win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
   refreshHandler.post(refresh[0]);
  }
- void readerMode(){WebView target=current();if(!allowed(target.getUrl()))return;target.evaluateJavascript("(function(){var e=document.querySelector('article,main,[role=main]')||document.body;return e?e.innerText.slice(0,150000):'';})()",value->{if(isDestroyed()||target!=current())return;String body;try{Object parsed=new org.json.JSONTokener(value).nextValue();body=parsed instanceof String?(String)parsed:"";}catch(Exception e){body="";}if(body.trim().isEmpty()){Toast.makeText(this,"No readable text found",Toast.LENGTH_SHORT).show();return;}Dialog dialog=new Dialog(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("Close reader");close.setOnClickListener(v->dialog.dismiss());panel.addView(close);ScrollView scroll=new ScrollView(this);TextView article=new TextView(this);article.setText(body);article.setTextColor(0xfff1f5f9);article.setTextSize(18);article.setLineSpacing(dp(5),1.2f);article.setPadding(dp(24),dp(16),dp(24),dp(24));article.setTextIsSelectable(true);scroll.addView(article);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));dialog.setContentView(panel);dialog.show();dialog.getWindow().setLayout(-1,-1);});}
- void printPage(){if(!allowed(current().getUrl()))return;android.print.PrintManager manager=(android.print.PrintManager)getSystemService(PRINT_SERVICE);if(manager!=null)manager.print("Orion webpage",current().createPrintDocumentAdapter("Orion webpage"),new android.print.PrintAttributes.Builder().build());}
+ @androidx.annotation.OptIn(markerClass=org.mozilla.geckoview.ExperimentalGeckoViewApi.class)
+ void geckoReaderMode(){
+  if(geckoSession==null||!geckoActive||!allowed(geckoAddress))return;
+  final org.mozilla.geckoview.GeckoSession session=geckoSession;
+  session.getSessionPageExtractor().getPageContent().accept(text->{
+   if(isDestroyed()||session!=geckoSession)return;
+   if(text==null||text.trim().isEmpty()){
+    Toast.makeText(this,"No readable text found",Toast.LENGTH_SHORT).show();return;
+   }
+   showReaderText(text);
+  },error->{if(!isDestroyed())Toast.makeText(this,"Unable to extract reader text",Toast.LENGTH_SHORT).show();});
+ }
+ void showReaderText(String text){
+  Dialog dialog=new Dialog(this);
+  LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setBackgroundColor(0xff171d28);
+  Button close=new Button(this);close.setText("Close reader");close.setAllCaps(false);close.setMinHeight(dp(48));close.setOnClickListener(v->dialog.dismiss());panel.addView(close);
+  ScrollView scroll=new ScrollView(this);TextView article=new TextView(this);
+  article.setText(text.length()>150000?text.substring(0,150000):text);
+  article.setTextColor(0xfff1f5f9);article.setTextSize(18);article.setLineSpacing(dp(5),1.2f);
+  article.setPadding(dp(24),dp(16),dp(24),dp(24));article.setTextIsSelectable(true);
+  scroll.addView(article);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+  dialog.setContentView(panel);dialog.show();dialog.getWindow().setLayout(-1,-1);
+ }
+ void readerMode(){if(geckoActive){geckoReaderMode();return;}WebView target=current();if(!allowed(target.getUrl()))return;target.evaluateJavascript("(function(){var e=document.querySelector('article,main,[role=main]')||document.body;return e?e.innerText.slice(0,150000):'';})()",value->{if(isDestroyed()||target!=current())return;String body;try{Object parsed=new org.json.JSONTokener(value).nextValue();body=parsed instanceof String?(String)parsed:"";}catch(Exception e){body="";}if(body.trim().isEmpty()){Toast.makeText(this,"No readable text found",Toast.LENGTH_SHORT).show();return;}Dialog dialog=new Dialog(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("Close reader");close.setOnClickListener(v->dialog.dismiss());panel.addView(close);ScrollView scroll=new ScrollView(this);TextView article=new TextView(this);article.setText(body);article.setTextColor(0xfff1f5f9);article.setTextSize(18);article.setLineSpacing(dp(5),1.2f);article.setPadding(dp(24),dp(16),dp(24),dp(24));article.setTextIsSelectable(true);scroll.addView(article);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));dialog.setContentView(panel);dialog.show();dialog.getWindow().setLayout(-1,-1);});}
+ void printPage(){if(geckoActive){if(geckoSession!=null&&allowed(geckoAddress))geckoSession.printPageContent();return;}if(!allowed(current().getUrl()))return;android.print.PrintManager manager=(android.print.PrintManager)getSystemService(PRINT_SERVICE);if(manager!=null)manager.print("Orion webpage",current().createPrintDocumentAdapter("Orion webpage"),new android.print.PrintAttributes.Builder().build());}
  void sharePage(){String u=geckoActive?geckoAddress:current().getUrl();if(allowed(u)){Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("text/plain");intent.putExtra(Intent.EXTRA_TEXT,u);startActivity(Intent.createChooser(intent,"Share link"));}}
- void findPage(){WebView target=current();EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Find text");field.setContentDescription("Find text on page");AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find in page").setView(field).setPositiveButton("Next",null).setNeutralButton("Previous",null).setNegativeButton("Done",null).create();field.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){if(s.length()==0)target.clearMatches();else target.findAllAsync(s.toString());}public void afterTextChanged(android.text.Editable e){}});dialog.setOnDismissListener(d->target.clearMatches());dialog.show();dialog.getButton(-1).setOnClickListener(v->target.findNext(true));dialog.getButton(-3).setOnClickListener(v->target.findNext(false));}
+ void shareCurrentPageToAi(){
+  if(geckoIncognito){Toast.makeText(this,"Private pages cannot be shared with AI apps",Toast.LENGTH_LONG).show();return;}
+  String url=geckoActive?geckoAddress:selected>=0?current().getUrl():null;
+  if(!allowed(url)){Toast.makeText(this,"Open a normal webpage before sharing",Toast.LENGTH_SHORT).show();return;}
+  String title=geckoActive?"Webpage":current().getTitle();
+  Intent send=new Intent(Intent.ACTION_SEND);
+  send.setType("text/plain");
+  send.putExtra(Intent.EXTRA_SUBJECT,"Page shared from Orion");
+  send.putExtra(Intent.EXTRA_TEXT,(title==null?"":title.substring(0,Math.min(title.length(),120))+"\n")+url);
+  startActivity(Intent.createChooser(send,"Share page with an AI app"));
+ }
+
+ void findGeckoPage(){
+  if(!geckoActive||geckoSession==null||homeOverlay!=null)return;
+  final org.mozilla.geckoview.GeckoSession session=geckoSession;
+  EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Find text");
+  field.setContentDescription("Find text on GeckoView webpage");
+  AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find in page").setView(field)
+   .setPositiveButton("Next",null).setNeutralButton("Previous",null)
+   .setNegativeButton("Done",null).create();
+  field.addTextChangedListener(new android.text.TextWatcher(){
+   public void beforeTextChanged(CharSequence text,int start,int count,int after){}
+   public void onTextChanged(CharSequence text,int start,int before,int count){
+    if(geckoSession!=session)return;
+    if(text.length()==0)session.getFinder().clear();
+    else session.getFinder().find(text.toString(),org.mozilla.geckoview.GeckoSession.FINDER_FIND_FORWARD);
+   }
+   public void afterTextChanged(android.text.Editable value){}
+  });
+  dialog.setOnDismissListener(d->{if(geckoSession==session)session.getFinder().clear();});
+  dialog.show();
+  dialog.getButton(-1).setOnClickListener(v->{if(geckoSession==session&&field.length()>0)session.getFinder().find(null,org.mozilla.geckoview.GeckoSession.FINDER_FIND_FORWARD);});
+  dialog.getButton(-3).setOnClickListener(v->{if(geckoSession==session&&field.length()>0)session.getFinder().find(null,org.mozilla.geckoview.GeckoSession.FINDER_FIND_BACKWARDS);});
+ }
+ void findPage(){if(geckoActive){findGeckoPage();return;}WebView target=current();EditText field=new EditText(this);field.setSingleLine(true);field.setHint("Find text");field.setContentDescription("Find text on page");AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find in page").setView(field).setPositiveButton("Next",null).setNeutralButton("Previous",null).setNegativeButton("Done",null).create();field.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){if(s.length()==0)target.clearMatches();else target.findAllAsync(s.toString());}public void afterTextChanged(android.text.Editable e){}});dialog.setOnDismissListener(d->target.clearMatches());dialog.show();dialog.getButton(-1).setOnClickListener(v->target.findNext(true));dialog.getButton(-3).setOnClickListener(v->target.findNext(false));}
  void home(WebView w){homeTabs.add(w);if(w==current()&&!geckoActive)showHome(false);address.setText("");}
  WebView current(){return tabs.get(selected);}
  boolean allowed(String s){try{Uri u=Uri.parse(s);return ("https".equalsIgnoreCase(u.getScheme())||"http".equalsIgnoreCase(u.getScheme()))&&u.getHost()!=null&&u.getUserInfo()==null;}catch(Exception e){return false;}}
@@ -736,6 +1066,8 @@ public class MainActivity extends Activity {
  void settings(){Dialog dialog=new Dialog(this,android.R.style.Theme_Material_NoActionBar);LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setBackgroundColor(0xff171d28);Button close=new Button(this);close.setText("‹  Settings");close.setAllCaps(false);close.setTextColor(0xfff1f5f9);close.setBackgroundColor(0xff293344);close.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);close.setPadding(dp(16),0,0,0);close.setMinHeight(dp(56));close.setOnClickListener(v->dialog.dismiss());page.addView(close);ScrollView scroll=new ScrollView(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(0,0,0,dp(24));scroll.addView(panel);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));String[] engines={"Google","DuckDuckGo","Bing","Yahoo","Kagi","Brave Search","Startpage","Ecosia","Qwant","Mojeek","Swisscows","Wikipedia"};
  section(panel,"ACCOUNT");disabledSettingRow(panel,"Sync","Google sign-in and cross-device syncing are not connected");
  section(panel,"GENERAL");settingRow(panel,"Search engine",engines[Math.max(0,Math.min(engines.length-1,getPreferences(0).getInt("engine",0)))],()->new AlertDialog.Builder(this).setTitle("Search engine").setSingleChoiceItems(engines,getPreferences(0).getInt("engine",0),(d,i)->{getPreferences(0).edit().putInt("engine",i).apply();d.dismiss();dialog.dismiss();settings();}).setNegativeButton("Cancel",null).show());
+ settingRow(panel,"Default browser",isDefaultBrowser()?"Orion is the default":"Choose Orion in Android's browser selector",()->requestDefaultBrowser());
+ section(panel,"AI CONTROL");settingRow(panel,"Orion AI Connect",aiBridge!=null&&aiBridge.running()?"Active local session · disconnect or inspect permissions":"Off · enable local MCP and approve each action",()->{dialog.dismiss();aiConnectSettings();});
  section(panel,"DISPLAY");settingRow(panel,"Homepage weather","ECMWF IFS forecast · location, visibility and saved area",()->HomeWeather.settings(this));settingRow(panel,"Toolbar shortcut","Choose Home, Bookmark or Reload",()->new AlertDialog.Builder(this).setTitle("Toolbar shortcut").setSingleChoiceItems(new String[]{"Home","Bookmark","Reload"},getPreferences(0).getInt("shortcut",0),(d,i)->{getPreferences(0).edit().putInt("shortcut",i).apply();updateToolbar();d.dismiss();}).setNegativeButton("Cancel",null).show());toggle(panel,"Swipe across address bar to switch tabs","tab_swipe",true);toggle(panel,"Dark web pages (WebView · experimental)","darkpages",false);settingRow(panel,"Text size",getPreferences(0).getInt("zoom",100)+"%",()->{String[] labels={"75%","100%","125%","150%","200%"};int[] sizes={75,100,125,150,200};new AlertDialog.Builder(this).setTitle("Text size").setItems(labels,(d,i)->{getPreferences(0).edit().putInt("zoom",sizes[i]).apply();applyAll();dialog.dismiss();settings();}).show();});toggle(panel,"Desktop websites (WebView)","desktop",false);
  settingRow(panel,"Security and privacy","Use the Orion icon at the right of the bottom toolbar",()->{dialog.dismiss();securityPrivacy();});
  section(panel,"BROWSER DATA");settingRow(panel,"Bookmarks","Saved websites",()->bookmarks());settingRow(panel,"Reading list","Saved pages and read status",()->readingList());settingRow(panel,"Browsing history","Recent visited pages",()->historyLibrary());
@@ -777,5 +1109,5 @@ public class MainActivity extends Activity {
  void privacy(){new AlertDialog.Builder(this).setTitle("Privacy protections").setMessage("HTTPS is preferred, but HTTP remains available after a warning. HTTP is unencrypted. WebView blocks third-party cookies; GeckoView uses its own cookie controls. Camera, microphone and location choices apply to secure HTTPS sites in both engines and require Android system permissions. GeckoView notification requests are blocked in this test build. Incognito uses GeckoView private mode with separate temporary site data; normal WebView tabs are unaffected. It does not conceal traffic from websites or networks, and downloads can remain on the device.").setNeutralButton("Site permissions",(d,i)->sitePermissions()).setPositiveButton("OK",null).show();}
  void clearBrowsingData(){new AlertDialog.Builder(this).setTitle("Clear browsing data?").setMessage("Clear normal WebView cookies, site storage, cache and tab history, plus Orion recent URL history. GeckoView data may require separate clearing. This may sign you out. Bookmarks are retained.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,i)->{WebStorage.getInstance().deleteAllData();getPreferences(0).edit().remove("recent_history").apply();for(WebView w:tabs){w.clearCache(true);w.clearHistory();w.clearFormData();}CookieManager cookies=CookieManager.getInstance();cookies.removeAllCookies(removed->{cookies.flush();if(!isFinishing()&&!isDestroyed())Toast.makeText(this,"Normal WebView cookies, site data and Orion recent history cleared",Toast.LENGTH_LONG).show();});}).show();}
  @Override public void onBackPressed(){if(address.hasFocus()){address.clearFocus();return;}if(geckoActive){if(geckoCanGoBack)geckoGoBack();else closeGecko();return;}if(selected>=0&&current().canGoBack()){current().goBack();return;}super.onBackPressed();}
- @Override protected void onDestroy(){homeHandler.removeCallbacks(openHomeAfterTap);if(geckoActive)closeGecko();hideHome();content.removeAllViews();homeTabs.clear();if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);for(WebView w:tabs)w.destroy();super.onDestroy();}
+ @Override protected void onDestroy(){if(aiBridge!=null)aiBridge.stop();homeHandler.removeCallbacks(openHomeAfterTap);if(geckoActive)closeGecko();hideHome();content.removeAllViews();homeTabs.clear();if(getPreferences(0).getBoolean("zero_cache",false))clearResourceCaches(false);for(WebView w:tabs)w.destroy();super.onDestroy();}
 }

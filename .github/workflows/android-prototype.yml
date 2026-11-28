@@ -1,7 +1,7 @@
 name: Android prototype APK
 on:
   push:
-    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync]
+    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync, chatgpt/default-browser-ai-connect]
     paths:
       - 'platforms/android/**'
       - '.github/workflows/android-prototype.yml'
@@ -61,6 +61,18 @@ jobs:
           cp "$apk" Orion-Browser-Android-test.apk
           test -s Orion-Browser-Android-test.apk
           sha256sum Orion-Browser-Android-test.apk | tee Orion-Browser-Android-test.apk.sha256
+      # Keep experimental AI Connect downloads separate from the established latest APK.
+      - name: Publish AI Connect direct APK as separate prerelease
+        if: github.event_name == 'push' && github.ref == 'refs/heads/chatgpt/default-browser-ai-connect'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ai_tag="android-ai-connect-${GITHUB_RUN_ID}"
+          notes="Experimental Orion AI Connect ARM64 debug APK; commit ${GITHUB_SHA}; workflow ${GITHUB_RUN_ID}. Automated checks passed. Physical-device pairing, privacy, and security validation remain UNVERIFIED. Debug signing may change between runs."
+          gh release create "$ai_tag" Orion-Browser-Android-test.apk Orion-Browser-Android-test.apk.sha256 \
+            --target "$GITHUB_SHA" --prerelease --title "Orion AI Connect test ${GITHUB_RUN_ID}" --notes "$notes"
+          echo "Direct AI Connect APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/${ai_tag}/Orion-Browser-Android-test.apk"
       # GitHub Actions artifacts download as ZIPs. Do not upload an Actions artifact:
       # the user-facing, direct .apk download is a GitHub Release asset instead.
       - name: Publish direct APK to versioned and latest test releases

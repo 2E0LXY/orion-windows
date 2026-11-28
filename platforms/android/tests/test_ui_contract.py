@@ -161,7 +161,8 @@ class OrionUiContract(unittest.TestCase):
 
     def test_shared_menu_without_replay(self):
         menu = method("void menu()", "void incognitoExplained()")
-        self.assertIn('geckoActive?new String[]{', menu)
+        self.assertIn('String[] labels=MENU_TITLES.clone();', menu)
+        self.assertIn('labels[1]=geckoActive?"Return to WebView":"Open in GeckoView";', menu)
         self.assertNotIn("Replay boot animation", menu)
         self.assertNotIn('"Privacy and permissions","DNS and network"', menu)
         self.assertIn("readingList()", menu)
@@ -268,13 +269,14 @@ class OrionUiContract(unittest.TestCase):
     def test_first_five_grey_actions_have_real_implementations(self):
         menu = method("void menu()", "void incognitoExplained()")
         self.assertIn('labels[2]="Refresh start page"',menu)
-        self.assertIn('labels[4]="Add bookmark"',menu)
+        self.assertIn('labels[4]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark"',menu)
         self.assertIn('labels[9]="Share Orion website"',menu)
-        self.assertIn('labels[3]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark"',menu)
         self.assertIn('()->refreshOrReload()',menu)
         self.assertIn('()->saveOrAddBookmark()',menu)
         self.assertIn('()->shareOrionIfHome()',menu)
-        self.assertIn('boolean requiresPage=!geckoActive&&(i==3||i==10||i==11)',menu)
+        self.assertIn('boolean requiresPage=ids[i].equals("find")',menu)
+        self.assertIn('boolean engineUnsupported=false;',menu)
+        self.assertIn('if(engineUnsupported)labels[i]+=" · WebView only"',menu)
         actions = method("void refreshOrReload()", "void incognitoExplained()")
         self.assertIn('if(homeOverlay!=null){showHome(geckoActive);if(homeWeather!=null&&HomeWeather.enabled(this))homeWeather.refreshSaved();return;}',actions)
         self.assertIn('void refreshSaved()',WEATHER)

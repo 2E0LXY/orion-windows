@@ -4,13 +4,56 @@
 
 Experimental **native Java** Android browser combining **Android System WebView** and **Mozilla GeckoView**. Community-developed from the Orion project; **not an official Kagi release**.
 
-**Android 8.0+ (API 26)** · **ARM64 development APKs** · **Draft [PR #3](https://github.com/2E0LXY/orion-windows/pull/3)** · [Root README](../../README.md) · [Android roadmap](ROADMAP.md)
+**Android 8.0+ (API 26)** · **ARM64 development APKs** · **AI-sharing draft [PR #4](https://github.com/2E0LXY/orion-windows/pull/4)** · [Earlier Android PR #3](https://github.com/2E0LXY/orion-windows/pull/3) · [Root README](../../README.md) · [Android roadmap](ROADMAP.md)
+
+> **Development-status note (28 November 2026):** Default-browser support and AI sharing are in the [draft AI Connect branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/default-browser-ai-connect), not necessarily in the latest published test APK. GitHub Actions source checks/builds are not evidence of real-device pairing. Do not use the direct APK download link as proof that it contains these changes.
+
+## Customisable menu and website shortcuts (development)
+
+The Orion WebView and GeckoView menus now include **Install and create shortcut** and a persistent **Customise menu** control, matching the requested Android menu options without copying Brave branding.
+
+- **Install and create shortcut** requests a pinned Android Home screen launcher shortcut for the current normal HTTP/HTTPS page. Android's launcher must support the pin request and may ask for confirmation. This creates a **website shortcut opening Orion**, not a standalone installed PWA or isolated web app. It is unavailable on Orion's start screen and in Incognito.
+- **Customise menu** opens native checkboxes to show/hide individual menu entries. Choices are stored locally and shared across WebView and GeckoView by stable action identifier. Save applies changes; Reset restores all defaults. The Customise menu action remains visible so it cannot be hidden accidentally.
+- Both functions are included on development branch `chatgpt/default-browser-ai-connect`. Installation and launcher-specific behavior require real-device testing before release approval.
+
+## WebView and GeckoView menu parity
+
+Both engines now use the same menu ordering, labels and saved visibility preferences. **Customise menu**, **Add website to Home screen**, bookmarks, reading list, history, imports, share link, downloads, Settings, reload and engine switching appear consistently. The shortcut action works from a normal loaded webpage in either engine; Android's launcher must approve creation.
+
+**GeckoView page tools:** Find in page uses Mozilla's native `GeckoSession.getFinder()` API with Next, Previous and clearing highlights. Reader mode extracts readable page text through GeckoView's page extractor and displays it in Orion's native reader dialog. Print / Save PDF uses GeckoView's own print delegate and the Android print system. These are separate GeckoView implementations, not operations against a hidden WebView tab.
+
+GeckoView external HTTP/HTTPS download responses now ask for confirmation before handing the URL to Orion's downloader. Protected or session-dependent downloads can fail because the downloader makes a separate request. Bookmarks, history, reading lists, navigation, search, user-selected engine switch, privacy hub, menu customisation and launcher shortcuts share the existing Orion native shell.
+
+**Not yet full parity:** normal GeckoView still has a single separate session rather than WebView's native multi-tab picker; extension management, complete per-engine import/export parity, cookie management and direct AI page-extraction/control remain outstanding. These changes have source-level and automated build gates but **real-phone testing remains necessary**. Not every GeckoView website feature should be described as verified or production-ready.
+
+## Android default browser and AI control
+
+**Default browser (development branch):** Settings → General → Default browser opens Android's system-managed browser-role prompt (Android 10+) or the default-apps settings screen on older devices. Orion advertises HTTP and HTTPS `VIEW` intents, accepts shared external website links on launch and while running, validates schemes, and closes an Incognito GeckoView session before opening a normal external link. Android retains the final choice. This has not yet been checked on a physical device.
+
+**Orion AI Connect (experimental local MCP):** Settings → AI Control → Orion AI Connect, or Orion security icon → AI Sharing. Start sharing on the Android device, then copy its temporary bearer token. The bridge listens at `http://127.0.0.1:18796/mcp` on this device **only**, never on the local network. The 256-bit token expires after 15 minutes; Stop and disconnect immediately revokes it. All tool calls require individual approval on the phone and are denied if Orion is not visible or Incognito is open. Entering Incognito stops the session. The bottom browser toolbar shows a persistent AI-sharing indicator while connected.
+
+MCP methods include `initialize`, `ping`, `notifications/initialized`, `tools/list` and `tools/call`. Available user-approved tools are `browser_info`, `tabs`, `navigate` (HTTPS only), `back`, `forward`, `reload`, `page_text`, `scroll`, `click`, and `type`. Text reading and direct page interactions only work in **normal WebView**, not GeckoView. The click tool blocks form controls and form descendants; typing blocks password and other sensitive field types, and does not submit a form. All operations are experimental and require real-device validation. Screenshots, automated form submission, file downloads, cookies and password extraction are not supported.
+
+**Sharing with installed ChatGPT, Claude, Gemini or other Android apps:** Orion security icon → AI Sharing → **Share current page with an AI app** opens Android's share chooser with only the normal tab's page title and URL. This is a one-way share action, not a remote-control connection; Incognito pages cannot be shared.
+
+**Connecting an AI controller:** A compatible MCP client on the Android device can POST JSON-RPC to the local address using `Authorization: Bearer <temporary token>`. For a developer-controlled desktop connection, Android Debug Bridge port forwarding can be configured on an explicitly authorised device (`adb forward tcp:18796 tcp:18796`); then the client's localhost requests reach the phone through USB. This does **not** make the service publicly reachable. Browser-based MCP clients are blocked by Origin checks. Direct cloud-hosted ChatGPT, Claude and Gemini connections are **not implemented**: each needs a compatible secured relay and provider-specific integration, with authentication, revocation and policy review. Do not paste the session token into an AI conversation or expose the loopback service through a public tunnel.
+
+To confirm the MCP schema from a trusted client on the same device, use a local terminal with a temporary token:
+
+```sh
+curl -sS http://127.0.0.1:18796/mcp \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $ORION_SESSION_TOKEN" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+This local API and its foreground approval dialogs still require install, security and usability tests on a real Android device. The existing Android CI checks are not a substitute for those tests.
 
 ## Download and install
 
 **[Download the latest Orion Android ARM64 APK directly](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — a standalone APK file with **no ZIP extraction** after the first successful direct-release CI run. The [Actions history](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) shows source tests, Gradle compilation and release status.
 
-- A successful **push** build on the Android development branch publishes the direct APK to both a versioned GitHub prerelease and the [stable latest test link](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk). A PR validation run does **not** publish an installer.
+- A successful **push** build on the designated published-APK branch (`chatgpt/geckoview-home-splash`) publishes the direct APK to both a versioned GitHub prerelease and the [stable latest test link](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk). A PR validation run does **not** publish an installer.
 - Current direct test builds contain **arm64-v8a** GeckoView libraries. A universal APK can be built without the ARM64 Gradle flag but is not distributed by this workflow.
 - Test APKs use **debug signing** and have **not undergone a production security review**. A signing mismatch may prevent an in-place upgrade; uninstalling erases local app data. Export important browser data before changing signatures.
 - **Build success is not physical-device confirmation.** Live weather, location permissions, WebView DNS tunnelling and Incognito teardown require Android device testing.
