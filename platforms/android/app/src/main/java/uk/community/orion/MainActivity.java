@@ -74,7 +74,10 @@ public class MainActivity extends Activity {
   }
  }
  OrionAiBridge aiBridge;
- boolean aiCanControl(){return !geckoIncognito&&!isFinishing()&&!isDestroyed()&&hasWindowFocus();}
+ boolean aiInForeground=false;
+ @Override protected void onStart(){super.onStart();aiInForeground=true;}
+ @Override protected void onStop(){aiInForeground=false;super.onStop();}
+ boolean aiCanControl(){return aiInForeground&&!geckoIncognito&&!isFinishing()&&!isDestroyed();}
  String aiPageInfo(){
   if(geckoIncognito)return "Private tabs cannot be shared";
   if(homeOverlay!=null)return "Orion start page";
