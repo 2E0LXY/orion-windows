@@ -100,6 +100,17 @@ public class MainActivity extends Activity {
   String title=geckoActive?"GeckoView page":current().getTitle();
   return "Title: "+(title==null?"":title.substring(0,Math.min(120,title.length())))+"\nURL: "+url;
  }
+ boolean aiWebPageReady(){
+  return aiCanControl()&&!geckoActive&&selected>=0&&homeOverlay==null&&allowed(current().getUrl());
+ }
+ void aiDecodeJs(String encoded,OrionAiBridge.Result reply){
+  if(!aiCanControl()||geckoIncognito){reply.complete("Page no longer shareable");return;}
+  try{
+   org.json.JSONArray result=new org.json.JSONArray("["+encoded+"]");
+   String content=result.optString(0,"");
+   reply.complete(content.length()>12000?content.substring(0,12000):content);
+  }catch(Exception e){reply.complete("Unable to read webpage result");}
+ }
  void aiConnectSettings(){
   if(aiBridge==null)aiBridge=new OrionAiBridge(this,new OrionAiBridge.Host(){
    @Override public boolean canControl(){return aiCanControl();}
@@ -107,6 +118,62 @@ public class MainActivity extends Activity {
    @Override public String describePage(){return aiPageInfo();}
    @Override public String currentUrl(){return geckoActive?geckoAddress:selected>=0?current().getUrl():"";}
    @Override public void openUrl(String url){if(!geckoIncognito&&aiCanControl())navigate(url);}
+   @Override public void perform(String tool,org.json.JSONObject args,OrionAiBridge.Result reply){
+    if(!aiCanControl()){reply.complete("Orion is not in a shareable state");return;}
+    switch(tool){
+     case "browser_info":reply.complete(aiPageInfo());return;
+     case "navigate":navigate(args.optString("url",""));reply.complete("HTTPS navigation requested");return;
+     case "back":
+      if(geckoActive)geckoGoBack();else if(selected>=0&&current().canGoBack())current().goBack();
+      reply.complete("Back requested");return;
+     case "forward":
+      if(geckoActive)geckoGoForward();else if(selected>=0&&current().canGoForward())current().goForward();
+      reply.complete("Forward requested");return;
+     case "reload":reloadActive();reply.complete("Reload requested");return;
+     case "tabs":{
+      StringBuilder list=new StringBuilder("Normal browser tabs:\n");
+      for(int i=0;i<tabs.size();i++){
+       WebView tab=tabs.get(i);
+       String url=tab.getUrl(),title=tab.getTitle();
+       list.append(i==selected?"* ":"  ").append(i+1).append(". ")
+        .append(title==null?"New tab":title.substring(0,Math.min(80,title.length())))
+        .append(" — ").append(allowed(url)?url:"New tab").append("\n");
+      }
+      if(geckoActive)list.append("Active GeckoView page: ").append(allowed(geckoAddress)?geckoAddress:"Start page");
+      reply.complete(list.toString());return;
+     }
+     case "page_text":{
+      if(!aiWebPageReady()){reply.complete("Available only for a loaded normal WebView webpage");return;}
+      String js="(function(){try{return document.body?(document.body.innerText||'').slice(0,12000):'';}catch(e){return '';}})()";
+      current().evaluateJavascript(js,encoded->aiDecodeJs(encoded,reply));return;
+     }
+     case "scroll":{
+      if(!aiWebPageReady()){reply.complete("Scrolling is available only in WebView");return;}
+      current().scrollBy(0,args.optInt("pixels",0));reply.complete("Scroll requested");return;
+     }
+     case "click":{
+      if(!aiWebPageReady()){reply.complete("Clicking is available only in WebView");return;}
+      String selector=org.json.JSONObject.quote(args.optString("selector",""));
+      String js="(function(){try{var e=document.querySelector("+selector+");if(!e)return 'Element not found';"
+       +"if(e.closest('form')||e.matches('input,textarea,button,select,[contenteditable],[role=button]'))return 'Blocked: potentially sensitive or submitting control';"
+       +"e.click();return 'Clicked non-form element';}catch(x){return 'Selector error';}})()";
+      current().evaluateJavascript(js,encoded->aiDecodeJs(encoded,reply));return;
+     }
+     case "type":{
+      if(!aiWebPageReady()){reply.complete("Typing is available only in WebView");return;}
+      String selector=org.json.JSONObject.quote(args.optString("selector",""));
+      String value=org.json.JSONObject.quote(args.optString("text",""));
+      String js="(function(){try{var e=document.querySelector("+selector+");if(!e)return 'Element not found';"
+       +"if(!e.matches('input,textarea'))return 'Not a text field';"
+       +"var t=(e.type||'text').toLowerCase(),a=(e.autocomplete||'').toLowerCase();"
+       +"if(['password','hidden','file','email','tel','number','date','month','week','time'].includes(t)||/password|cc-|one-time-code|username/.test(a))return 'Sensitive field blocked';"
+       +"e.focus();e.value="+value+";e.dispatchEvent(new Event('input',{bubbles:true}));"
+       +"return 'Text entered; form not submitted';}catch(x){return 'Field error';}})()";
+      current().evaluateJavascript(js,encoded->aiDecodeJs(encoded,reply));return;
+     }
+     default:reply.complete("Tool unavailable");
+    }
+   }
    @Override public void requestApproval(String tool,String detail,OrionAiBridge.Approval cb){
     if(!aiCanControl()){cb.complete(false);return;}
     new AlertDialog.Builder(MainActivity.this)
@@ -138,10 +205,11 @@ public class MainActivity extends Activity {
    });
   }
   section(items,"PERMISSIONS");
-  settingRow(items,"Read current title and URL","Ask on each request · normal tab only",()->{});
-  settingRow(items,"Navigate to HTTPS URL","Ask on each request · user can deny",()->{});
-  disabledSettingRow(items,"Read webpage content","Not enabled in this first secure connection");
-  disabledSettingRow(items,"Click, type, screenshots, downloads","Not enabled until fine-grained permissions and checks are implemented");
+  settingRow(items,"Read title, URL and normal tabs","Ask on every read request",()->{});
+  settingRow(items,"Read webpage text (WebView)","Ask once per request · may expose personal information",()->{});
+  settingRow(items,"Navigate, back, forward and reload","Ask on each request · HTTPS links only",()->{});
+  settingRow(items,"Scroll, click and type (WebView)","Ask on each request · blocks form submission and sensitive fields",()->{});
+  disabledSettingRow(items,"Screenshots and downloads","Not enabled while capture and file policies are being verified");
   section(items,"BOUNDARIES");
   TextView guidance=new TextView(this);guidance.setText("The listener accepts only this device's loopback connections. A desktop AI cannot reach it directly; use a trusted local bridge or connector. ChatGPT, Claude and Gemini require their own MCP/client connection. Incognito, passwords and cookies are excluded. Close this panel using the top control; sharing continues until disconnect or expiry.");
   guidance.setTextSize(15);guidance.setTextColor(0xfff1f5f9);guidance.setPadding(dp(16),dp(12),dp(16),dp(16));items.addView(guidance);
