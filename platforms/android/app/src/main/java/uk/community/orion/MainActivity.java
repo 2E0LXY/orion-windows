@@ -265,6 +265,7 @@ public class MainActivity extends Activity {
  final Handler sessionHandler=new Handler(Looper.getMainLooper());
  final Runnable sessionWriter=()->writeSession();
  boolean sessionClosed=false;
+ final Map<WebView,org.json.JSONObject> lazyTabs=new IdentityHashMap<>();
  // Coalesce bursts (page loads, tab switches, Gecko location changes) into one write; lifecycle callbacks flush immediately.
  void saveSession(){if(sessionClosed)return;sessionHandler.removeCallbacks(sessionWriter);sessionHandler.postDelayed(sessionWriter,1000);}
  void flushSession(){sessionHandler.removeCallbacks(sessionWriter);writeSession();}
@@ -275,6 +276,26 @@ public class MainActivity extends Activity {
   for(String key:new ArrayList<>(getPreferences(0).getAll().keySet()))if(key.startsWith("download_url_")||key.startsWith("download_name_"))editor.remove(key);
   editor.apply();
  }
+ // Restored background tabs stay unloaded until first selected; they are re-saved verbatim meanwhile.
+ void loadLazy(WebView w){
+  org.json.JSONObject tab=lazyTabs.remove(w);if(tab==null)return;
+  String url=tab.optString("url","");if(!allowed(url))return;
+  boolean restored=false;String encoded=tab.optString("history","");
+  if(!encoded.isEmpty()){
+   try{
+    byte[] raw=android.util.Base64.decode(encoded,android.util.Base64.DEFAULT);
+    Parcel parcel=Parcel.obtain();
+    try{
+     parcel.unmarshall(raw,0,raw.length);parcel.setDataPosition(0);
+     Bundle history=parcel.readBundle(getClassLoader());
+     if(history!=null&&w.restoreState(history)!=null)restored=true;
+    }finally{parcel.recycle();}
+   }catch(Exception ignored){}
+  }
+  int y=Math.max(0,tab.optInt("scrollY",0));
+  if(y>0)pendingScroll.put(w,y);
+  homeTabs.remove(w);if(!restored)w.loadUrl(url);
+ }
  void writeSession(){
   if(sessionClosed||restoringSession||tabs.isEmpty()||selected<0)return;
   long historyBudget=900000;
@@ -283,7 +304,9 @@ public class MainActivity extends Activity {
    state.put("version",1);state.put("selected",selected);
    state.put("engine",geckoActive&&!geckoIncognito?"gecko":"webview");
    if(geckoActive&&!geckoIncognito&&allowed(geckoAddress))state.put("geckoUrl",geckoAddress);
+   lazyTabs.keySet().retainAll(tabs);
    for(WebView w:tabs){
+    org.json.JSONObject saved=lazyTabs.get(w);if(saved!=null){items.put(saved);continue;}
     org.json.JSONObject tab=new org.json.JSONObject();
     String url=w.getUrl();boolean isHome=homeTabs.contains(w)||!allowed(url);
     tab.put("home",isHome);tab.put("scrollY",w.getScrollY());
@@ -327,21 +350,7 @@ public class MainActivity extends Activity {
     if(tab.optBoolean("home",false))continue;
     String url=tab.optString("url","");
     if(!allowed(url))continue;
-    String encoded=tab.optString("history","");boolean restored=false;
-    if(!encoded.isEmpty()){
-     try{
-      byte[] raw=android.util.Base64.decode(encoded,android.util.Base64.DEFAULT);
-      Parcel parcel=Parcel.obtain();
-      try{
-       parcel.unmarshall(raw,0,raw.length);parcel.setDataPosition(0);
-       Bundle history=parcel.readBundle(getClassLoader());
-       if(history!=null&&w.restoreState(history)!=null)restored=true;
-      }finally{parcel.recycle();}
-     }catch(Exception ignored){}
-    }
-    int y=Math.max(0,tab.optInt("scrollY",0));
-    if(y>0)pendingScroll.put(w,y);
-    homeTabs.remove(w);if(!restored)w.loadUrl(url);
+    homeTabs.remove(w);lazyTabs.put(w,tab);
    }
    if(tabs.isEmpty())return false;
    show(active);
@@ -541,14 +550,14 @@ public class MainActivity extends Activity {
   }
  }
  void downloadPage(String url,String disposition,String mime){if(!allowed(url)){Toast.makeText(this,"Unsupported download address",Toast.LENGTH_SHORT).show();return;}String name=URLUtil.guessFileName(url,disposition,mime).replaceAll("[^a-zA-Z0-9._ -]","_");if(name.isEmpty()||name.equals(".")||name.equals(".."))name="download";final String filename=name;new AlertDialog.Builder(this).setTitle("Download file?").setMessage(filename+"\n"+Uri.parse(url).getHost()).setNegativeButton("Cancel",null).setPositiveButton("Parallel (4)",(d,i)->ParallelDownload.start(this,url,filename,()->standardDownload(url,filename))).setNeutralButton("Standard",(d,i)->standardDownload(url,filename)).show();}
- void standardDownload(String url,String filename){try{android.app.DownloadManager.Request req=new android.app.DownloadManager.Request(Uri.parse(url));req.setTitle(filename);req.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,filename);long downloadId=((android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(req);rememberDownload(downloadId);getPreferences(0).edit().putString("download_url_"+downloadId,url).putString("download_name_"+downloadId,filename).apply();ParallelDownload.State old=ParallelDownload.snapshot();if(old!=null&&old.finished&&!old.success&&url.equals(old.url))old.status="Parallel failed · standard download queued";Toast.makeText(this,"Download queued · swipe up from the bottom toolbar for status",Toast.LENGTH_LONG).show();}catch(Exception e){ParallelDownload.State old=ParallelDownload.snapshot();if(old!=null&&url.equals(old.url)&&old.finished&&!old.success)old.status="Standard download could not be queued · tap Retry";Toast.makeText(this,"Unable to queue download",Toast.LENGTH_SHORT).show();}}
+ void standardDownload(String url,String filename){try{android.app.DownloadManager.Request req=new android.app.DownloadManager.Request(Uri.parse(url));req.setTitle(filename);req.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,filename);long downloadId=((android.app.DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(req);rememberDownload(downloadId);ParallelDownload.State old=ParallelDownload.snapshot();if(old!=null&&old.finished&&!old.success&&url.equals(old.url))old.status="Parallel failed · standard download queued";Toast.makeText(this,"Download queued · swipe up from the bottom toolbar for status",Toast.LENGTH_LONG).show();}catch(Exception e){ParallelDownload.State old=ParallelDownload.snapshot();if(old!=null&&url.equals(old.url)&&old.finished&&!old.success)old.status="Standard download could not be queued · tap Retry";Toast.makeText(this,"Unable to queue download",Toast.LENGTH_SHORT).show();}}
 
  // Standard download IDs survive app restarts; the system owns their transfer state.
  void rememberDownload(long id){
   ArrayList<String> ids=new ArrayList<>();ids.add(Long.toString(id));
   for(String value:getPreferences(0).getString("download_ids","").split(",")){
    if(value.isEmpty()||value.equals(Long.toString(id)))continue;
-   if(ids.size()<20)ids.add(value);else getPreferences(0).edit().remove("download_url_"+value).remove("download_name_"+value).apply();
+   if(ids.size()<20)ids.add(value);
   }
   getPreferences(0).edit().putString("download_ids",android.text.TextUtils.join(",",ids)).apply();
  }
@@ -635,8 +644,9 @@ public class MainActivity extends Activity {
     boolean active=status==android.app.DownloadManager.STATUS_RUNNING||status==android.app.DownloadManager.STATUS_PAUSED||status==android.app.DownloadManager.STATUS_PENDING;
     downloadRow(list,name,description,percentage,active?()->manager.remove(id):null);
     if(status==android.app.DownloadManager.STATUS_FAILED){
-     String retryUrl=getPreferences(0).getString("download_url_"+id,"");
-     String retryName=getPreferences(0).getString("download_name_"+id,name);
+     int uriColumn=cursor.getColumnIndex(android.app.DownloadManager.COLUMN_URI);
+     String retryUrl=uriColumn>=0?cursor.getString(uriColumn):"";
+     String retryName=name;
      if(allowed(retryUrl)){
       downloadAction(list,"Retry standard download",()->standardDownload(retryUrl,retryName));
       downloadAction(list,"Restart parallel download",()->ParallelDownload.start(this,retryUrl,retryName,()->standardDownload(retryUrl,retryName)));
@@ -710,7 +720,7 @@ public class MainActivity extends Activity {
  void locationPermission(WebView w,String origin,GeolocationPermissions.Callback cb){if(pendingMedia!=null||pendingLocation!=null||!secureOrigin(w,origin)||getPreferences(0).getInt("site_location",0)==1){cb.invoke(origin,false,false);return;}pendingLocation=cb;locationOrigin=origin;permissionTab=w;Runnable grantLocation=()->{if(checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)==android.content.pm.PackageManager.PERMISSION_GRANTED)finishLocation(true);else requestPermissions(new String[]{android.Manifest.permission.ACCESS_COARSE_LOCATION},42);};if(getPreferences(0).getInt("site_location",0)==2){grantLocation.run();return;}new AlertDialog.Builder(this).setTitle("Location permission").setMessage(Uri.parse(origin).getHost()+" requests approximate location. Allow for this request?").setNegativeButton("Deny",(d,i)->finishLocation(false)).setOnCancelListener(d->finishLocation(false)).setPositiveButton("Allow",(d,i)->grantLocation.run()).show();}
  void finishLocation(boolean allow){GeolocationPermissions.Callback cb=pendingLocation;pendingLocation=null;if(cb!=null)cb.invoke(locationOrigin,allow&&secureOrigin(permissionTab,locationOrigin),false);}
  @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){super.onRequestPermissionsResult(code,permissions,results);boolean ok=results.length>0;for(int result:results)ok&=result==android.content.pm.PackageManager.PERMISSION_GRANTED;if(code==HomeWeather.LOCATION_REQUEST){if(homeWeather!=null)homeWeather.onPermissionResult(ok);return;}if(code==41)finishMedia(ok);if(code==42)finishLocation(ok);if(code==43){org.mozilla.geckoview.GeckoSession.PermissionDelegate.Callback cb=geckoAndroidCallback;geckoAndroidCallback=null;if(cb!=null){if(ok&&geckoActive)cb.grant();else cb.reject();}}}
- void show(int i){if(geckoActive)closeGecko();if(selected>=0&&selected<tabs.size())tabs.get(selected).onPause();hideHome();content.removeAllViews();selected=i;current().onResume();content.addView(current(),new FrameLayout.LayoutParams(-1,-1));address.setText(allowed(current().getUrl())?current().getUrl():"");count.setContentDescription("Switch tabs, "+tabs.size()+" open");count.invalidate();back.setEnabled(current().canGoBack());forward.setEnabled(current().canGoForward());refreshTabletTabs();if(homeTabs.contains(current()))showHome(false);saveSession();}
+ void show(int i){if(geckoActive)closeGecko();if(selected>=0&&selected<tabs.size())tabs.get(selected).onPause();hideHome();content.removeAllViews();selected=i;loadLazy(current());current().onResume();content.addView(current(),new FrameLayout.LayoutParams(-1,-1));address.setText(allowed(current().getUrl())?current().getUrl():"");count.setContentDescription("Switch tabs, "+tabs.size()+" open");count.invalidate();back.setEnabled(current().canGoBack());forward.setEnabled(current().canGoForward());refreshTabletTabs();if(homeTabs.contains(current()))showHome(false);saveSession();}
  void chooseTab(){String[] names=new String[tabs.size()];for(int i=0;i<names.length;i++)names[i]=tabs.get(i).getTitle()==null?"New tab":tabs.get(i).getTitle();new AlertDialog.Builder(this).setTitle("Tabs").setItems(names,(d,i)->show(i)).setPositiveButton("Archived tabs",(d,i)->archivedTabs()).setNeutralButton("Close current",(d,i)->{WebView w=current();content.removeAllViews();int previous=selected;tabs.remove(selected);w.destroy();selected=-1;if(tabs.isEmpty())newTab();else show(Math.min(previous,tabs.size()-1));}).show();}
  void archivedTabs(){String[] urls=new TreeSet<>(getPreferences(0).getStringSet("archived_tabs",Collections.emptySet())).toArray(new String[0]);new AlertDialog.Builder(this).setTitle("Archived tabs").setItems(urls,(d,i)->{if(tabs.size()>=20){Toast.makeText(this,"Close a tab before restoring",Toast.LENGTH_SHORT).show();return;}newTab();navigate(urls[i]);Set<String> set=new HashSet<>(Arrays.asList(urls));set.remove(urls[i]);getPreferences(0).edit().putStringSet("archived_tabs",set).apply();}).setPositiveButton("Archive current",(d,i)->{String url=current().getUrl();if(!allowed(url))return;Set<String> set=new HashSet<>(getPreferences(0).getStringSet("archived_tabs",Collections.emptySet()));set.add(url);getPreferences(0).edit().putStringSet("archived_tabs",set).apply();WebView w=current();content.removeAllViews();int index=selected;tabs.remove(index);selected=-1;w.destroy();if(tabs.isEmpty())newTab();else show(Math.min(index,tabs.size()-1));}).setNegativeButton("Close",null).show();}
  void save(){if(geckoIncognito){Toast.makeText(this,"Bookmarks are not saved in Incognito",Toast.LENGTH_SHORT).show();return;}String u=geckoActive?geckoAddress:current().getUrl();if(!allowed(u))return;Set<String> set=new HashSet<>(getPreferences(0).getStringSet("bookmarks",Collections.emptySet()));set.add(u);getPreferences(0).edit().putStringSet("bookmarks",set).apply();Toast.makeText(this,"Bookmark saved",Toast.LENGTH_SHORT).show();}

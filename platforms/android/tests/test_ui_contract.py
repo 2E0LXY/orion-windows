@@ -406,9 +406,22 @@ class OrionRecoveryContract(unittest.TestCase):
         self.assertIn("historyBudget", write)
 
     def test_restore_does_not_double_load_restored_history(self):
-        restore = method("boolean restoreSession()", "void originalHome()")
+        restore = method("void loadLazy(WebView w)", "void writeSession()")
         self.assertIn("w.restoreState(history)!=null)restored=true;", restore)
         self.assertIn("if(!restored)w.loadUrl(url);", restore)
+
+    def test_background_tabs_restore_lazily_and_are_saved_verbatim(self):
+        restore = method("boolean restoreSession()", "void originalHome()")
+        self.assertIn("lazyTabs.put(w,tab);", restore)
+        self.assertNotIn("w.loadUrl(url)", restore)
+        self.assertIn("selected=i;loadLazy(current());current().onResume();", SOURCE)
+        write = method("void writeSession()", "boolean restoreSession()")
+        self.assertIn("items.put(saved);continue;", write)
+
+    def test_download_urls_are_not_persisted_by_orion(self):
+        self.assertNotIn('putString("download_url_"', SOURCE)
+        self.assertNotIn('putString("download_url_"', self.PD)
+        self.assertIn("COLUMN_URI", SOURCE)
 
     def test_clear_browsing_data_removes_saved_session_and_download_urls(self):
         clear = method("void clearBrowsingData()", "void onBackPressed()")

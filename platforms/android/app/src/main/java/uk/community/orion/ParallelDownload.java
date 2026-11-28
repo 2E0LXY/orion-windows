@@ -37,7 +37,7 @@ final class ParallelDownload {
    long id=((DownloadManager)c.getSystemService(Context.DOWNLOAD_SERVICE)).enqueue(req);
    SharedPreferences prefs=c.getSharedPreferences(MainActivity.class.getName(),Context.MODE_PRIVATE);
    String ids=id+(prefs.getString("download_ids","").isEmpty()?"":","+prefs.getString("download_ids",""));
-   prefs.edit().putString("download_ids",ids).putString("download_url_"+id,url).putString("download_name_"+id,name).apply();
+   prefs.edit().putString("download_ids",ids).apply();
    transfer.status="Parallel failed · standard download queued";
   }catch(Exception e){transfer.status="Automatic fallback failed · retry manually";transfer.error=e.getClass().getSimpleName();}
  }
