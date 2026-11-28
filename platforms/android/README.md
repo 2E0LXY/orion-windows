@@ -1,15 +1,17 @@
 # Orion Community Browser for Android
 
+<img src="../../assets/orion-mark.svg" width="76" height="76" alt="Orion ring and star browser logo">
+
 Experimental **native Java** Android browser combining **Android System WebView** and **Mozilla GeckoView**. Community-developed from the Orion project; **not an official Kagi release**.
 
 **Android 8.0+ (API 26)** · **ARM64 development APKs** · **Draft [PR #3](https://github.com/2E0LXY/orion-windows/pull/3)** · [Root README](../../README.md) · [Android roadmap](ROADMAP.md)
 
 ## Download and install
 
-**[Latest Android APK build runs](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml)** — select the newest **successful** `Android prototype APK` run on `chatgpt/geckoview-home-splash`, open **Artifacts → orion-community-arm64-debug**, download the ZIP and extract `app-debug.apk`.
+**[Download the latest Orion Android ARM64 APK directly](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — a standalone APK file with **no ZIP extraction** after the first successful direct-release CI run. The [Actions history](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) shows source tests, Gradle compilation and release status.
 
-- The PR build is **not automatically published** to the stable [release shortcut](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk); that shortcut can be older.
-- Current test builds contain **arm64-v8a** GeckoView libraries. A universal APK can be compiled without the ARM64 Gradle property, but is not necessarily published as a test artifact.
+- A successful **push** build on the Android development branch publishes the direct APK to both a versioned GitHub prerelease and the [stable latest test link](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk). A PR validation run does **not** publish an installer.
+- Current direct test builds contain **arm64-v8a** GeckoView libraries. A universal APK can be built without the ARM64 Gradle flag but is not distributed by this workflow.
 - Test APKs use **debug signing** and have **not undergone a production security review**. A signing mismatch may prevent an in-place upgrade; uninstalling erases local app data. Export important browser data before changing signatures.
 - **Build success is not physical-device confirmation.** Live weather, location permissions, WebView DNS tunnelling and Incognito teardown require Android device testing.
 
@@ -116,7 +118,7 @@ gradle --no-daemon -PorionArm64=true assembleDebug
 
 Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`.
 
-**Verification levels:** GitHub Actions source contracts, Gradle compilation, ARM64 packaging, artifact checksum, and style checks are automated. **On-device install/launch, weather and location permission UX, Incognito isolation and teardown, VPN DNS routing/leaks, and complete GeckoView parity remain UNVERIFIED unless explicitly reported with real test evidence.** A draft PR build produces a workflow artifact, not a published release.
+**Verification levels:** GitHub Actions source contracts, Gradle compilation, ARM64 package inspection, SHA-256 checksum and style checks are automated. **On-device install/launch, weather and location permission UX, Incognito isolation and teardown, VPN DNS routing/leaks, and complete GeckoView parity remain UNVERIFIED unless explicitly reported with real test evidence.** Test-branch pushes publish direct GitHub Release APK assets after CI passes; PR-only runs do not publish a release.
 
 **Source and review:**
 
@@ -127,3 +129,12 @@ Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`.
 - [Source regression tests](tests/test_ui_contract.py) · [Android CI workflow](../../.github/workflows/android-prototype.yml) · [Roadmap](ROADMAP.md)
 
 Feedback: [Report an issue](https://github.com/2E0LXY/orion-windows/issues/new) with device/Android version, build run, engine, steps and screenshots **without passwords, session cookies or private browsing data**.
+
+
+### Branding, repository hygiene and downloads
+
+The [official symbol for new community development](../../assets/orion-mark.svg) has the same blue ring, pale orbital streak and star as the Android launcher [vector asset](app/src/main/res/drawable/orion_icon.xml). Use it for new Orion-branded pages and collateral. Legacy Windows/Linux upstream assets remain where required and are not removed as expendable build debris.
+
+The repository intentionally retains **source code, Android tests, the Android build recipe and platform-preservation materials**. No obsolete Android APK/ZIP files were tracked at audit time. Generated Gradle directories, local Android SDK settings, IDE caches, `.apk` and `.aab` outputs are now explicitly excluded by [.gitignore](../../.gitignore).
+
+**[Standalone ARM64 test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** · [matching SHA-256 checksum](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk.sha256) · [versioned prereleases](https://github.com/2E0LXY/orion-windows/releases). No unzip step is required. GitHub Release assets only become available following successful CI and release publishing; never treat a compile as device/security verification.

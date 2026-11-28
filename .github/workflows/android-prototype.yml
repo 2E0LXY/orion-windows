@@ -1,21 +1,26 @@
 name: Android prototype APK
 on:
   push:
-    branches: [chatgpt/android, chatgpt/drive-sync]
-    paths: ['platforms/android/**', '.github/workflows/android-prototype.yml']
+    branches: [chatgpt/geckoview-home-splash, chatgpt/android, chatgpt/drive-sync]
+    paths:
+      - 'platforms/android/**'
+      - '.github/workflows/android-prototype.yml'
+      - 'assets/orion-mark.svg'
   pull_request:
     branches: [chatgpt/drive-sync]
-    paths: ['platforms/android/**', '.github/workflows/android-prototype.yml']
+    paths: ['platforms/android/**', '.github/workflows/android-prototype.yml', 'assets/orion-mark.svg']
   workflow_dispatch:
 concurrency:
-  group: orion-android-test-apk
+  group: orion-android-test-apk-${{ github.ref }}
   cancel-in-progress: true
 permissions:
-  contents: write
+  contents: read
 jobs:
   apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -25,39 +30,45 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: UI regression contract tests
+      - name: Source-level UI and packaging regression tests
         working-directory: platforms/android
         run: python3 -m unittest discover -s tests -v
-      - name: Build debug APK
+      - name: Build ARM64 debug APK
         working-directory: platforms/android
         run: gradle --no-daemon -PorionArm64=true assembleDebug
-      - name: Verify APK output and SHA256
+      - name: Verify output, ABI and stage direct APK
         run: |
-          test -s platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          sha256sum platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          python3 -c "import zipfile; z=zipfile.ZipFile('platforms/android/app/build/outputs/apk/debug/app-debug.apk'); a={n.split('/')[1] for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')}; print('Native ABIs:',a); assert a == {'arm64-v8a'}"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: orion-community-arm64-debug
-          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-      - name: Publish experimental APK
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          tag="android-dev-${GITHUB_RUN_ID}"
-          gh release create "$tag" platforms/android/app/build/outputs/apk/debug/app-debug.apk --target "$GITHUB_SHA" --prerelease --title "Android experimental build ${GITHUB_RUN_ID}" --notes "Debug build; not security reviewed or device tested."
-      - name: Publish latest APK shortcut
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          tag="android-latest-test"
+          set -euo pipefail
           apk="platforms/android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          python3 - <<'PY_CHECK'
+          import zipfile
+          apk='platforms/android/app/build/outputs/apk/debug/app-debug.apk'
+          with zipfile.ZipFile(apk) as z:
+              abis={p.split('/')[1] for p in z.namelist() if p.startswith('lib/') and p.endswith('.so')}
+          print('Native ABIs:', sorted(abis))
+          assert abis=={'arm64-v8a'}, abis
+          PY_CHECK
           cp "$apk" Orion-Browser-Android-test.apk
-          if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --target "$GITHUB_SHA" --prerelease --title "Orion Android — latest test APK" --notes "Debug APK, not a production release."
+          test -s Orion-Browser-Android-test.apk
+          sha256sum Orion-Browser-Android-test.apk | tee Orion-Browser-Android-test.apk.sha256
+      # GitHub Actions artifacts download as ZIPs. Do not upload an Actions artifact:
+      # the user-facing, direct .apk download is a GitHub Release asset instead.
+      - name: Publish direct APK to versioned and latest test releases
+        if: github.event_name == 'push' && github.ref == 'refs/heads/chatgpt/geckoview-home-splash'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          dev_tag="android-dev-${GITHUB_RUN_ID}"
+          latest_tag="android-latest-test"
+          notes="Experimental ARM64 debug APK; commit ${GITHUB_SHA}; workflow ${GITHUB_RUN_ID}. Automated checks passed. Real-device privacy, DNS and install testing remain UNVERIFIED. Debug signing may vary across runs."
+          gh release create "$dev_tag" Orion-Browser-Android-test.apk Orion-Browser-Android-test.apk.sha256 \
+            --target "$GITHUB_SHA" --prerelease --title "Orion Android experimental ${GITHUB_RUN_ID}" --notes "$notes"
+          if ! gh release view "$latest_tag" >/dev/null 2>&1; then
+            gh release create "$latest_tag" --target "$GITHUB_SHA" --prerelease \
+              --title "Orion Android - latest test APK" --notes "$notes"
           fi
-          gh release upload "$tag" Orion-Browser-Android-test.apk --clobber
-          gh release edit "$tag" --notes "Latest successfully built debug APK. Git commit: $GITHUB_SHA; workflow run: $GITHUB_RUN_ID. Experimental; not device/security reviewed. Debug signing may require uninstall before upgrading."
+          gh release upload "$latest_tag" Orion-Browser-Android-test.apk Orion-Browser-Android-test.apk.sha256 --clobber
+          gh release edit "$latest_tag" --notes "$notes"
+          echo "Direct APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/${latest_tag}/Orion-Browser-Android-test.apk"

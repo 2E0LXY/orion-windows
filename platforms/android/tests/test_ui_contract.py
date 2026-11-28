@@ -78,7 +78,8 @@ class OrionUiContract(unittest.TestCase):
 
     def test_shared_native_home_weather_card(self):
         home = method("void showHome(boolean gecko)", "class GeckoMark")
-        self.assertIn("HomeWeather.attach(this,column)", home)
+        self.assertIn("HomeWeather.attach(this,weatherHost)", home)
+        self.assertIn("emblem.setImageResource(R.drawable.orion_icon)", home)
         self.assertIn('title.setText("Orion")', home)
         self.assertIn('powered.setText("Powered by GeckoView")', home)
         self.assertIn("homeWeather.dispose()", SOURCE)
@@ -188,6 +189,19 @@ class OrionUiContract(unittest.TestCase):
         self.assertNotIn('section(panel,"PRIVACY AND SECURITY")', settings)
         self.assertIn('securityPrivacy()', settings)
 
+    def test_canonical_orion_branding_and_direct_apk_release(self):
+        from pathlib import Path
+        icon=(APP/"app/src/main/res/drawable/orion_icon.xml").read_text(encoding="utf-8")
+        logo=(APP.parent.parent/"assets/orion-mark.svg").read_text(encoding="utf-8")
+        workflow=(APP.parent.parent/".github/workflows/android-prototype.yml").read_text(encoding="utf-8")
+        self.assertIn('android:pathData="M20,72 Q32,43 83,34"', icon)
+        self.assertIn('M20 72 Q32 43 83 34', logo)
+        self.assertIn('R.drawable.orion_icon', SOURCE)
+        self.assertIn('android:icon="@drawable/orion_icon"', MANIFEST)
+        self.assertIn('releases/download/android-latest-test/Orion-Browser-Android-test.apk', (APP/"README.md").read_text(encoding="utf-8"))
+        self.assertIn('gh release upload "$latest_tag" Orion-Browser-Android-test.apk Orion-Browser-Android-test.apk.sha256 --clobber', workflow)
+        self.assertNotIn('actions/upload-artifact@', workflow)
+
     def test_incognito_is_a_real_gecko_private_session_and_not_recorded(self):
         gecko = method("void openGecko()", "void closeGecko()")
         self.assertIn('new org.mozilla.geckoview.GeckoSessionSettings.Builder().usePrivateMode(incognito).build()', gecko)
@@ -205,7 +219,8 @@ class OrionUiContract(unittest.TestCase):
         bookmark = method("void save()", "void bookmarks()")
         self.assertIn('if(geckoIncognito)', bookmark)
         home = method("void showHome(boolean gecko)", "class GeckoMark")
-        self.assertIn('if(!geckoIncognito)homeWeather=HomeWeather.attach(this,column)', home)
+        self.assertIn('if(!geckoIncognito){', home)
+        self.assertIn('homeWeather=HomeWeather.attach(this,weatherHost);', home)
         self.assertIn('End Incognito session', home)
         self.assertIn('if(geckoIncognito){originalHome();return;}', SOURCE)
         self.assertIn('else homeTap();', SOURCE)

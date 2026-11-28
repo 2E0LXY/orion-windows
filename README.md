@@ -4,19 +4,21 @@ Open-source **Orion** work covering **Windows, Linux, and Android**. This reposi
 
 > **Release status:** Android is an **experimental debug APK**, Windows is a public-source build/recovery effort, and Linux is a preserved source snapshot. Features, build success, and security reviews are **different** things. Please see the platform-specific status below.
 
+<img src="assets/orion-mark.svg" width="76" height="76" alt="Orion blue ring, silver orbit and star symbol">
+
 ## Downloads — start here
 
-**[Latest Android ARM64 build runs](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml)** — open a successful Android prototype APK run, download its ARM64 artefact and extract the APK. [CI history](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) · [Draft PR #3](https://github.com/2E0LXY/orion-windows/pull/3). The stable release shortcut below may contain older code until the PR is merged and published.
+**[Download the latest Android ARM64 test APK directly](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — a single `.apk` file, **no ZIP to extract**. The test-branch CI publishes a versioned prerelease plus updates the stable test-download link after all automated checks pass. [Build history](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) · [Draft PR #3](https://github.com/2E0LXY/orion-windows/pull/3). The link is ready when the first new direct-release job succeeds.
 
 | Platform | Latest accessible download / source | Status |
 | --- | --- | --- |
-| **Android** | **[Download latest Orion Android test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** | Updated by eligible publishing-branch builds, not draft PR builds. **The stable link becomes available after its first successful publication.** |
+| **Android** | **[Download latest Orion Android test APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** | Published directly from successful `chatgpt/geckoview-home-splash` push builds; not a production-signed release. |
 | Android — versioned | [All Orion releases](https://github.com/2E0LXY/orion-windows/releases) · [Android build runs](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml) | Earlier working APKs remain available for comparison and rollback |
 | Android — previous verified | [Download verified test APK (build 46091875384)](https://github.com/2E0LXY/orion-windows/releases/download/android-dev-46091875384/app-debug.apk) | Versioned debug build; **does not contain every subsequent import change** |
 | **Windows** | [Windows branch and source](https://github.com/2E0LXY/orion-windows) · [Public WebKit build PR](https://github.com/2E0LXY/orion-windows/pull/2) | No verified community Windows installer available yet |
 | **Linux** | [Linux snapshot branch](https://github.com/2E0LXY/orion-windows/tree/archive/orion-linux) · [Cross-platform branch](https://github.com/2E0LXY/orion-windows/tree/chatgpt/cross-platform) | Source snapshot only; no verified Linux package available |
 
-**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; test package includes Android System WebView and Mozilla GeckoView. CI's ARM64 artifacts package **arm64-v8a only** and ZIP sizes vary between runs. Universal packaging remains available locally. Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
+**Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; test package includes Android System WebView and Mozilla GeckoView. Direct Android test releases package **arm64-v8a only** as standalone APK assets. Universal packaging remains available locally. Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
 
 **Latest development branch:** [`chatgpt/geckoview-home-splash`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/geckoview-home-splash) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
 
@@ -120,7 +122,7 @@ gradle --no-daemon -PorionArm64=true assembleDebug
 # Omit -PorionArm64=true for universal packaging
 ```
 
-Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`. This is an experimental debug APK, not a signed distribution release. Eligible development-branch push builds publish releases; draft PR builds upload test artefacts only.
+Output: `platforms/android/app/build/outputs/apk/debug/app-debug.apk`. This is an experimental debug APK, not a signed distribution release. Push builds of the Android development branch publish direct APK GitHub Releases; PR checks validate builds but do not publish user-downloadable ZIP artifacts.
 
 See the [Android roadmap](platforms/android/ROADMAP.md), [Android APK workflow](.github/workflows/android-prototype.yml), and [Android source tree](platforms/android/app/src/main/java/uk/community/orion/).
 
@@ -148,7 +150,7 @@ Design goals: user-authorised sharing of links, bookmarks and settings between A
 
 ## Releases, testing and support
 
-- **[Latest Android APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — stable shortcut, activated by first successful publication of the new workflow.
+- **[Latest Android APK](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk)** — direct download with no ZIP extraction after a successful new CI publication.
 - **[All downloadable releases](https://github.com/2E0LXY/orion-windows/releases)** — versioned Android builds and any future installers.
 - **[Android Actions](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml)** — status, compile errors and build artefacts.
 - **[Connect tests](https://github.com/2E0LXY/orion-windows/actions/workflows/orion-connect.yml)**.
@@ -486,3 +488,12 @@ CEF is provisioned automatically by the `OrionCefSetup` project, which runs
 - `docs/` — manually edited documentation.
 - `docs_ai/` — generated/managed notes (architecture, web extensions, profile
   storage, CEF performance, WebDriver design).
+
+
+### Canonical Orion brand and direct APK publishing (November 2026)
+
+The canonical **Orion** identity is the blue circular ring, pale orbit and white star shown in the original Android launcher. Source: [scalable Orion symbol](assets/orion-mark.svg); Android uses the matching [vector launcher drawable](platforms/android/app/src/main/res/drawable/orion_icon.xml). Windows and Linux upstream assets are retained for build and licence compatibility; this independent community artwork is used for new Orion promotional materials and pages. The previous custom startup overlay was removed; the operating system can show its own icon-based splash.
+
+[**Download Android test APK directly**](https://github.com/2E0LXY/orion-windows/releases/download/android-latest-test/Orion-Browser-Android-test.apk). The Android workflow now tests and builds ARM64, verifies its native libraries, publishes a **versioned prerelease** and updates the **same direct .apk link** plus a SHA-256 checksum file. Unlike GitHub Actions artifacts, Release assets do **not** require ZIP extraction. No build output, debug APK, copied archive or IDE cache is tracked in the repository. Check the [CI workflow](.github/workflows/android-prototype.yml) for publishing conditions.
+
+**Release gate:** automated tests and compilation must pass before publication. This is an **experimental debug build**, not a device-certified or production-signed release. Real-device browsing/privacy/DNS tests remain a separate gate. A changed debug signature may require uninstall/reinstall, which deletes local browser data.

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" role="img" aria-labelledby="orion-symbol-title">
+  <title id="orion-symbol-title">Orion browser symbol</title>
+  <circle cx="54" cy="54" r="25" fill="none" stroke="#8AB4FF" stroke-width="8"/>
+  <path d="M20 72 Q32 43 83 34" fill="none" stroke="#DCEBFF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M79 22 L82 31 L91 34 L82 37 L79 46 L76 37 L67 34 L76 31Z" fill="#FFFFFF"/>
+</svg>
