@@ -20,9 +20,23 @@ Open-source **Orion** work covering **Windows, Linux, and Android**. This reposi
 
 **Android requirements:** Android 8.0+ (API 26); **compiled against API 36**; test package includes Android System WebView and Mozilla GeckoView. Direct Android test releases package **arm64-v8a only** as standalone APK assets. Universal packaging remains available locally. Test APKs are **not security-reviewed or production-signed**. CI's debug signing key may change between builds, so an update might require uninstalling the earlier version and losing local app data. **Back up bookmarks and credentials before uninstalling.** Never assume imported credentials or cookies survive uninstall.
 
-**Latest development branch:** [`chatgpt/geckoview-home-splash`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/geckoview-home-splash) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
+**Latest AI-sharing development branch:** [`chatgpt/default-browser-ai-connect`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/default-browser-ai-connect) · **last published Android APK branch:** [`chatgpt/geckoview-home-splash`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/geckoview-home-splash) · [GitHub Actions overview](https://github.com/2E0LXY/orion-windows/actions) · [Report bugs](https://github.com/2E0LXY/orion-windows/issues).
 
 **[Android setup, menu map and complete feature guide](platforms/android/README.md)** · [Android implementation roadmap](platforms/android/ROADMAP.md) · [Source-level regression tests](platforms/android/tests/test_ui_contract.py). The Android guide documents how to use each new control, its engine scope, verification status and known limitations.
+
+## Android default browser and AI sharing — development update (28 November 2026)
+
+The current Android development work is in **[PR #4](https://github.com/2E0LXY/orion-windows/pull/4)** on branch **[`chatgpt/default-browser-ai-connect`](https://github.com/2E0LXY/orion-windows/tree/chatgpt/default-browser-ai-connect)**. This remains an **experimental draft**, separate from the last published direct-download APK on `chatgpt/geckoview-home-splash`.
+
+- **Set as default browser:** the Android system browser-role prompt, HTTP/HTTPS link handlers and external-link navigation are implemented in source; users make the final choice in Android Settings.
+- **Share a page with an AI app:** the Orion privacy hub offers Android's share sheet with the current normal tab's title and URL; Incognito pages are excluded.
+- **Orion AI Connect (local MCP prototype):** an opt-in, loopback-only connection at `127.0.0.1:18796/mcp`, with a temporary bearer token, 15-minute expiry, a persistent sharing indicator, explicit approval for every tool request and immediate disconnect. Supports listing tabs, title/URL information, HTTPS navigation, back/forward/reload, plus experimental WebView page text, scroll, guarded click and guarded typing.
+- **Privacy boundaries:** no Incognito sharing, cookies, stored credentials or password extraction. Screenshots, downloads and automated form submission are not available through AI Connect. GeckoView automation does not yet match WebView.
+- **Important:** a local MCP interface is **not** a working automatic ChatGPT, Claude or Gemini remote-control connection. Those services need a compatible client/secure relay and separate integration. A page can be sent to an installed AI app using Android's share sheet without giving that app browser control.
+
+The latest **development validation** can be followed in [Android Actions](https://github.com/2E0LXY/orion-windows/actions/workflows/android-prototype.yml). Source tests, compilation, static lint and a physically installed APK are **different verification steps**. The feature build and on-device security checks must pass before advertising AI Connect as stable or updating a public test-download link.
+
+See the [detailed Android guide](platforms/android/README.md) for capabilities and limitations.
 
 ## Android — feature and implementation status
 
