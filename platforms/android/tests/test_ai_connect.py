@@ -13,7 +13,8 @@ class AiConnectContracts(unittest.TestCase):
         self.assertIn('private volatile boolean running;',BRIDGE)
         self.assertNotIn('"0.0.0.0"',BRIDGE)
     def test_authorisation_limits(self):
-        self.assertIn('MessageDigest.isEqual(a,b)',BRIDGE)\n        self.assertIn('readHeaderLine(input)',BRIDGE)
+        self.assertIn('MessageDigest.isEqual(a,b)',BRIDGE)
+        self.assertIn('readHeaderLine(input)',BRIDGE)
         self.assertIn('System.currentTimeMillis()>deadline',BRIDGE)
         self.assertIn('if(origin!=null',BRIDGE)
         self.assertIn('length>MAX_BODY',BRIDGE)
