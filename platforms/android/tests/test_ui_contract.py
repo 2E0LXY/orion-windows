@@ -4,6 +4,8 @@ import unittest
 
 APP = pathlib.Path(__file__).resolve().parents[1]
 SOURCE = (APP / "app/src/main/java/uk/community/orion/MainActivity.java").read_text(encoding="utf-8")
+DNS = (APP / "app/src/main/java/uk/community/orion/DnsSettings.java").read_text(encoding="utf-8")
+MANIFEST = (APP / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
 
 
 def method(name, next_name):
@@ -13,6 +15,36 @@ def method(name, next_name):
 
 
 class OrionUiContract(unittest.TestCase):
+    def test_cloudflare_is_gecko_default_and_applied(self):
+        self.assertIn('PREF_PROVIDER="dns_provider"', DNS)
+        self.assertIn('prefs.getInt(PREF_PROVIDER,1)', DNS)
+        self.assertIn('CLOUDFLARE="https://cloudflare-dns.com/dns-query"', DNS)
+        self.assertIn('setTrustedRecursiveResolverUri(url)', DNS)
+        self.assertIn('setTrustedRecursiveResolverMode(', DNS)
+        self.assertIn('DnsSettings.applyToGecko(geckoRuntime,getPreferences(0));', SOURCE)
+
+    def test_webview_dns_is_honest_and_android_managed(self):
+        self.assertIn('WebView follows Android settings', DNS)
+        self.assertIn('PRIVATE_DNS_SETTINGS', DNS)
+        self.assertIn('per-WebView DNS are not available', DNS)
+        self.assertIn('ACCESS_NETWORK_STATE', MANIFEST)
+
+    def test_ipv4_and_ipv6_are_actually_probed(self):
+        self.assertIn('LinkProperties', DNS)
+        self.assertIn('Inet6Address', DNS)
+        self.assertIn('probe("1.1.1.1")', DNS)
+        self.assertIn('probe("2606:4700:4700::1111")', DNS)
+        self.assertIn('queryDns(endpoint,1)', DNS)
+        self.assertIn('queryDns(endpoint,28)', DNS)
+        self.assertIn('application/dns-message', DNS)
+
+    def test_custom_secure_dns_rejects_insecure_protocols(self):
+        self.assertIn('"https".equalsIgnoreCase(u.getScheme())', DNS)
+        self.assertIn('u.getUserInfo()==null', DNS)
+        self.assertIn('validDoh(url)', DNS)
+        self.assertIn('TRR_MODE_ONLY', DNS)
+        self.assertIn('TRR_MODE_FIRST', DNS)
+
     def test_startup_not_restricted_to_first_activity_state(self):
         oncreate = method("public void onCreate(Bundle b)", "String installedVersion()")
         self.assertIn("newTab();showStartup();", oncreate)
