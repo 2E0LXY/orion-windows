@@ -52,36 +52,40 @@ public class MainActivity extends Activity {
     root.requestApplyInsets();
    }
   };
-  if(!android.animation.ValueAnimator.areAnimatorsEnabled()){
-   splash.phase=1f;splash.invalidate();splash.postDelayed(finish,350);
-   return;
-  }
-  android.animation.ValueAnimator animator=android.animation.ValueAnimator.ofFloat(0f,1f);
-  animator.setDuration(3200L);
-  animator.setInterpolator(new android.view.animation.LinearInterpolator());
-  animator.addUpdateListener(a->{splash.phase=(Float)a.getAnimatedValue();splash.invalidate();});
-  animator.addListener(new android.animation.AnimatorListenerAdapter(){
-   @Override public void onAnimationEnd(android.animation.Animator a){
-    if(splash.getParent()==host)splash.animate().alpha(0f).setDuration(260L).withEndAction(finish).start();
-   }
-  });
-  // Guard against a device never dispatching the first animation frame.
-  splash.postDelayed(()->{if(splash.getParent()==host&&!animator.isStarted())animator.start();},300L);
-  // post() runs after attachment/layout even when the first frame has not been drawn yet.
-  splash.post(()->{if(!isFinishing()&&!isDestroyed()&&splash.getParent()==host&&!animator.isStarted())animator.start();});
+  final boolean motion=android.animation.ValueAnimator.areAnimatorsEnabled();
+  // Start the clock only after the splash has actually drawn its first frame.
+  splash.firstFrame=()->{
+   final long started=android.os.SystemClock.uptimeMillis();
+   final long duration=motion?5000L:1800L;
+   Runnable frame=new Runnable(){
+    @Override public void run(){
+     if(isFinishing()||isDestroyed()||!splash.isAttachedToWindow()||splash.getParent()!=host)return;
+     long elapsed=android.os.SystemClock.uptimeMillis()-started;
+     splash.phase=motion?Math.min(1f,elapsed/4500f):1f;
+     if(motion)splash.setAlpha(elapsed>4500L?Math.max(0f,(5000L-elapsed)/500f):1f);
+     splash.invalidate();
+     if(elapsed>=duration)finish.run();else splash.postOnAnimation(this);
+    }
+   };
+   splash.postOnAnimation(frame);
+  };
+
  }
  class StartupView extends View {
   float phase=0f;
+  Runnable firstFrame;
   final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
   final String version=installedVersion();
   StartupView(){super(MainActivity.this);}
   @Override protected void onDraw(Canvas c){
    super.onDraw(c);
+   if(firstFrame!=null){Runnable start=firstFrame;firstFrame=null;post(start);}
    c.drawColor(0xff171d28);
-   float x=getWidth()/2f,y=getHeight()*.41f,r=dp(43),angle=(float)(-Math.PI/2+phase*Math.PI*3.5);
+   float x=getWidth()/2f,y=getHeight()*.41f,r=dp(43),angle=(float)(-Math.PI/2+phase*Math.PI*6);
    p.setShader(null);p.setAlpha(255);p.setStyle(Paint.Style.FILL);
    p.setColor(0xff26354e);c.drawCircle(x,y,r,p);
    p.setColor(0xff8ab4ff);c.drawCircle(x,y,r*.75f,p);
+   p.setColor(0xffe4efff);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));p.setTextSize(dp(35));c.drawText("O",x,y-(p.ascent()+p.descent())/2f,p);
    p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);
    p.setStrokeWidth(dp(4));p.setColor(0xffdcebff);
    c.drawArc(x-r,y-r,x+r,y+r,(float)Math.toDegrees(angle),74,false,p);
