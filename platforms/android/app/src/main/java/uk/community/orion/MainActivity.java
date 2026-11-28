@@ -517,32 +517,94 @@ public class MainActivity extends Activity {
  void loadWebUrl(WebView w,String url){homeTabs.remove(w);if(!geckoActive&&w==current())hideHome();w.loadUrl(url);}
  
  Button geckoButton(String label,String description,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(18);b.setContentDescription(description);b.setTextColor(0xfff1f5f9);b.setMinHeight(dp(48));b.setMinWidth(dp(48));b.setPadding(0,0,0,0);b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,10)));b.setOnClickListener(v->action.run());return b;}
+  // Persist menu visibility by stable action ID, never by position.
+ static final String[] MENU_IDS={"new_tab","engine","reload","find","bookmark","bookmarks","reading","history","import","share","reader","print","downloads","install","settings"};
+ static final String[] MENU_TITLES={"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Install and create shortcut","Settings"};
+ boolean menuShown(String id){return getPreferences(0).getBoolean("menu_item_"+id,true);}
+ void customiseMenu(){
+  final String[] names=MENU_TITLES.clone();
+  final boolean[] enabled=new boolean[MENU_IDS.length];
+  for(int i=0;i<enabled.length;i++)enabled[i]=menuShown(MENU_IDS[i]);
+  new AlertDialog.Builder(this).setTitle("Customise Orion menu")
+    .setMultiChoiceItems(names,enabled,(d,i,checked)->enabled[i]=checked)
+    .setPositiveButton("Save",(d,w)->{
+      android.content.SharedPreferences.Editor edits=getPreferences(0).edit();
+      for(int i=0;i<MENU_IDS.length;i++)edits.putBoolean("menu_item_"+MENU_IDS[i],enabled[i]);
+      edits.apply();Toast.makeText(this,"Menu choices saved",Toast.LENGTH_SHORT).show();
+    })
+    .setNeutralButton("Reset",(d,w)->{
+      android.content.SharedPreferences.Editor edits=getPreferences(0).edit();
+      for(String id:MENU_IDS)edits.remove("menu_item_"+id);
+      edits.apply();Toast.makeText(this,"Default menu restored",Toast.LENGTH_SHORT).show();
+    }).setNegativeButton("Cancel",null).show();
+ }
+ void installOrShortcut(){
+  if(geckoIncognito){Toast.makeText(this,"Shortcuts are unavailable in Incognito",Toast.LENGTH_LONG).show();return;}
+  String url=geckoActive?geckoAddress:homeOverlay!=null?null:current().getUrl();
+  if(!allowed(url)){Toast.makeText(this,"Open a website to add a shortcut",Toast.LENGTH_LONG).show();return;}
+  String title=geckoActive?Uri.parse(url).getHost():current().getTitle();
+  if(title==null||title.trim().isEmpty())title=Uri.parse(url).getHost();
+  final String label=title.substring(0,Math.min(40,title.length()));
+  final String target=url;
+  new AlertDialog.Builder(this).setTitle("Add website to Home screen")
+    .setMessage("Create a launcher shortcut for "+label+"?\n\nThis opens the website in Orion. Installing websites as standalone apps is not supported yet.")
+    .setNegativeButton("Cancel",null)
+    .setPositiveButton("Create shortcut",(d,w)->{
+      if(android.os.Build.VERSION.SDK_INT<26){Toast.makeText(this,"Requires Android 8 or newer",Toast.LENGTH_LONG).show();return;}
+      android.content.pm.ShortcutManager manager=getSystemService(android.content.pm.ShortcutManager.class);
+      if(manager==null||!manager.isRequestPinShortcutSupported()){
+        Toast.makeText(this,"Your Home screen launcher does not support pinned shortcuts",Toast.LENGTH_LONG).show();return;
+      }
+      Intent open=new Intent(Intent.ACTION_VIEW,Uri.parse(target),this,MainActivity.class);
+      open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      String id="orion_site_"+Integer.toHexString(target.hashCode());
+      android.content.pm.ShortcutInfo shortcut=new android.content.pm.ShortcutInfo.Builder(this,id)
+       .setShortLabel(label)
+       .setLongLabel(label)
+       .setIcon(android.graphics.drawable.Icon.createWithResource(this,R.mipmap.ic_launcher))
+       .setIntent(open).build();
+      try{
+       if(!manager.requestPinShortcut(shortcut,null))
+        Toast.makeText(this,"Shortcut request was not accepted by your launcher",Toast.LENGTH_LONG).show();
+      }catch(Exception e){Toast.makeText(this,"Could not request Home screen shortcut",Toast.LENGTH_LONG).show();}
+    }).show();
+ }
  void menu(){
- Dialog dialog=new Dialog(this);LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(16),dp(12),dp(16),dp(16));panel.setBackground(round(0xff293344,20));
- TextView title=new TextView(this);title.setText(geckoIncognito?"Orion · Incognito":geckoActive?"Orion · GeckoView":"Orion · WebView");title.setTextSize(22);title.setTextColor(0xfff1f5f9);title.setPadding(dp(8),dp(8),0,dp(12));panel.addView(title);
- ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
- String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Settings"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Settings"};
- Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->refreshOrReload(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->shareOrionIfHome(),()->showDownloadPanel(),()->importBrowserData(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->refreshOrReload(),()->findPage(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->shareOrionIfHome(),()->readerMode(),()->printPage(),()->showDownloadPanel(),()->settings()};
- if(homeOverlay!=null){
-   if(geckoActive){labels[2]="Refresh start page";labels[3]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark";labels[7]="Share Orion website";}
-   else{labels[2]="Refresh start page";labels[4]="Add bookmark";labels[9]="Share Orion website";}
+  Dialog dialog=new Dialog(this);
+  LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);
+  panel.setPadding(dp(16),dp(12),dp(16),dp(16));panel.setBackground(round(0xff293344,20));
+  TextView title=new TextView(this);title.setText(geckoIncognito?"Orion · Incognito":geckoActive?"Orion · GeckoView":"Orion · WebView");
+  title.setTextSize(22);title.setTextColor(0xfff1f5f9);title.setPadding(dp(8),dp(8),0,dp(12));panel.addView(title);
+  ScrollView scroll=new ScrollView(this);LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);
+  scroll.addView(actions);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+  String[] labels=geckoActive?new String[]{"New WebView tab","Return to WebView","Reload page","Save bookmark","Bookmarks","Reading list","History","Share link","Downloads","Import browser data","Install and create shortcut","Settings"}:new String[]{"New tab","Open in GeckoView","Reload page","Find in page","Save bookmark","Bookmarks","Reading list","History","Import browser data","Share link","Reader mode","Print / Save PDF","Downloads","Install and create shortcut","Settings"};
+  String[] ids=geckoActive?new String[]{"new_tab","engine","reload","bookmark","bookmarks","reading","history","share","downloads","import","install","settings"}:MENU_IDS;
+  Runnable[] tasks=geckoActive?new Runnable[]{()->{closeGecko();newTab();},()->closeGecko(),()->refreshOrReload(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->shareOrionIfHome(),()->showDownloadPanel(),()->importBrowserData(),()->installOrShortcut(),()->settings()}:new Runnable[]{()->newTab(),()->openGecko(),()->refreshOrReload(),()->findPage(),()->saveOrAddBookmark(),()->bookmarks(),()->readingList(),()->historyLibrary(),()->importBrowserData(),()->shareOrionIfHome(),()->readerMode(),()->printPage(),()->showDownloadPanel(),()->installOrShortcut(),()->settings()};
+  if(homeOverlay!=null){
+    if(geckoActive){labels[2]="Refresh start page";labels[3]=geckoIncognito?"Save bookmark · Unavailable":"Add bookmark";labels[7]="Share Orion website";}
+    else{labels[2]="Refresh start page";labels[4]="Add bookmark";labels[9]="Share Orion website";}
   }
   boolean canUsePage=homeOverlay==null&&allowed(geckoActive?geckoAddress:current().getUrl());
   for(int i=0;i<labels.length;i++){
-   final Runnable task=tasks[i];
-   boolean requiresPage=!geckoActive&&(i==3||i==10||i==11);
-   boolean unavailable=(requiresPage&&!canUsePage)||(geckoIncognito&&geckoActive&&(i==3||i==9));
-   Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
-   button.setTextColor(unavailable?0xff919bab:0xfff1f5f9);
-   button.setTextSize(16);button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
-   button.setPadding(dp(16),0,dp(16),0);
-   button.setEnabled(!unavailable);
-   button.setContentDescription(labels[i]+(unavailable?", unavailable":""));
-   button.setBackground(unavailable?round(0xff293344,12):new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,12)));
-   actions.addView(button,new LinearLayout.LayoutParams(-1,dp(48)));
-   if(!unavailable)button.setOnClickListener(v->{dialog.dismiss();task.run();});
+    if(!menuShown(ids[i]))continue;
+    final Runnable task=tasks[i];
+    boolean requiresPage=ids[i].equals("find")||ids[i].equals("reader")||ids[i].equals("print")||ids[i].equals("install");
+    boolean unavailable=(requiresPage&&!canUsePage)||(geckoIncognito&&(ids[i].equals("bookmark")||ids[i].equals("import")||ids[i].equals("install")));
+    Button button=new Button(this);button.setAllCaps(false);button.setText(labels[i]);
+    button.setTextColor(unavailable?0xff919bab:0xfff1f5f9);button.setTextSize(16);
+    button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);button.setPadding(dp(16),0,dp(16),0);
+    button.setEnabled(!unavailable);button.setContentDescription(labels[i]+(unavailable?", unavailable":""));
+    button.setBackground(unavailable?round(0xff293344,12):new RippleDrawable(ColorStateList.valueOf(0x338ab4ff),null,round(0xffffffff,12)));
+    actions.addView(button,new LinearLayout.LayoutParams(-1,dp(48)));
+    if(!unavailable)button.setOnClickListener(v->{dialog.dismiss();task.run();});
   }
- dialog.setContentView(panel);dialog.show();Window win=dialog.getWindow();win.setBackgroundDrawableResource(android.R.color.transparent);win.setGravity(Gravity.BOTTOM);win.setLayout(-1,Math.min(dp(560),(int)(getResources().getDisplayMetrics().heightPixels*.80f)));
+  Button customise=new Button(this);customise.setText("Customise menu");customise.setAllCaps(false);
+  customise.setTextSize(16);customise.setTextColor(0xfff1f5f9);customise.setMinHeight(dp(56));
+  customise.setContentDescription("Customise which Orion menu items are shown");
+  customise.setOnClickListener(v->{dialog.dismiss();customiseMenu();});panel.addView(customise,new LinearLayout.LayoutParams(-1,dp(56)));
+  dialog.setContentView(panel);dialog.show();Window win=dialog.getWindow();
+  win.setBackgroundDrawableResource(android.R.color.transparent);win.setGravity(Gravity.BOTTOM);
+  win.setLayout(-1,Math.min(dp(610),(int)(getResources().getDisplayMetrics().heightPixels*.85f)));
  }
  // Give page-independent menu actions explicit, useful home-screen behaviour.
  void refreshOrReload(){
