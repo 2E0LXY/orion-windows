@@ -212,10 +212,8 @@ public class MainActivity extends Activity {
   LinearLayout column=new LinearLayout(this);column.setOrientation(LinearLayout.VERTICAL);column.setGravity(Gravity.CENTER_HORIZONTAL);
   int top=getResources().getConfiguration().orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE?dp(16):dp(30);
   column.setPadding(dp(16),top,dp(16),dp(24));
-  FrameLayout emblem=new FrameLayout(this);emblem.setBackground(round(0xff26354e,50));
+  android.widget.ImageView emblem=new android.widget.ImageView(this);emblem.setImageResource(R.drawable.orion_icon);emblem.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);emblem.setContentDescription("Orion logo");
   LinearLayout.LayoutParams emblemParams=new LinearLayout.LayoutParams(dp(88),dp(88));column.addView(emblem,emblemParams);
-  View orb=new View(this);orb.setBackground(round(0xff8ab4ff,50));
-  FrameLayout.LayoutParams orbParams=new FrameLayout.LayoutParams(dp(64),dp(64),Gravity.CENTER);emblem.addView(orb,orbParams);
   TextView title=new TextView(this);title.setText("Orion");title.setTextSize(32);title.setTextColor(0xfff1f5f9);
   title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));title.setGravity(Gravity.CENTER);
   LinearLayout.LayoutParams titleParams=new LinearLayout.LayoutParams(-1,-2);titleParams.topMargin=dp(16);column.addView(title,titleParams);
@@ -225,8 +223,7 @@ public class MainActivity extends Activity {
   TextView instruction=new TextView(this);instruction.setText("Search or enter an address below.");
   instruction.setTextSize(16);instruction.setTextColor(0xffb9c6da);instruction.setGravity(Gravity.CENTER);
   LinearLayout.LayoutParams instructionParams=new LinearLayout.LayoutParams(-1,-2);instructionParams.topMargin=dp(22);column.addView(instruction,instructionParams);
-  if(!geckoIncognito)homeWeather=HomeWeather.attach(this,column);
-  else{
+  if(geckoIncognito){
    TextView banner=new TextView(this);banner.setText("INCOGNITO · PRIVATE SESSION");
    banner.setTextColor(0xfff5e9ff);banner.setTextSize(15);banner.setGravity(Gravity.CENTER);
    banner.setBackground(round(0xff463758,14));banner.setPadding(dp(16),dp(12),dp(16),dp(12));
@@ -245,6 +242,11 @@ public class MainActivity extends Activity {
    powered.setTextColor(0xffa8bce0);powered.setPadding(dp(8),0,0,0);
    attribution.addView(powered);
    LinearLayout.LayoutParams attrParams=new LinearLayout.LayoutParams(-1,dp(40));attrParams.topMargin=dp(24);column.addView(attribution,attrParams);
+  }
+  if(!geckoIncognito){
+   LinearLayout weatherHost=new LinearLayout(this);weatherHost.setOrientation(LinearLayout.VERTICAL);weatherHost.setGravity(Gravity.CENTER_HORIZONTAL);
+   column.addView(weatherHost,new LinearLayout.LayoutParams(-1,-2));
+   homeWeather=HomeWeather.attach(this,weatherHost);
   }
   scroll.addView(column,new ScrollView.LayoutParams(-1,-2));
   page.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
