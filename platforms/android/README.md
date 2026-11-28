@@ -10,7 +10,11 @@ Experimental **native Java** Android browser combining **Android System WebView*
 
 **Default browser (development branch):** Settings → General → Default browser opens Android's system-managed browser-role prompt (Android 10+) or the default-apps settings screen on older devices. Orion advertises HTTP and HTTPS `VIEW` intents, accepts shared external website links on launch and while running, validates schemes, and closes an Incognito GeckoView session before opening a normal external link. Android retains the final choice. This has not yet been checked on a physical device.
 
-**Orion AI Connect is not connected.** Its settings entry remains disabled. The adjacent security-plan entry explains the intended opt-in permissions. No MCP endpoint, token pairing, remote navigation, page extraction, screenshots, click control, downloads, or ChatGPT/Claude/Gemini connection is present in this build. Those must not be advertised as working until implemented and tested. Private browsing and stored credentials must stay outside a future remote-control interface.
+**Orion AI Connect (experimental local MCP):** Settings → AI Control → Orion AI Connect. Start sharing on the Android device, copy the temporary bearer token and pair a **trusted client running on that same device** with \`http://127.0.0.1:18796/mcp\`. It is disabled by default and accepts only local loopback connections. The token expires after 15 minutes; Stop and disconnect revokes it immediately. The app asks for user approval on each request. Entering Incognito disconnects AI sharing, and the browser refuses requests while it is private or not in the foreground.
+
+Current MCP operations: \`initialize\`, \`ping\`, \`tools/list\`, \`tools/call\` with tools \`browser_info\` (title and URL) and \`navigate\` (HTTPS only). Page body reading, screenshots, clicking, typing, downloads and other actions remain disabled. **The browser does not connect to ChatGPT, Claude or Gemini automatically.** Each service needs a compatible trusted MCP client or an explicit secure bridge; the loopback address is not reachable directly from another computer or cloud service. The session-token clipboard is sensitive. No passwords, cookies or private pages are exposed.
+
+These controls are experimental and await real-device security/UX testing. Avoid treating a localhost MCP listener as authenticated remote access from the internet.
 
 ## Download and install
 
