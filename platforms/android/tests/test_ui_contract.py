@@ -40,6 +40,25 @@ class OrionUiContract(unittest.TestCase):
         self.assertIn('queryDns(endpoint,28)', DNS)
         self.assertIn('application/dns-message', DNS)
 
+    def test_webview_dns_vpn_requires_android_consent_and_scopes_traffic(self):
+        vpn = (APP / "app/src/main/java/uk/community/orion/OrionDnsVpnService.java").read_text(encoding="utf-8")
+        self.assertIn('OrionDnsVpnService', MANIFEST)
+        self.assertIn('android.permission.BIND_VPN_SERVICE', MANIFEST)
+        self.assertIn('android.permission.FOREGROUND_SERVICE_SPECIAL_USE', MANIFEST)
+        self.assertIn('VpnService.prepare(a)', DNS)
+        self.assertIn('DNS_VPN_REQUEST', SOURCE)
+        self.assertIn('if(result==RESULT_OK)startDnsVpn()', SOURCE)
+        self.assertIn('builder.addAllowedApplication(getPackageName())', vpn)
+        self.assertIn('.addRoute("10.203.0.53",32)', vpn)
+        self.assertIn('.addRoute("fd70::53",128)', vpn)
+        self.assertIn('network.openConnection(new URL(doh))', vpn)
+        self.assertIn('connection.setRequestMethod("POST")', vpn)
+        self.assertIn('application/dns-message', vpn)
+        self.assertIn('ACTION_STOP', vpn)
+        self.assertIn('onRevoke()', vpn)
+        self.assertIn('if(tunnel==fd)', vpn)
+        self.assertIn('Local DNS VPN', DNS)
+
     def test_custom_secure_dns_rejects_insecure_protocols(self):
         self.assertIn('"https".equalsIgnoreCase(u.getScheme())', DNS)
         self.assertIn('u.getUserInfo()==null', DNS)
